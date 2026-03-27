@@ -1,0 +1,112 @@
+[
+  {
+    "base": "Scientists say learning Spanish rewires your brain, opens new horizons, and may help you ",
+    "lightEnding": "find true love abroad.",
+    "darkEnding": "update your LinkedIn before the next round of layoffs.",
+    "vocabulary": [
+      {
+        "english": "brain",
+        "spanish": "cerebro",
+        "examples": ["Tienes un cerebro brillante.", "El cerebro necesita descanso."]
+      },
+      {
+        "english": "horizon",
+        "spanish": "horizonte",
+        "examples": ["Miro el horizonte.", "Nuevos horizontes nos esperan."]
+      },
+      {
+        "english": "layoff",
+        "spanish": "despido",
+        "examples": ["Hay muchos despidos este año.", "Temo el despido."]
+      }
+    ]
+  },
+  {
+    "base": "Mastering a new language gives you confidence, culture, and the power to ",
+    "lightEnding": "connect with humanity on a deeper level.",
+    "darkEnding": "argue with customer service in two languages.",
+    "vocabulary": [
+      {
+        "english": "language",
+        "spanish": "idioma",
+        "examples": ["El español es un idioma hermoso.", "¿Cuántos idiomas hablas?"]
+      },
+      {
+        "english": "confidence",
+        "spanish": "confianza",
+        "examples": ["Tengo confianza en ti.", "La confianza es clave."]
+      },
+      {
+        "english": "argue",
+        "spanish": "discutir",
+        "examples": ["No quiero discutir.", "Ellos discuten todo el tiempo."]
+      }
+    ]
+  },
+  {
+    "base": "They say fluent speakers earn more, travel further, and are eventually able to ",
+    "lightEnding": "retire early and live the dream.",
+    "darkEnding": "afford one extra coffee per week.",
+    "vocabulary": [
+      {
+        "english": "fluent",
+        "spanish": "fluido",
+        "examples": ["Habla español de manera fluida.", "Quiero ser fluido en francés."]
+      },
+      {
+        "english": "earn",
+        "spanish": "ganar",
+        "examples": ["Quiero ganar más dinero.", "Ella gana bien."]
+      },
+      {
+        "english": "coffee",
+        "spanish": "café",
+        "examples": ["Me gusta el café solo.", "Tomamos un café juntos."]
+      }
+    ]
+  },
+  {
+    "base": "Every word you learn here is a step toward freedom, adventure, and ",
+    "lightEnding": "a life fully and beautifully lived.",
+    "darkEnding": "slightly less embarrassing holidays.",
+    "vocabulary": [
+      {
+        "english": "word",
+        "spanish": "palabra",
+        "examples": ["Aprendo una palabra nueva cada día.", "Las palabras tienen poder."]
+      },
+      {
+        "english": "freedom",
+        "spanish": "libertad",
+        "examples": ["La libertad es un derecho.", "Vivo en libertad."]
+      },
+      {
+        "english": "adventure",
+        "spanish": "aventura",
+        "examples": ["¡Qué aventura increíble!", "Me encantan las aventuras."]
+      }
+    ]
+  },
+  {
+    "base": "Learning Spanish means you will finally understand the locals, impress your friends, and ",
+    "lightEnding": "change your life forever.",
+    "darkEnding": "not order the wrong thing at the restaurant again.",
+    "vocabulary": [
+      {
+        "english": "understand",
+        "spanish": "entender",
+        "examples": ["No entiendo la pregunta.", "¿Entiendes lo que digo?"]
+      },
+      {
+        "english": "friends",
+        "spanish": "amigos",
+        "examples": ["Mis amigos son muy divertidos.", "Los amigos son importantes."]
+      },
+      {
+        "english": "restaurant",
+        "spanish": "restaurante",
+        "examples": ["Vamos al restaurante esta noche.", "El restaurante está lleno."]
+      }
+    ]
+  }
+]
