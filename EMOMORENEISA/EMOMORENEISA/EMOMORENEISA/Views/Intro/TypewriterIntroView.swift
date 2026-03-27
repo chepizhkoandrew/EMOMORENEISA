@@ -101,8 +101,7 @@ struct TypewriterIntroView: View {
 
                 Spacer(minLength: 0)
             }
-            .frame(width: .infinity, height: height)
-            .frame(maxWidth: .infinity)
+            .frame(maxWidth: .infinity, maxHeight: height)
 
             Button { showSettings = true } label: {
                 Image(systemName: "line.3.horizontal")
