@@ -4,6 +4,7 @@ struct SpinningWheelView: View {
     let finalVerb: String
     let isJoker: Bool
     let delay: Double
+    let skipRequested: Bool
     let onStopped: (() -> Void)?
 
     private static let frameCount = 5
@@ -15,6 +16,7 @@ struct SpinningWheelView: View {
     @State private var verbOpacity: Double = 0
     @State private var verbRotationX: Double = -70
     @State private var visibleLetters: Int = 0
+    @State private var spinDone = false
 
     var body: some View {
         ZStack {
@@ -34,6 +36,9 @@ struct SpinningWheelView: View {
             }
         }
         .onAppear { startSpin() }
+        .onChange(of: skipRequested) { requested in
+            if requested && !spinDone { revealVerb() }
+        }
     }
 
     private var wheelImage: some View {
@@ -93,6 +98,7 @@ struct SpinningWheelView: View {
         var tick = 0
 
         func scheduleNext() {
+            guard !spinDone else { return }
             let progress = Double(tick) / Double(totalTicks)
             let interval: Double
             if progress < 0.5 {
@@ -103,6 +109,7 @@ struct SpinningWheelView: View {
             }
 
             DispatchQueue.main.asyncAfter(deadline: .now() + interval) {
+                guard !spinDone else { return }
                 frameIndex = (frameIndex + 1) % Self.frameCount
                 tick += 1
                 if tick < totalTicks {
@@ -114,12 +121,15 @@ struct SpinningWheelView: View {
         }
 
         DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+            guard !spinDone else { return }
             scheduleNext()
         }
     }
 
     private func revealVerb() {
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
+        guard !spinDone else { return }
+        spinDone = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
             showVerb = true
             showSparkles = true
             visibleLetters = 0

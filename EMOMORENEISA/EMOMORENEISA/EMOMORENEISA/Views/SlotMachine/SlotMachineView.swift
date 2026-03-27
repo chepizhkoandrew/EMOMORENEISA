@@ -5,8 +5,10 @@ struct SlotMachineView: View {
     @Environment(\.verticalSizeClass) private var verticalSizeClass
 
     @State private var stoppedCount = 0
+    @State private var skipSpinRequested = false
 
     private var isLandscape: Bool { verticalSizeClass == .compact }
+    private var isSpinning: Bool { engine.phase == .spinning }
 
     var body: some View {
         ZStack {
@@ -37,7 +39,8 @@ struct SlotMachineView: View {
                         SpinningWheelView(
                             finalVerb: verb.infinitive,
                             isJoker: verb.joker,
-                            delay: Double(index) * 0.5
+                            delay: Double(index) * 0.5,
+                            skipRequested: skipSpinRequested
                         ) {
                             stoppedCount += 1
                             if stoppedCount == engine.selectedVerbs.count {
@@ -57,7 +60,14 @@ struct SlotMachineView: View {
             VStack {
                 Spacer()
 
-                if engine.phase == .readyToStart {
+                if isSpinning {
+                    Text("tap to reveal")
+                        .font(.system(size: isLandscape ? 13 : 15, weight: .medium, design: .monospaced))
+                        .foregroundColor(.white.opacity(0.28))
+                        .tracking(1)
+                        .transition(.opacity)
+                        .padding(.bottom, isLandscape ? 16 : 36)
+                } else if engine.phase == .readyToStart {
                     if isLandscape {
                         Text("tap to practice")
                             .font(.system(size: 15, weight: .medium, design: .monospaced))
@@ -87,6 +97,19 @@ struct SlotMachineView: View {
             }
         }
         .animation(.easeInOut(duration: 0.3), value: engine.phase == .readyToStart)
+        .contentShape(Rectangle())
+        .onTapGesture { handleTap() }
+    }
+
+    private func handleTap() {
+        switch engine.phase {
+        case .spinning:
+            skipSpinRequested = true
+        case .readyToStart:
+            engine.beginCountdown()
+        default:
+            break
+        }
     }
 }
 

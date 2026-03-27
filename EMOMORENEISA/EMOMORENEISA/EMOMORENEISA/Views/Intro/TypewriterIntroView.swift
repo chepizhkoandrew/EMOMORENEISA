@@ -21,11 +21,17 @@ struct TypewriterIntroView: View {
     @State private var displayedText: String = ""
     @State private var cursorVisible: Bool = true
     @State private var isDone: Bool = false
-    @State private var tapOpacity: Double = 0
     @State private var typingTask: Task<Void, Never>? = nil
     @State private var showSettings: Bool = false
     @State private var chosenPhrase: TypewriterPhrase? = nil
     @State private var visibleVocabCount: Int = 0
+
+    private var maxVocabCount: Int { chosenPhrase?.vocabulary.count ?? 0 }
+    private var tapHintText: String {
+        if !isDone { return "tap to skip" }
+        if visibleVocabCount < maxVocabCount { return "tap for examples" }
+        return "tap anywhere to continue"
+    }
 
     private static let phrases: [TypewriterPhrase] = loadPhrases()
 
@@ -118,10 +124,10 @@ struct TypewriterIntroView: View {
 
                 Spacer(minLength: 0)
 
-                Text("tap anywhere to continue")
+                Text(tapHintText)
                     .font(.system(size: 11, weight: .medium, design: .monospaced))
                     .foregroundColor(.white.opacity(0.35))
-                    .opacity(tapOpacity)
+                    .animation(.easeInOut(duration: 0.3), value: tapHintText)
                     .padding(.bottom, 14)
             }
             .frame(height: height)
@@ -143,10 +149,10 @@ struct TypewriterIntroView: View {
                     .scrollBounceBehavior(.basedOnSize)
                 }
 
-                Text("tap anywhere to continue")
+                Text(tapHintText)
                     .font(.system(size: 13, weight: .medium, design: .monospaced))
                     .foregroundColor(.white.opacity(0.35))
-                    .opacity(tapOpacity)
+                    .animation(.easeInOut(duration: 0.3), value: tapHintText)
                     .padding(.bottom, 24)
             }
             .frame(height: height)
@@ -185,20 +191,26 @@ struct TypewriterIntroView: View {
     }
 
     private func handleTap() {
-        if isDone {
-            onContinue()
-        } else {
+        if !isDone {
+            // Tap 1: skip typing, show full dark ending immediately
             typingTask?.cancel()
             if let phrase = chosenPhrase {
                 displayedText = phrase.base + phrase.darkEnding
             }
             finishTyping()
+        } else if visibleVocabCount < maxVocabCount {
+            // Tap 2: reveal all vocab instantly
+            withAnimation(.easeOut(duration: 0.25)) {
+                visibleVocabCount = maxVocabCount
+            }
+        } else {
+            // Tap 3: navigate
+            onContinue()
         }
     }
 
     private func finishTyping() {
         isDone = true
-        withAnimation(.easeIn(duration: 0.7)) { tapOpacity = 1 }
         scheduleVocabReveal()
     }
 
@@ -208,7 +220,9 @@ struct TypewriterIntroView: View {
         for i in 0..<count {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5 + Double(i) * 0.6) {
                 withAnimation(.easeOut(duration: 0.4)) {
-                    visibleVocabCount = i + 1
+                    if visibleVocabCount < i + 1 {
+                        visibleVocabCount = i + 1
+                    }
                 }
             }
         }
