@@ -103,39 +103,31 @@ struct TypewriterIntroView: View {
     private func bottomHalf(height: CGFloat) -> some View {
         ZStack(alignment: .bottom) {
             if isDone, let phrase = chosenPhrase, !phrase.vocabulary.isEmpty {
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 0) {
-                        Spacer().frame(height: 24)
-                        ForEach(Array(phrase.vocabulary.prefix(visibleVocabCount).enumerated()), id: \.offset) { idx, word in
-                            VStack(alignment: .leading, spacing: 6) {
-                                HStack(alignment: .firstTextBaseline, spacing: 0) {
-                                    Text(word.english)
-                                        .font(.system(size: 15, weight: .semibold, design: .monospaced))
-                                        .foregroundColor(.white.opacity(0.6))
-                                    Text("  →  ")
-                                        .font(.system(size: 13, weight: .regular, design: .monospaced))
-                                        .foregroundColor(.white.opacity(0.3))
-                                    Text(word.spanish)
-                                        .font(.system(size: 17, weight: .bold, design: .monospaced))
-                                        .foregroundColor(.yellow)
-                                        .shadow(color: .yellow.opacity(0.4), radius: 4)
-                                }
-
-                                ForEach(word.examples, id: \.self) { example in
-                                    Text("• \(example)")
-                                        .font(.system(size: 12, weight: .regular, design: .monospaced))
-                                        .foregroundColor(.white.opacity(0.35))
-                                        .lineSpacing(3)
-                                }
-                            }
-                            .padding(.horizontal, 32)
-                            .padding(.bottom, idx < phrase.vocabulary.count - 1 ? 20 : 0)
-                            .transition(.opacity.combined(with: .move(edge: .bottom)))
+                if isLandscape {
+                    HStack(alignment: .top, spacing: 0) {
+                        ForEach(Array(phrase.vocabulary.prefix(visibleVocabCount).enumerated()), id: \.offset) { _, word in
+                            vocabWordView(word: word, fontSize: 12, spanishSize: 14)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .transition(.opacity)
                         }
-                        Spacer().frame(height: 56)
                     }
+                    .padding(.horizontal, 28)
+                    .padding(.top, 20)
+                } else {
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: 0) {
+                            Spacer().frame(height: 24)
+                            ForEach(Array(phrase.vocabulary.prefix(visibleVocabCount).enumerated()), id: \.offset) { idx, word in
+                                vocabWordView(word: word, fontSize: 15, spanishSize: 17)
+                                    .padding(.horizontal, 32)
+                                    .padding(.bottom, idx < phrase.vocabulary.count - 1 ? 20 : 0)
+                                    .transition(.opacity.combined(with: .move(edge: .bottom)))
+                            }
+                            Spacer().frame(height: 56)
+                        }
+                    }
+                    .scrollBounceBehavior(.basedOnSize)
                 }
-                .scrollBounceBehavior(.basedOnSize)
             }
 
             Text("tap anywhere to continue")
@@ -147,50 +139,27 @@ struct TypewriterIntroView: View {
         .frame(height: height)
     }
 
-    private func bottomHalfLandscape(height: CGFloat) -> some View {
-        ZStack(alignment: .bottom) {
-            if isDone, let phrase = chosenPhrase, !phrase.vocabulary.isEmpty {
-                ScrollView {
-                    HStack(alignment: .top, spacing: 16) {
-                        ForEach(Array(phrase.vocabulary.prefix(visibleVocabCount).enumerated()), id: \.offset) { _, word in
-                            VStack(alignment: .leading, spacing: 5) {
-                                HStack(alignment: .firstTextBaseline, spacing: 4) {
-                                    Text(word.english)
-                                        .font(.system(size: 12, weight: .semibold, design: .monospaced))
-                                        .foregroundColor(.white.opacity(0.6))
-                                    Text("→")
-                                        .font(.system(size: 11, weight: .regular, design: .monospaced))
-                                        .foregroundColor(.white.opacity(0.3))
-                                    Text(word.spanish)
-                                        .font(.system(size: 14, weight: .bold, design: .monospaced))
-                                        .foregroundColor(.yellow)
-                                        .shadow(color: .yellow.opacity(0.4), radius: 4)
-                                }
-                                ForEach(word.examples, id: \.self) { example in
-                                    Text("• \(example)")
-                                        .font(.system(size: 10, weight: .regular, design: .monospaced))
-                                        .foregroundColor(.white.opacity(0.35))
-                                        .lineSpacing(2)
-                                }
-                            }
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .transition(.opacity.combined(with: .move(edge: .bottom)))
-                        }
-                    }
-                    .padding(.horizontal, 20)
-                    .padding(.top, 20)
-                    .padding(.bottom, 40)
-                }
-                .scrollBounceBehavior(.basedOnSize)
+    private func vocabWordView(word: VocabWord, fontSize: CGFloat, spanishSize: CGFloat) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(alignment: .firstTextBaseline, spacing: 0) {
+                Text(word.english)
+                    .font(.system(size: fontSize, weight: .semibold, design: .monospaced))
+                    .foregroundColor(.white.opacity(0.6))
+                Text("  →  ")
+                    .font(.system(size: fontSize - 2, weight: .regular, design: .monospaced))
+                    .foregroundColor(.white.opacity(0.3))
+                Text(word.spanish)
+                    .font(.system(size: spanishSize, weight: .bold, design: .monospaced))
+                    .foregroundColor(.yellow)
+                    .shadow(color: .yellow.opacity(0.4), radius: 4)
             }
-
-            Text("tap anywhere to continue")
-                .font(.system(size: 11, weight: .medium, design: .monospaced))
-                .foregroundColor(.white.opacity(0.35))
-                .opacity(tapOpacity)
-                .padding(.bottom, 12)
+            ForEach(word.examples, id: \.self) { example in
+                Text("• \(example)")
+                    .font(.system(size: fontSize - 3, weight: .regular, design: .monospaced))
+                    .foregroundColor(.white.opacity(0.35))
+                    .lineSpacing(3)
+            }
         }
-        .frame(height: height)
     }
 
     private var displayedAttributedText: AttributedString {
