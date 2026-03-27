@@ -51,28 +51,14 @@ struct TypewriterIntroView: View {
             ZStack {
                 Color.black.ignoresSafeArea()
 
-                if isLandscape {
-                    HStack(spacing: 0) {
-                        topHalf(height: geo.size.height)
-                            .frame(width: geo.size.width / 2)
+                VStack(spacing: 0) {
+                    topHalf(height: geo.size.height / 2)
 
-                        Rectangle()
-                            .fill(Color.white.opacity(0.08))
-                            .frame(width: 1)
+                    Rectangle()
+                        .fill(Color.white.opacity(0.08))
+                        .frame(height: 1)
 
-                        bottomHalfLandscape(height: geo.size.height)
-                            .frame(width: geo.size.width / 2)
-                    }
-                } else {
-                    VStack(spacing: 0) {
-                        topHalf(height: geo.size.height / 2)
-
-                        Rectangle()
-                            .fill(Color.white.opacity(0.08))
-                            .frame(height: 1)
-
-                        bottomHalf(height: geo.size.height / 2)
-                    }
+                    bottomHalf(height: geo.size.height / 2)
                 }
             }
         }
@@ -90,7 +76,7 @@ struct TypewriterIntroView: View {
     private func topHalf(height: CGFloat) -> some View {
         ZStack(alignment: .topTrailing) {
             VStack(alignment: .leading, spacing: 0) {
-                Spacer().frame(height: 52)
+                Spacer().frame(height: 80)
 
                 Text(displayedAttributedText)
                     .font(.system(size: 19, weight: .medium, design: .monospaced))
