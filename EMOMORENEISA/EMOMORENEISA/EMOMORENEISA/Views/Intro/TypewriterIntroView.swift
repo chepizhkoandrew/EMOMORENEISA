@@ -101,19 +101,32 @@ struct TypewriterIntroView: View {
     }
 
     private func bottomHalf(height: CGFloat) -> some View {
-        ZStack(alignment: .bottom) {
-            if isDone, let phrase = chosenPhrase, !phrase.vocabulary.isEmpty {
-                if isLandscape {
+        if isLandscape {
+            VStack(spacing: 0) {
+                if isDone, let phrase = chosenPhrase, !phrase.vocabulary.isEmpty {
                     HStack(alignment: .top, spacing: 0) {
                         ForEach(Array(phrase.vocabulary.prefix(visibleVocabCount).enumerated()), id: \.offset) { _, word in
-                            vocabWordView(word: word, fontSize: 12, spanishSize: 14)
+                            vocabWordView(word: word, fontSize: 13, spanishSize: 15)
                                 .frame(maxWidth: .infinity, alignment: .leading)
                                 .transition(.opacity)
                         }
                     }
-                    .padding(.horizontal, 28)
+                    .padding(.horizontal, 20)
                     .padding(.top, 20)
-                } else {
+                }
+
+                Spacer(minLength: 0)
+
+                Text("tap anywhere to continue")
+                    .font(.system(size: 11, weight: .medium, design: .monospaced))
+                    .foregroundColor(.white.opacity(0.35))
+                    .opacity(tapOpacity)
+                    .padding(.bottom, 14)
+            }
+            .frame(height: height)
+        } else {
+            ZStack(alignment: .bottom) {
+                if isDone, let phrase = chosenPhrase, !phrase.vocabulary.isEmpty {
                     ScrollView {
                         VStack(alignment: .leading, spacing: 0) {
                             Spacer().frame(height: 24)
@@ -128,15 +141,15 @@ struct TypewriterIntroView: View {
                     }
                     .scrollBounceBehavior(.basedOnSize)
                 }
-            }
 
-            Text("tap anywhere to continue")
-                .font(.system(size: 13, weight: .medium, design: .monospaced))
-                .foregroundColor(.white.opacity(0.35))
-                .opacity(tapOpacity)
-                .padding(.bottom, 24)
+                Text("tap anywhere to continue")
+                    .font(.system(size: 13, weight: .medium, design: .monospaced))
+                    .foregroundColor(.white.opacity(0.35))
+                    .opacity(tapOpacity)
+                    .padding(.bottom, 24)
+            }
+            .frame(height: height)
         }
-        .frame(height: height)
     }
 
     private func vocabWordView(word: VocabWord, fontSize: CGFloat, spanishSize: CGFloat) -> some View {
