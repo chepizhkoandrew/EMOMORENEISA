@@ -26,7 +26,7 @@ struct GameMatrixView: View {
             }
             .scrollBounceBehavior(.basedOnSize)
 
-            if engine.isListening && !isReview {
+            if (engine.isListening || engine.isPostProcessing) && !isReview {
                 listeningIndicator
             }
         }
@@ -56,11 +56,6 @@ struct GameMatrixView: View {
 
             if isReview {
                 reviewControls
-            } else if engine.isPostProcessing {
-                Text("PROCESSING…")
-                    .font(.system(size: 11, weight: .bold, design: .monospaced))
-                    .foregroundColor(.yellow.opacity(0.6))
-                    .shadow(color: .yellow.opacity(0.4), radius: 4)
             }
         }
         .padding(.bottom, 4)
@@ -123,7 +118,9 @@ struct GameMatrixView: View {
 
     private func activeBanner(cell: GameCell) -> some View {
         let (knownStem, endingBlanks) = stemAndBlanks(infinitive: cell.verb.infinitive, conjugation: cell.expectedConjugation)
-        return VStack(spacing: 6) {
+        return HStack(spacing: 0) {
+            Color.clear.frame(width: 76 + 6)
+
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Text(cell.pronoun.displayLabel.uppercased())
                     .font(.system(size: 28, weight: .bold, design: .monospaced))
@@ -144,23 +141,11 @@ struct GameMatrixView: View {
                         .tracking(3)
                 }
             }
-
-            if !engine.liveTranscript.isEmpty {
-                Text("« \(engine.liveTranscript) »")
-                    .font(.system(size: 13, weight: .regular, design: .monospaced))
-                    .foregroundColor(.yellow.opacity(0.8))
-                    .lineLimit(1)
-                    .truncationMode(.tail)
-                    .animation(.easeInOut(duration: 0.15), value: engine.liveTranscript)
-            } else {
-                Text(isReview ? "LISTENING FOR RETRY…" : "LISTENING…")
-                    .font(.system(size: 11, weight: .regular, design: .monospaced))
-                    .foregroundColor(.white.opacity(0.2))
-                    .tracking(1)
-            }
+            .frame(maxWidth: .infinity, alignment: .center)
         }
-        .frame(maxWidth: .infinity, alignment: .center)
+        .frame(maxWidth: .infinity)
         .frame(height: 80)
+        .padding(.top, 8)
     }
 
     private func resultBanner(result: GameEngine.LastResult) -> some View {
@@ -315,14 +300,15 @@ struct GameMatrixView: View {
     // MARK: - Listening indicator
 
     private var listeningIndicator: some View {
-        VStack {
+        let isProcessing = engine.isPostProcessing && !engine.isListening
+        return VStack {
             Spacer()
             HStack(spacing: 8) {
                 Circle()
-                    .fill(Color.red)
+                    .fill(isProcessing ? Color.yellow : Color.red)
                     .frame(width: 8, height: 8)
-                    .shadow(color: .red.opacity(0.8), radius: 4)
-                Text("LISTENING…")
+                    .shadow(color: (isProcessing ? Color.yellow : Color.red).opacity(0.8), radius: 4)
+                Text(isProcessing ? "PROCESSING…" : "LISTENING…")
                     .font(.system(size: 12, weight: .bold, design: .monospaced))
                     .foregroundColor(.white.opacity(0.7))
                     .tracking(1)

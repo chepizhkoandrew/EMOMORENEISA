@@ -58,11 +58,21 @@ struct SlotMachineView: View {
                 Spacer()
 
                 if engine.phase == .readyToStart {
-                    PlayToLearnButton(compact: isLandscape) {
-                        engine.beginCountdown()
+                    if isLandscape {
+                        Text("tap to practice")
+                            .font(.system(size: 15, weight: .medium, design: .monospaced))
+                            .foregroundColor(.white.opacity(0.45))
+                            .tracking(1)
+                            .transition(.opacity)
+                            .onTapGesture { engine.beginCountdown() }
+                            .padding(.bottom, 16)
+                    } else {
+                        PlayToLearnButton(compact: false) {
+                            engine.beginCountdown()
+                        }
+                        .transition(.opacity.combined(with: .scale(scale: 0.85)))
+                        .padding(.bottom, 36)
                     }
-                    .transition(.opacity.combined(with: .scale(scale: 0.85)))
-                    .padding(.bottom, isLandscape ? 10 : 36)
                 } else if case .countdown(let n) = engine.phase {
                     Text("\(n)")
                         .font(.system(size: isLandscape ? 60 : 100, weight: .black, design: .monospaced))
