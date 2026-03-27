@@ -20,7 +20,9 @@ final class SpeechService: NSObject {
     private var lastTranscript: String = ""
     private var listenStartTime: Date?
 
-    private let silenceTimeout: TimeInterval = 1.4
+    private let silenceTimeout: TimeInterval = 1.0
+    private var watchdogTimer: Timer?
+    private var firstBufferReceived = false
 
     func requestPermission(completion: @escaping (Bool) -> Void) {
         SFSpeechRecognizer.requestAuthorization { status in
@@ -41,6 +43,7 @@ final class SpeechService: NSObject {
         onPartial = onPartialResult
         lastTranscript = ""
         listenStartTime = Date()
+        firstBufferReceived = false
 
         guard let recognizer else {
             glog("🎙  STT  ", "⚠️ SFSpeechRecognizer is nil (locale es-ES not supported on this device?)")
@@ -53,8 +56,14 @@ final class SpeechService: NSObject {
 
         let req = SFSpeechAudioBufferRecognitionRequest()
         req.shouldReportPartialResults = true
-        req.taskHint = .dictation
+        req.taskHint = .search
         req.addsPunctuation = false
+        if recognizer.supportsOnDeviceRecognition {
+            req.requiresOnDeviceRecognition = true
+            glog("🎙  STT  ", "On-device recognition ✅")
+        } else {
+            glog("🎙  STT  ", "On-device recognition not available — using server")
+        }
         if !contextualStrings.isEmpty {
             req.contextualStrings = contextualStrings
             glog("🎙  STT  ", "Contextual hints: \(contextualStrings.joined(separator: ", "))")
@@ -90,8 +99,15 @@ final class SpeechService: NSObject {
             glog("🎙  STT  ", "Using fallback format — \(format.sampleRate) Hz, \(format.channelCount) ch")
         }
 
-        inputNode.installTap(onBus: 0, bufferSize: 4096, format: format) { [weak self] buffer, _ in
-            self?.request?.append(buffer)
+        inputNode.installTap(onBus: 0, bufferSize: 1024, format: format) { [weak self] buffer, _ in
+            guard let self else { return }
+            if !self.firstBufferReceived {
+                self.firstBufferReceived = true
+                let elapsed = self.listenStartTime.map { Date().timeIntervalSince($0) } ?? 0
+                glog("🎙  STT  ", "First audio buffer received at [\(String(format: "%.2f", elapsed))s]")
+                self.watchdogTimer?.invalidate()
+            }
+            self.request?.append(buffer)
         }
 
         do {
@@ -102,6 +118,12 @@ final class SpeechService: NSObject {
             glog("🎙  STT  ", "⚠️ Audio engine start failed: \(error.localizedDescription)")
             inputNode.removeTap(onBus: 0)
             return
+        }
+
+        watchdogTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: false) { [weak self] _ in
+            guard let self, !self.firstBufferReceived else { return }
+            glog("🎙  STT  ", "⚠️ Watchdog: no audio buffers in 2s — microphone may be unavailable")
+            self.deliverResult(self.lastTranscript)
         }
 
         task = recognizer.recognitionTask(with: req) { [weak self] result, error in
@@ -157,6 +179,8 @@ final class SpeechService: NSObject {
 
     func stopListening() {
         silenceTimer?.invalidate()
+        watchdogTimer?.invalidate()
+        watchdogTimer = nil
         onPartial = nil
         task?.cancel()
         task = nil
