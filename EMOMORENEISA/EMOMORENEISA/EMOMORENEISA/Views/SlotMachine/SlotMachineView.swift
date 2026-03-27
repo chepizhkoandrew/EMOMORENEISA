@@ -2,8 +2,11 @@ import SwiftUI
 
 struct SlotMachineView: View {
     @EnvironmentObject var engine: GameEngine
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
 
     @State private var stoppedCount = 0
+
+    private var isLandscape: Bool { verticalSizeClass == .compact }
 
     var body: some View {
         ZStack {
@@ -48,28 +51,28 @@ struct SlotMachineView: View {
 
                 Spacer(minLength: 0)
 
-                Color.clear.frame(height: 160)
+                Color.clear.frame(height: isLandscape ? 72 : 160)
             }
 
             VStack {
                 Spacer()
 
                 if engine.phase == .readyToStart {
-                    PlayToLearnButton {
+                    PlayToLearnButton(compact: isLandscape) {
                         engine.beginCountdown()
                     }
                     .transition(.opacity.combined(with: .scale(scale: 0.85)))
-                    .padding(.bottom, 36)
+                    .padding(.bottom, isLandscape ? 10 : 36)
                 } else if case .countdown(let n) = engine.phase {
                     Text("\(n)")
-                        .font(.system(size: 100, weight: .black, design: .monospaced))
+                        .font(.system(size: isLandscape ? 60 : 100, weight: .black, design: .monospaced))
                         .foregroundColor(.yellow)
                         .shadow(color: .yellow.opacity(0.7), radius: 16)
                         .transition(.scale.combined(with: .opacity))
                         .id(n)
-                        .padding(.bottom, 36)
+                        .padding(.bottom, isLandscape ? 10 : 36)
                 } else {
-                    Color.clear.frame(height: 160)
+                    Color.clear.frame(height: isLandscape ? 72 : 160)
                 }
             }
         }
@@ -78,13 +81,23 @@ struct SlotMachineView: View {
 }
 
 struct PlayToLearnButton: View {
+    var compact: Bool = false
     let action: () -> Void
     @State private var isPressed: Bool = false
+
+    private var size: CGFloat { compact ? 80 : 160 }
+    private var circleSize: CGFloat { compact ? 65 : 130 }
+    private var textRadius: CGFloat { compact ? 24 : 49 }
+    private var textFontSize: CGFloat { compact ? 5 : 10 }
+    private var buttonSize: CGFloat { compact ? 37 : 74 }
+    private var shadowSize: CGFloat { compact ? 36 : 72 }
+    private var cornerRadius: CGFloat { compact ? 7 : 13 }
+    private var screwOffset: CGFloat { compact ? 30 : 60 }
 
     var body: some View {
         Button(action: action) {
             ZStack {
-                RoundedRectangle(cornerRadius: 13)
+                RoundedRectangle(cornerRadius: cornerRadius)
                     .fill(
                         LinearGradient(
                             colors: [Color(red: 0.92, green: 0.76, blue: 0.05), Color(red: 0.72, green: 0.56, blue: 0.02)],
@@ -92,32 +105,32 @@ struct PlayToLearnButton: View {
                             endPoint: .bottomTrailing
                         )
                     )
-                    .frame(width: 160, height: 160)
+                    .frame(width: size, height: size)
                     .shadow(color: .black.opacity(0.55), radius: 10, y: 5)
                     .overlay(
-                        RoundedRectangle(cornerRadius: 13)
+                        RoundedRectangle(cornerRadius: cornerRadius)
                             .stroke(Color(red: 0.55, green: 0.42, blue: 0.0).opacity(0.7), lineWidth: 1.5)
                     )
 
-                ForEach([(CGFloat(-60), CGFloat(-60)), (60, -60), (-60, CGFloat(60)), (CGFloat(60), CGFloat(60))], id: \.0) { (x, y) in
+                ForEach([(-screwOffset, -screwOffset), (screwOffset, -screwOffset), (-screwOffset, screwOffset), (screwOffset, screwOffset)].map { CGPoint(x: $0.0, y: $0.1) }, id: \.x) { pt in
                     ScrewView()
-                        .offset(x: x, y: y)
+                        .offset(x: pt.x, y: pt.y)
                 }
 
                 ZStack {
                     Circle()
                         .fill(Color(red: 0.98, green: 0.84, blue: 0.15))
-                        .frame(width: 130, height: 130)
+                        .frame(width: circleSize, height: circleSize)
                         .shadow(color: Color(red: 0.5, green: 0.38, blue: 0.0).opacity(0.5), radius: 4, y: 2)
 
-                    CircularTextView(text: "PLAY  TO  LEARN  ★  ", radius: 49, fontSize: 10)
+                    CircularTextView(text: "PLAY  TO  LEARN  ★  ", radius: textRadius, fontSize: textFontSize)
                         .foregroundColor(.white)
                         .shadow(color: .black.opacity(0.5), radius: 2)
 
                     ZStack {
                         Circle()
                             .fill(Color(red: 0.45, green: 0.0, blue: 0.0))
-                            .frame(width: 72, height: 72)
+                            .frame(width: shadowSize, height: shadowSize)
                             .offset(y: isPressed ? 3 : 6)
                             .blur(radius: 2)
 
@@ -130,17 +143,17 @@ struct PlayToLearnButton: View {
                                     ],
                                     center: .init(x: 0.38, y: 0.32),
                                     startRadius: 3,
-                                    endRadius: 40
+                                    endRadius: compact ? 20 : 40
                                 )
                             )
-                            .frame(width: 74, height: isPressed ? 68 : 74)
+                            .frame(width: buttonSize, height: isPressed ? buttonSize * 0.92 : buttonSize)
                             .offset(y: isPressed ? 3 : 0)
 
                         Circle()
                             .fill(Color.white.opacity(0.18))
-                            .frame(width: 40, height: 22)
-                            .offset(x: -6, y: isPressed ? -12 : -17)
-                            .blur(radius: 3)
+                            .frame(width: buttonSize * 0.54, height: buttonSize * 0.3)
+                            .offset(x: compact ? -3 : -6, y: isPressed ? (compact ? -6 : -12) : (compact ? -9 : -17))
+                            .blur(radius: compact ? 2 : 3)
                     }
                 }
             }

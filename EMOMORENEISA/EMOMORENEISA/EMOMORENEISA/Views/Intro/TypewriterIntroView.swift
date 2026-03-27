@@ -43,19 +43,36 @@ struct TypewriterIntroView: View {
         return decoded
     }
 
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
+    private var isLandscape: Bool { verticalSizeClass == .compact }
+
     var body: some View {
         GeometryReader { geo in
             ZStack {
                 Color.black.ignoresSafeArea()
 
-                VStack(spacing: 0) {
-                    topHalf(height: geo.size.height / 2)
+                if isLandscape {
+                    HStack(spacing: 0) {
+                        topHalf(height: geo.size.height)
+                            .frame(width: geo.size.width / 2)
 
-                    Rectangle()
-                        .fill(Color.white.opacity(0.08))
-                        .frame(height: 1)
+                        Rectangle()
+                            .fill(Color.white.opacity(0.08))
+                            .frame(width: 1)
 
-                    bottomHalf(height: geo.size.height / 2)
+                        bottomHalfLandscape(height: geo.size.height)
+                            .frame(width: geo.size.width / 2)
+                    }
+                } else {
+                    VStack(spacing: 0) {
+                        topHalf(height: geo.size.height / 2)
+
+                        Rectangle()
+                            .fill(Color.white.opacity(0.08))
+                            .frame(height: 1)
+
+                        bottomHalf(height: geo.size.height / 2)
+                    }
                 }
             }
         }
@@ -141,6 +158,52 @@ struct TypewriterIntroView: View {
                 .foregroundColor(.white.opacity(0.35))
                 .opacity(tapOpacity)
                 .padding(.bottom, 24)
+        }
+        .frame(height: height)
+    }
+
+    private func bottomHalfLandscape(height: CGFloat) -> some View {
+        ZStack(alignment: .bottom) {
+            if isDone, let phrase = chosenPhrase, !phrase.vocabulary.isEmpty {
+                ScrollView {
+                    HStack(alignment: .top, spacing: 16) {
+                        ForEach(Array(phrase.vocabulary.prefix(visibleVocabCount).enumerated()), id: \.offset) { _, word in
+                            VStack(alignment: .leading, spacing: 5) {
+                                HStack(alignment: .firstTextBaseline, spacing: 4) {
+                                    Text(word.english)
+                                        .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                                        .foregroundColor(.white.opacity(0.6))
+                                    Text("→")
+                                        .font(.system(size: 11, weight: .regular, design: .monospaced))
+                                        .foregroundColor(.white.opacity(0.3))
+                                    Text(word.spanish)
+                                        .font(.system(size: 14, weight: .bold, design: .monospaced))
+                                        .foregroundColor(.yellow)
+                                        .shadow(color: .yellow.opacity(0.4), radius: 4)
+                                }
+                                ForEach(word.examples, id: \.self) { example in
+                                    Text("• \(example)")
+                                        .font(.system(size: 10, weight: .regular, design: .monospaced))
+                                        .foregroundColor(.white.opacity(0.35))
+                                        .lineSpacing(2)
+                                }
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .transition(.opacity.combined(with: .move(edge: .bottom)))
+                        }
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 20)
+                    .padding(.bottom, 40)
+                }
+                .scrollBounceBehavior(.basedOnSize)
+            }
+
+            Text("tap anywhere to continue")
+                .font(.system(size: 11, weight: .medium, design: .monospaced))
+                .foregroundColor(.white.opacity(0.35))
+                .opacity(tapOpacity)
+                .padding(.bottom, 12)
         }
         .frame(height: height)
     }

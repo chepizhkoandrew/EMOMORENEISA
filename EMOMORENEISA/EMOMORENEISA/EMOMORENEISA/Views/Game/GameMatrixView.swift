@@ -2,22 +2,29 @@ import SwiftUI
 
 struct GameMatrixView: View {
     @EnvironmentObject var engine: GameEngine
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
 
     private var isReview: Bool { engine.phase == .review }
+    private var isLandscape: Bool { verticalSizeClass == .compact }
 
     var body: some View {
         ZStack {
             Color.black.ignoresSafeArea()
 
-            VStack(spacing: 0) {
-                topBar
-                guidanceBanner
-                headerRow
-                Divider().background(Color.white.opacity(0.15))
-                matrixBody
+            ScrollView(isLandscape ? .vertical : []) {
+                VStack(spacing: 0) {
+                    topBar
+                    if !isLandscape {
+                        guidanceBanner
+                    }
+                    headerRow
+                    Divider().background(Color.white.opacity(0.15))
+                    matrixBody
+                }
+                .padding(.horizontal, 12)
+                .padding(.top, 8)
             }
-            .padding(.horizontal, 12)
-            .padding(.top, 8)
+            .scrollBounceBehavior(.basedOnSize)
 
             if engine.isListening && !isReview {
                 listeningIndicator
@@ -247,13 +254,13 @@ struct GameMatrixView: View {
                 .frame(maxWidth: .infinity)
             }
         }
-        .padding(.vertical, 8)
+        .padding(.vertical, isLandscape ? 4 : 8)
     }
 
     // MARK: - Matrix
 
     private var matrixBody: some View {
-        VStack(spacing: 4) {
+        VStack(spacing: isLandscape ? 2 : 4) {
             ForEach(Pronoun.allCases) { pronoun in
                 HStack(spacing: 6) {
                     Text(pronoun.displayLabel)
@@ -267,7 +274,7 @@ struct GameMatrixView: View {
                         if let (cell, idx) = cellAndIndex(pronoun: pronoun, verb: verb) {
                             cellView(cell: cell, index: idx)
                                 .frame(maxWidth: .infinity)
-                                .frame(height: 52)
+                                .frame(height: isLandscape ? 36 : 52)
                         }
                     }
                 }
