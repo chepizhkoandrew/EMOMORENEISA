@@ -1,0 +1,13 @@
+.DS_Store
+*.DS_Store
+xcuserdata/
+*.xcworkspace/xcuserdata/
+DerivedData/
+.build/
+*.xccheckout
+*.moved-aside
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+.zencoder/
