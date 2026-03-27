@@ -100,6 +100,7 @@ struct TypewriterIntroView: View {
         .clipped()
     }
 
+    @ViewBuilder
     private func bottomHalf(height: CGFloat) -> some View {
         if isLandscape {
             VStack(spacing: 0) {
