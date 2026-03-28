@@ -108,5 +108,115 @@
         "examples": ["Vamos al restaurante esta noche.", "El restaurante está lleno."]
       }
     ]
+  },
+  {
+    "base": "Spanish unlocks new horizons, opens doors to new cultures, and gives you the power to ",
+    "lightEnding": "see the world with fresh eyes and unlimited potential.",
+    "darkEnding": "be replaced by GPT a few months later than your monolingual colleagues.",
+    "vocabulary": [
+      {
+        "english": "horizon",
+        "spanish": "horizonte",
+        "examples": ["Nuevos horizontes nos esperan.", "El horizonte parece infinito."]
+      },
+      {
+        "english": "culture",
+        "spanish": "cultura",
+        "examples": ["La cultura española es rica.", "Respeto todas las culturas."]
+      },
+      {
+        "english": "replace",
+        "spanish": "reemplazar",
+        "examples": ["El robot me va a reemplazar.", "Nadie puede reemplazarte."]
+      }
+    ]
+  },
+  {
+    "base": "With Spanish you can speak to millions of native speakers, build real connections, and ",
+    "lightEnding": "open yourself to a lifetime of meaningful friendships.",
+    "darkEnding": "save money on the iPhone Pro 5 with built-in real-time translation.",
+    "vocabulary": [
+      {
+        "english": "native",
+        "spanish": "nativo",
+        "examples": ["Quiero hablar como un nativo.", "Los hablantes nativos son pacientes."]
+      },
+      {
+        "english": "connection",
+        "spanish": "conexión",
+        "examples": ["Tenemos una conexión especial.", "Las conexiones humanas importan."]
+      },
+      {
+        "english": "save",
+        "spanish": "ahorrar",
+        "examples": ["Quiero ahorrar dinero.", "Ahorra para el futuro."]
+      }
+    ]
+  },
+  {
+    "base": "Research shows bilingual people are sharper, more empathetic, and much better at ",
+    "lightEnding": "everything — career, travel, love, and life.",
+    "darkEnding": "pretending they understood the joke at the dinner table.",
+    "vocabulary": [
+      {
+        "english": "research",
+        "spanish": "investigación",
+        "examples": ["La investigación confirma los beneficios.", "Hago investigación todos los días."]
+      },
+      {
+        "english": "empathetic",
+        "spanish": "empático",
+        "examples": ["Es una persona muy empática.", "Ser empático ayuda mucho."]
+      },
+      {
+        "english": "joke",
+        "spanish": "chiste",
+        "examples": ["No entiendo el chiste.", "Cuenta un chiste en español."]
+      }
+    ]
+  },
+  {
+    "base": "They say Spanish is the language of passion, of poetry, of sunsets in Barcelona — and also of ",
+    "lightEnding": "the most beautiful conversations you will ever have.",
+    "darkEnding": "forms you must fill in triplicate at the immigration office.",
+    "vocabulary": [
+      {
+        "english": "passion",
+        "spanish": "pasión",
+        "examples": ["El flamenco es pura pasión.", "Habla con mucha pasión."]
+      },
+      {
+        "english": "sunset",
+        "spanish": "atardecer",
+        "examples": ["El atardecer en Barcelona es increíble.", "Miro el atardecer cada noche."]
+      },
+      {
+        "english": "form",
+        "spanish": "formulario",
+        "examples": ["Rellena el formulario, por favor.", "Hay demasiados formularios."]
+      }
+    ]
+  },
+  {
+    "base": "Studies prove that people who speak Spanish live longer, feel happier, and are far more likely to ",
+    "lightEnding": "thrive wherever life takes them.",
+    "darkEnding": "spend 40 minutes arguing with a Spanish bureaucrat and still lose.",
+    "vocabulary": [
+      {
+        "english": "study",
+        "spanish": "estudio",
+        "examples": ["Un estudio revela datos sorprendentes.", "El estudio fue publicado ayer."]
+      },
+      {
+        "english": "happy",
+        "spanish": "feliz",
+        "examples": ["Soy muy feliz hoy.", "¿Eres feliz con tu vida?"]
+      },
+      {
+        "english": "bureaucrat",
+        "spanish": "burócrata",
+        "examples": ["El burócrata no entiende mi problema.", "Los burócratas son lentos."]
+      }
+    ]
   }
 ]
