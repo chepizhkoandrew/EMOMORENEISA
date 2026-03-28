@@ -108,7 +108,7 @@ struct GameMatrixView: View {
                 reviewIdleBanner
                     .transition(.opacity)
             } else {
-                Color.clear.frame(height: 80)
+                Color.clear.frame(height: 72)
             }
         }
         .animation(.easeInOut(duration: 0.2), value: engine.currentActiveCell?.id)
@@ -121,61 +121,69 @@ struct GameMatrixView: View {
         return HStack(spacing: 0) {
             Color.clear.frame(width: 76 + 6)
 
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
                 Text(cell.pronoun.displayLabel.uppercased())
-                    .font(.system(size: 28, weight: .bold, design: .monospaced))
+                    .font(.system(size: 22, weight: .bold, design: .monospaced))
                     .foregroundColor(.yellow)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
                     .shadow(color: .yellow.opacity(0.7), radius: 8)
                     .shadow(color: .yellow.opacity(0.3), radius: 16)
 
                 HStack(alignment: .firstTextBaseline, spacing: 0) {
                     if !knownStem.isEmpty {
                         Text(knownStem)
-                            .font(.system(size: 26, weight: .bold, design: .monospaced))
+                            .font(.system(size: 22, weight: .bold, design: .monospaced))
                             .foregroundColor(.white)
                             .shadow(color: .white.opacity(0.4), radius: 6)
                     }
                     Text(endingBlanks.isEmpty ? "_" : endingBlanks)
-                        .font(.system(size: 22, weight: .regular, design: .monospaced))
+                        .font(.system(size: 18, weight: .regular, design: .monospaced))
                         .foregroundColor(.white.opacity(0.22))
                         .tracking(3)
                 }
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
             }
             .frame(maxWidth: .infinity, alignment: .center)
         }
         .frame(maxWidth: .infinity)
-        .frame(height: 80)
-        .padding(.top, 8)
+        .frame(height: 72)
     }
 
     private func resultBanner(result: GameEngine.LastResult) -> some View {
         let color: Color = result.correct ? .green : .red
-        return VStack(spacing: 4) {
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
+        return VStack(spacing: 3) {
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
                 Text(result.pronoun.uppercased())
-                    .font(.system(size: 18, weight: .regular, design: .monospaced))
+                    .font(.system(size: 16, weight: .regular, design: .monospaced))
                     .foregroundColor(color.opacity(0.65))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
 
                 Text(result.conjugation)
-                    .font(.system(size: 24, weight: .bold, design: .monospaced))
+                    .font(.system(size: 22, weight: .bold, design: .monospaced))
                     .foregroundColor(color)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
                     .shadow(color: color.opacity(0.6), radius: 8)
             }
 
             if !result.userTranscript.isEmpty && !result.correct {
                 Text("you said: \"\(result.userTranscript)\"")
-                    .font(.system(size: 12, weight: .regular, design: .monospaced))
+                    .font(.system(size: 11, weight: .regular, design: .monospaced))
                     .foregroundColor(.red.opacity(0.55))
                     .lineLimit(1)
+                    .minimumScaleFactor(0.7)
             } else if result.correct {
                 Text("✓ CORRECT")
-                    .font(.system(size: 12, weight: .bold, design: .monospaced))
+                    .font(.system(size: 11, weight: .bold, design: .monospaced))
                     .foregroundColor(.green.opacity(0.65))
                     .shadow(color: .green.opacity(0.5), radius: 4)
             }
         }
         .frame(maxWidth: .infinity, alignment: .center)
-        .frame(height: 80)
+        .frame(height: 72)
     }
 
     private var reviewIdleBanner: some View {
@@ -194,7 +202,7 @@ struct GameMatrixView: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .center)
-        .frame(height: 80)
+        .frame(height: 72)
     }
 
     private func stemAndBlanks(infinitive: String, conjugation: String) -> (stem: String, blanks: String) {

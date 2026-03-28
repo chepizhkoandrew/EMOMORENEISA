@@ -29,7 +29,6 @@ struct TypewriterIntroView: View {
     private var maxVocabCount: Int { chosenPhrase?.vocabulary.count ?? 0 }
     private var tapHintText: String {
         if !isDone { return "tap to skip" }
-        if visibleVocabCount < maxVocabCount { return "tap for examples" }
         return "tap anywhere to continue"
     }
 
@@ -192,19 +191,14 @@ struct TypewriterIntroView: View {
 
     private func handleTap() {
         if !isDone {
-            // Tap 1: skip typing, show full dark ending immediately
+            // Tap 1: skip typing, show full dark ending, auto-reveal examples
             typingTask?.cancel()
             if let phrase = chosenPhrase {
                 displayedText = phrase.base + phrase.darkEnding
             }
             finishTyping()
-        } else if visibleVocabCount < maxVocabCount {
-            // Tap 2: reveal all vocab instantly
-            withAnimation(.easeOut(duration: 0.25)) {
-                visibleVocabCount = maxVocabCount
-            }
         } else {
-            // Tap 3: navigate
+            // Tap 2: navigate
             onContinue()
         }
     }
