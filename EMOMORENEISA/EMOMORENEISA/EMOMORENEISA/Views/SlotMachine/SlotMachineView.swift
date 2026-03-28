@@ -27,6 +27,15 @@ struct SlotMachineView: View {
                         .foregroundColor(.white.opacity(0.55))
                     }
                     Spacer()
+                    Button {
+                        stoppedCount = 0
+                        skipSpinRequested = false
+                        engine.reSpin()
+                    } label: {
+                        Image(systemName: "arrow.clockwise")
+                            .font(.system(size: 17, weight: .semibold, design: .monospaced))
+                            .foregroundColor(.white.opacity(0.55))
+                    }
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 12)
@@ -38,6 +47,7 @@ struct SlotMachineView: View {
                     ForEach(Array(engine.selectedVerbs.enumerated()), id: \.offset) { index, verb in
                         SpinningWheelView(
                             finalVerb: verb.infinitive,
+                            translation: verb.translation,
                             isJoker: verb.joker,
                             delay: Double(index) * 0.5,
                             skipRequested: skipSpinRequested
@@ -51,10 +61,11 @@ struct SlotMachineView: View {
                     }
                 }
                 .padding(.horizontal, 0)
+                .padding(.top, 16)
 
                 Spacer(minLength: 0)
 
-                Color.clear.frame(height: isLandscape ? 72 : 160)
+                Color.clear.frame(height: isLandscape ? 56 : 120)
             }
 
             VStack {
@@ -92,7 +103,7 @@ struct SlotMachineView: View {
                         .id(n)
                         .padding(.bottom, isLandscape ? 10 : 36)
                 } else {
-                    Color.clear.frame(height: isLandscape ? 72 : 160)
+                    Color.clear.frame(height: isLandscape ? 56 : 120)
                 }
             }
         }

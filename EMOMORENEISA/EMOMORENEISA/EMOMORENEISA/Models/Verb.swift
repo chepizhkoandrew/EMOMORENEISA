@@ -16,6 +16,7 @@ struct Verb: Codable, Identifiable, Equatable {
     let joker: Bool
     let jokerKind: JokerKind?
     let present: [String: String]
+    let translation: String?
 
     func conjugation(for pronoun: Pronoun) -> String {
         present[pronoun.rawValue] ?? ""

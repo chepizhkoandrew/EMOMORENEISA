@@ -4,582 +4,1310 @@
       "infinitive": "hablar",
       "type": "ar",
       "joker": false,
-      "present": { "yo": "hablo", "tu": "hablas", "el": "habla", "nosotros": "hablamos", "vosotros": "habláis", "ellos": "hablan" }
+      "present": {
+        "yo": "hablo",
+        "tu": "hablas",
+        "el": "habla",
+        "nosotros": "hablamos",
+        "vosotros": "habláis",
+        "ellos": "hablan"
+      },
+      "translation": "to speak"
     },
     {
       "infinitive": "caminar",
       "type": "ar",
       "joker": false,
-      "present": { "yo": "camino", "tu": "caminas", "el": "camina", "nosotros": "caminamos", "vosotros": "camináis", "ellos": "caminan" }
+      "present": {
+        "yo": "camino",
+        "tu": "caminas",
+        "el": "camina",
+        "nosotros": "caminamos",
+        "vosotros": "camináis",
+        "ellos": "caminan"
+      },
+      "translation": "to walk"
     },
     {
       "infinitive": "bailar",
       "type": "ar",
       "joker": false,
-      "present": { "yo": "bailo", "tu": "bailas", "el": "baila", "nosotros": "bailamos", "vosotros": "bailáis", "ellos": "bailan" }
+      "present": {
+        "yo": "bailo",
+        "tu": "bailas",
+        "el": "baila",
+        "nosotros": "bailamos",
+        "vosotros": "bailáis",
+        "ellos": "bailan"
+      },
+      "translation": "to dance"
     },
     {
       "infinitive": "trabajar",
       "type": "ar",
       "joker": false,
-      "present": { "yo": "trabajo", "tu": "trabajas", "el": "trabaja", "nosotros": "trabajamos", "vosotros": "trabajáis", "ellos": "trabajan" }
+      "present": {
+        "yo": "trabajo",
+        "tu": "trabajas",
+        "el": "trabaja",
+        "nosotros": "trabajamos",
+        "vosotros": "trabajáis",
+        "ellos": "trabajan"
+      },
+      "translation": "to work"
     },
     {
       "infinitive": "escuchar",
       "type": "ar",
       "joker": false,
-      "present": { "yo": "escucho", "tu": "escuchas", "el": "escucha", "nosotros": "escuchamos", "vosotros": "escucháis", "ellos": "escuchan" }
+      "present": {
+        "yo": "escucho",
+        "tu": "escuchas",
+        "el": "escucha",
+        "nosotros": "escuchamos",
+        "vosotros": "escucháis",
+        "ellos": "escuchan"
+      },
+      "translation": "to listen"
     },
     {
       "infinitive": "mirar",
       "type": "ar",
       "joker": false,
-      "present": { "yo": "miro", "tu": "miras", "el": "mira", "nosotros": "miramos", "vosotros": "miráis", "ellos": "miran" }
+      "present": {
+        "yo": "miro",
+        "tu": "miras",
+        "el": "mira",
+        "nosotros": "miramos",
+        "vosotros": "miráis",
+        "ellos": "miran"
+      },
+      "translation": "to look"
     },
     {
       "infinitive": "comprar",
       "type": "ar",
       "joker": false,
-      "present": { "yo": "compro", "tu": "compras", "el": "compra", "nosotros": "compramos", "vosotros": "compráis", "ellos": "compran" }
+      "present": {
+        "yo": "compro",
+        "tu": "compras",
+        "el": "compra",
+        "nosotros": "compramos",
+        "vosotros": "compráis",
+        "ellos": "compran"
+      },
+      "translation": "to buy"
     },
     {
       "infinitive": "llegar",
       "type": "ar",
       "joker": false,
-      "present": { "yo": "llego", "tu": "llegas", "el": "llega", "nosotros": "llegamos", "vosotros": "llegáis", "ellos": "llegan" }
+      "present": {
+        "yo": "llego",
+        "tu": "llegas",
+        "el": "llega",
+        "nosotros": "llegamos",
+        "vosotros": "llegáis",
+        "ellos": "llegan"
+      },
+      "translation": "to arrive"
     },
     {
       "infinitive": "tomar",
       "type": "ar",
       "joker": false,
-      "present": { "yo": "tomo", "tu": "tomas", "el": "toma", "nosotros": "tomamos", "vosotros": "tomáis", "ellos": "toman" }
+      "present": {
+        "yo": "tomo",
+        "tu": "tomas",
+        "el": "toma",
+        "nosotros": "tomamos",
+        "vosotros": "tomáis",
+        "ellos": "toman"
+      },
+      "translation": "to take"
     },
     {
       "infinitive": "usar",
       "type": "ar",
       "joker": false,
-      "present": { "yo": "uso", "tu": "usas", "el": "usa", "nosotros": "usamos", "vosotros": "usáis", "ellos": "usan" }
+      "present": {
+        "yo": "uso",
+        "tu": "usas",
+        "el": "usa",
+        "nosotros": "usamos",
+        "vosotros": "usáis",
+        "ellos": "usan"
+      },
+      "translation": "to use"
     },
     {
       "infinitive": "entrar",
       "type": "ar",
       "joker": false,
-      "present": { "yo": "entro", "tu": "entras", "el": "entra", "nosotros": "entramos", "vosotros": "entráis", "ellos": "entran" }
+      "present": {
+        "yo": "entro",
+        "tu": "entras",
+        "el": "entra",
+        "nosotros": "entramos",
+        "vosotros": "entráis",
+        "ellos": "entran"
+      },
+      "translation": "to enter"
     },
     {
       "infinitive": "esperar",
       "type": "ar",
       "joker": false,
-      "present": { "yo": "espero", "tu": "esperas", "el": "espera", "nosotros": "esperamos", "vosotros": "esperáis", "ellos": "esperan" }
+      "present": {
+        "yo": "espero",
+        "tu": "esperas",
+        "el": "espera",
+        "nosotros": "esperamos",
+        "vosotros": "esperáis",
+        "ellos": "esperan"
+      },
+      "translation": "to wait"
     },
     {
       "infinitive": "llamar",
       "type": "ar",
       "joker": false,
-      "present": { "yo": "llamo", "tu": "llamas", "el": "llama", "nosotros": "llamamos", "vosotros": "llamáis", "ellos": "llaman" }
+      "present": {
+        "yo": "llamo",
+        "tu": "llamas",
+        "el": "llama",
+        "nosotros": "llamamos",
+        "vosotros": "llamáis",
+        "ellos": "llaman"
+      },
+      "translation": "to call"
     },
     {
       "infinitive": "pasar",
       "type": "ar",
       "joker": false,
-      "present": { "yo": "paso", "tu": "pasas", "el": "pasa", "nosotros": "pasamos", "vosotros": "pasáis", "ellos": "pasan" }
+      "present": {
+        "yo": "paso",
+        "tu": "pasas",
+        "el": "pasa",
+        "nosotros": "pasamos",
+        "vosotros": "pasáis",
+        "ellos": "pasan"
+      },
+      "translation": "to happen"
     },
     {
       "infinitive": "necesitar",
       "type": "ar",
       "joker": false,
-      "present": { "yo": "necesito", "tu": "necesitas", "el": "necesita", "nosotros": "necesitamos", "vosotros": "necesitáis", "ellos": "necesitan" }
+      "present": {
+        "yo": "necesito",
+        "tu": "necesitas",
+        "el": "necesita",
+        "nosotros": "necesitamos",
+        "vosotros": "necesitáis",
+        "ellos": "necesitan"
+      },
+      "translation": "to need"
     },
     {
       "infinitive": "dejar",
       "type": "ar",
       "joker": false,
-      "present": { "yo": "dejo", "tu": "dejas", "el": "deja", "nosotros": "dejamos", "vosotros": "dejáis", "ellos": "dejan" }
+      "present": {
+        "yo": "dejo",
+        "tu": "dejas",
+        "el": "deja",
+        "nosotros": "dejamos",
+        "vosotros": "dejáis",
+        "ellos": "dejan"
+      },
+      "translation": "to leave"
     },
     {
       "infinitive": "buscar",
       "type": "ar",
       "joker": false,
-      "present": { "yo": "busco", "tu": "buscas", "el": "busca", "nosotros": "buscamos", "vosotros": "buscáis", "ellos": "buscan" }
+      "present": {
+        "yo": "busco",
+        "tu": "buscas",
+        "el": "busca",
+        "nosotros": "buscamos",
+        "vosotros": "buscáis",
+        "ellos": "buscan"
+      },
+      "translation": "to look for"
     },
     {
       "infinitive": "ayudar",
       "type": "ar",
       "joker": false,
-      "present": { "yo": "ayudo", "tu": "ayudas", "el": "ayuda", "nosotros": "ayudamos", "vosotros": "ayudáis", "ellos": "ayudan" }
+      "present": {
+        "yo": "ayudo",
+        "tu": "ayudas",
+        "el": "ayuda",
+        "nosotros": "ayudamos",
+        "vosotros": "ayudáis",
+        "ellos": "ayudan"
+      },
+      "translation": "to help"
     },
     {
       "infinitive": "estudiar",
       "type": "ar",
       "joker": false,
-      "present": { "yo": "estudio", "tu": "estudias", "el": "estudia", "nosotros": "estudiamos", "vosotros": "estudiáis", "ellos": "estudian" }
+      "present": {
+        "yo": "estudio",
+        "tu": "estudias",
+        "el": "estudia",
+        "nosotros": "estudiamos",
+        "vosotros": "estudiáis",
+        "ellos": "estudian"
+      },
+      "translation": "to study"
     },
     {
       "infinitive": "terminar",
       "type": "ar",
       "joker": false,
-      "present": { "yo": "termino", "tu": "terminas", "el": "termina", "nosotros": "terminamos", "vosotros": "termináis", "ellos": "terminan" }
+      "present": {
+        "yo": "termino",
+        "tu": "terminas",
+        "el": "termina",
+        "nosotros": "terminamos",
+        "vosotros": "termináis",
+        "ellos": "terminan"
+      },
+      "translation": "to finish"
     },
     {
       "infinitive": "preguntar",
       "type": "ar",
       "joker": false,
-      "present": { "yo": "pregunto", "tu": "preguntas", "el": "pregunta", "nosotros": "preguntamos", "vosotros": "preguntáis", "ellos": "preguntan" }
+      "present": {
+        "yo": "pregunto",
+        "tu": "preguntas",
+        "el": "pregunta",
+        "nosotros": "preguntamos",
+        "vosotros": "preguntáis",
+        "ellos": "preguntan"
+      },
+      "translation": "to ask"
     },
     {
       "infinitive": "ganar",
       "type": "ar",
       "joker": false,
-      "present": { "yo": "gano", "tu": "ganas", "el": "gana", "nosotros": "ganamos", "vosotros": "ganáis", "ellos": "ganan" }
+      "present": {
+        "yo": "gano",
+        "tu": "ganas",
+        "el": "gana",
+        "nosotros": "ganamos",
+        "vosotros": "ganáis",
+        "ellos": "ganan"
+      },
+      "translation": "to win"
     },
     {
       "infinitive": "preparar",
       "type": "ar",
       "joker": false,
-      "present": { "yo": "preparo", "tu": "preparas", "el": "prepara", "nosotros": "preparamos", "vosotros": "preparáis", "ellos": "preparan" }
+      "present": {
+        "yo": "preparo",
+        "tu": "preparas",
+        "el": "prepara",
+        "nosotros": "preparamos",
+        "vosotros": "preparáis",
+        "ellos": "preparan"
+      },
+      "translation": "to prepare"
     },
     {
       "infinitive": "enseñar",
       "type": "ar",
       "joker": false,
-      "present": { "yo": "enseño", "tu": "enseñas", "el": "enseña", "nosotros": "enseñamos", "vosotros": "enseñáis", "ellos": "enseñan" }
+      "present": {
+        "yo": "enseño",
+        "tu": "enseñas",
+        "el": "enseña",
+        "nosotros": "enseñamos",
+        "vosotros": "enseñáis",
+        "ellos": "enseñan"
+      },
+      "translation": "to teach"
     },
     {
       "infinitive": "descansar",
       "type": "ar",
       "joker": false,
-      "present": { "yo": "descanso", "tu": "descansas", "el": "descansa", "nosotros": "descansamos", "vosotros": "descansáis", "ellos": "descansan" }
+      "present": {
+        "yo": "descanso",
+        "tu": "descansas",
+        "el": "descansa",
+        "nosotros": "descansamos",
+        "vosotros": "descansáis",
+        "ellos": "descansan"
+      },
+      "translation": "to rest"
     },
     {
       "infinitive": "comer",
       "type": "er",
       "joker": false,
-      "present": { "yo": "como", "tu": "comes", "el": "come", "nosotros": "comemos", "vosotros": "coméis", "ellos": "comen" }
+      "present": {
+        "yo": "como",
+        "tu": "comes",
+        "el": "come",
+        "nosotros": "comemos",
+        "vosotros": "coméis",
+        "ellos": "comen"
+      },
+      "translation": "to eat"
     },
     {
       "infinitive": "beber",
       "type": "er",
       "joker": false,
-      "present": { "yo": "bebo", "tu": "bebes", "el": "bebe", "nosotros": "bebemos", "vosotros": "bebéis", "ellos": "beben" }
+      "present": {
+        "yo": "bebo",
+        "tu": "bebes",
+        "el": "bebe",
+        "nosotros": "bebemos",
+        "vosotros": "bebéis",
+        "ellos": "beben"
+      },
+      "translation": "to drink"
     },
     {
       "infinitive": "correr",
       "type": "er",
       "joker": false,
-      "present": { "yo": "corro", "tu": "corres", "el": "corre", "nosotros": "corremos", "vosotros": "corréis", "ellos": "corren" }
+      "present": {
+        "yo": "corro",
+        "tu": "corres",
+        "el": "corre",
+        "nosotros": "corremos",
+        "vosotros": "corréis",
+        "ellos": "corren"
+      },
+      "translation": "to run"
     },
     {
       "infinitive": "vender",
       "type": "er",
       "joker": false,
-      "present": { "yo": "vendo", "tu": "vendes", "el": "vende", "nosotros": "vendemos", "vosotros": "vendéis", "ellos": "venden" }
+      "present": {
+        "yo": "vendo",
+        "tu": "vendes",
+        "el": "vende",
+        "nosotros": "vendemos",
+        "vosotros": "vendéis",
+        "ellos": "venden"
+      },
+      "translation": "to sell"
     },
     {
       "infinitive": "leer",
       "type": "er",
       "joker": false,
-      "present": { "yo": "leo", "tu": "lees", "el": "lee", "nosotros": "leemos", "vosotros": "leéis", "ellos": "leen" }
+      "present": {
+        "yo": "leo",
+        "tu": "lees",
+        "el": "lee",
+        "nosotros": "leemos",
+        "vosotros": "leéis",
+        "ellos": "leen"
+      },
+      "translation": "to read"
     },
     {
       "infinitive": "aprender",
       "type": "er",
       "joker": false,
-      "present": { "yo": "aprendo", "tu": "aprendes", "el": "aprende", "nosotros": "aprendemos", "vosotros": "aprendéis", "ellos": "aprenden" }
+      "present": {
+        "yo": "aprendo",
+        "tu": "aprendes",
+        "el": "aprende",
+        "nosotros": "aprendemos",
+        "vosotros": "aprendéis",
+        "ellos": "aprenden"
+      },
+      "translation": "to learn"
     },
     {
       "infinitive": "comprender",
       "type": "er",
       "joker": false,
-      "present": { "yo": "comprendo", "tu": "comprendes", "el": "comprende", "nosotros": "comprendemos", "vosotros": "comprendéis", "ellos": "comprenden" }
+      "present": {
+        "yo": "comprendo",
+        "tu": "comprendes",
+        "el": "comprende",
+        "nosotros": "comprendemos",
+        "vosotros": "comprendéis",
+        "ellos": "comprenden"
+      },
+      "translation": "to understand"
     },
     {
       "infinitive": "responder",
       "type": "er",
       "joker": false,
-      "present": { "yo": "respondo", "tu": "respondes", "el": "responde", "nosotros": "respondemos", "vosotros": "respondéis", "ellos": "responden" }
+      "present": {
+        "yo": "respondo",
+        "tu": "respondes",
+        "el": "responde",
+        "nosotros": "respondemos",
+        "vosotros": "respondéis",
+        "ellos": "responden"
+      },
+      "translation": "to respond"
     },
     {
       "infinitive": "prometer",
       "type": "er",
       "joker": false,
-      "present": { "yo": "prometo", "tu": "prometes", "el": "promete", "nosotros": "prometemos", "vosotros": "prometéis", "ellos": "prometen" }
+      "present": {
+        "yo": "prometo",
+        "tu": "prometes",
+        "el": "promete",
+        "nosotros": "prometemos",
+        "vosotros": "prometéis",
+        "ellos": "prometen"
+      },
+      "translation": "to promise"
     },
     {
       "infinitive": "meter",
       "type": "er",
       "joker": false,
-      "present": { "yo": "meto", "tu": "metes", "el": "mete", "nosotros": "metemos", "vosotros": "metéis", "ellos": "meten" }
+      "present": {
+        "yo": "meto",
+        "tu": "metes",
+        "el": "mete",
+        "nosotros": "metemos",
+        "vosotros": "metéis",
+        "ellos": "meten"
+      },
+      "translation": "to put in"
     },
     {
       "infinitive": "romper",
       "type": "er",
       "joker": false,
-      "present": { "yo": "rompo", "tu": "rompes", "el": "rompe", "nosotros": "rompemos", "vosotros": "rompéis", "ellos": "rompen" }
+      "present": {
+        "yo": "rompo",
+        "tu": "rompes",
+        "el": "rompe",
+        "nosotros": "rompemos",
+        "vosotros": "rompéis",
+        "ellos": "rompen"
+      },
+      "translation": "to break"
     },
     {
       "infinitive": "barrer",
       "type": "er",
       "joker": false,
-      "present": { "yo": "barro", "tu": "barres", "el": "barre", "nosotros": "barremos", "vosotros": "barréis", "ellos": "barren" }
+      "present": {
+        "yo": "barro",
+        "tu": "barres",
+        "el": "barre",
+        "nosotros": "barremos",
+        "vosotros": "barréis",
+        "ellos": "barren"
+      },
+      "translation": "to sweep"
     },
     {
       "infinitive": "coser",
       "type": "er",
       "joker": false,
-      "present": { "yo": "coso", "tu": "coses", "el": "cose", "nosotros": "cosemos", "vosotros": "coséis", "ellos": "cosen" }
+      "present": {
+        "yo": "coso",
+        "tu": "coses",
+        "el": "cose",
+        "nosotros": "cosemos",
+        "vosotros": "coséis",
+        "ellos": "cosen"
+      },
+      "translation": "to sew"
     },
     {
       "infinitive": "toser",
       "type": "er",
       "joker": false,
-      "present": { "yo": "toso", "tu": "toses", "el": "tose", "nosotros": "tosemos", "vosotros": "toséis", "ellos": "tosen" }
+      "present": {
+        "yo": "toso",
+        "tu": "toses",
+        "el": "tose",
+        "nosotros": "tosemos",
+        "vosotros": "toséis",
+        "ellos": "tosen"
+      },
+      "translation": "to cough"
     },
     {
       "infinitive": "sorprender",
       "type": "er",
       "joker": false,
-      "present": { "yo": "sorprendo", "tu": "sorprendes", "el": "sorprende", "nosotros": "sorprendemos", "vosotros": "sorprendéis", "ellos": "sorprenden" }
+      "present": {
+        "yo": "sorprendo",
+        "tu": "sorprendes",
+        "el": "sorprende",
+        "nosotros": "sorprendemos",
+        "vosotros": "sorprendéis",
+        "ellos": "sorprenden"
+      },
+      "translation": "to surprise"
     },
     {
       "infinitive": "depender",
       "type": "er",
       "joker": false,
-      "present": { "yo": "dependo", "tu": "dependes", "el": "depende", "nosotros": "dependemos", "vosotros": "dependéis", "ellos": "dependen" }
+      "present": {
+        "yo": "dependo",
+        "tu": "dependes",
+        "el": "depende",
+        "nosotros": "dependemos",
+        "vosotros": "dependéis",
+        "ellos": "dependen"
+      },
+      "translation": "to depend"
     },
     {
       "infinitive": "vivir",
       "type": "ir",
       "joker": false,
-      "present": { "yo": "vivo", "tu": "vives", "el": "vive", "nosotros": "vivimos", "vosotros": "vivís", "ellos": "viven" }
+      "present": {
+        "yo": "vivo",
+        "tu": "vives",
+        "el": "vive",
+        "nosotros": "vivimos",
+        "vosotros": "vivís",
+        "ellos": "viven"
+      },
+      "translation": "to live"
     },
     {
       "infinitive": "escribir",
       "type": "ir",
       "joker": false,
-      "present": { "yo": "escribo", "tu": "escribes", "el": "escribe", "nosotros": "escribimos", "vosotros": "escribís", "ellos": "escriben" }
+      "present": {
+        "yo": "escribo",
+        "tu": "escribes",
+        "el": "escribe",
+        "nosotros": "escribimos",
+        "vosotros": "escribís",
+        "ellos": "escriben"
+      },
+      "translation": "to write"
     },
     {
       "infinitive": "subir",
       "type": "ir",
       "joker": false,
-      "present": { "yo": "subo", "tu": "subes", "el": "sube", "nosotros": "subimos", "vosotros": "subís", "ellos": "suben" }
+      "present": {
+        "yo": "subo",
+        "tu": "subes",
+        "el": "sube",
+        "nosotros": "subimos",
+        "vosotros": "subís",
+        "ellos": "suben"
+      },
+      "translation": "to go up"
     },
     {
       "infinitive": "abrir",
       "type": "ir",
       "joker": false,
-      "present": { "yo": "abro", "tu": "abres", "el": "abre", "nosotros": "abrimos", "vosotros": "abrís", "ellos": "abren" }
+      "present": {
+        "yo": "abro",
+        "tu": "abres",
+        "el": "abre",
+        "nosotros": "abrimos",
+        "vosotros": "abrís",
+        "ellos": "abren"
+      },
+      "translation": "to open"
     },
     {
       "infinitive": "partir",
       "type": "ir",
       "joker": false,
-      "present": { "yo": "parto", "tu": "partes", "el": "parte", "nosotros": "partimos", "vosotros": "partís", "ellos": "parten" }
+      "present": {
+        "yo": "parto",
+        "tu": "partes",
+        "el": "parte",
+        "nosotros": "partimos",
+        "vosotros": "partís",
+        "ellos": "parten"
+      },
+      "translation": "to depart"
     },
     {
       "infinitive": "recibir",
       "type": "ir",
       "joker": false,
-      "present": { "yo": "recibo", "tu": "recibes", "el": "recibe", "nosotros": "recibimos", "vosotros": "recibís", "ellos": "reciben" }
+      "present": {
+        "yo": "recibo",
+        "tu": "recibes",
+        "el": "recibe",
+        "nosotros": "recibimos",
+        "vosotros": "recibís",
+        "ellos": "reciben"
+      },
+      "translation": "to receive"
     },
     {
       "infinitive": "decidir",
       "type": "ir",
       "joker": false,
-      "present": { "yo": "decido", "tu": "decides", "el": "decide", "nosotros": "decidimos", "vosotros": "decidís", "ellos": "deciden" }
+      "present": {
+        "yo": "decido",
+        "tu": "decides",
+        "el": "decide",
+        "nosotros": "decidimos",
+        "vosotros": "decidís",
+        "ellos": "deciden"
+      },
+      "translation": "to decide"
     },
     {
       "infinitive": "permitir",
       "type": "ir",
       "joker": false,
-      "present": { "yo": "permito", "tu": "permites", "el": "permite", "nosotros": "permitimos", "vosotros": "permitís", "ellos": "permiten" }
+      "present": {
+        "yo": "permito",
+        "tu": "permites",
+        "el": "permite",
+        "nosotros": "permitimos",
+        "vosotros": "permitís",
+        "ellos": "permiten"
+      },
+      "translation": "to allow"
     },
     {
       "infinitive": "añadir",
       "type": "ir",
       "joker": false,
-      "present": { "yo": "añado", "tu": "añades", "el": "añade", "nosotros": "añadimos", "vosotros": "añadís", "ellos": "añaden" }
+      "present": {
+        "yo": "añado",
+        "tu": "añades",
+        "el": "añade",
+        "nosotros": "añadimos",
+        "vosotros": "añadís",
+        "ellos": "añaden"
+      },
+      "translation": "to add"
     },
     {
       "infinitive": "discutir",
       "type": "ir",
       "joker": false,
-      "present": { "yo": "discuto", "tu": "discutes", "el": "discute", "nosotros": "discutimos", "vosotros": "discutís", "ellos": "discuten" }
+      "present": {
+        "yo": "discuto",
+        "tu": "discutes",
+        "el": "discute",
+        "nosotros": "discutimos",
+        "vosotros": "discutís",
+        "ellos": "discuten"
+      },
+      "translation": "to argue"
     },
     {
       "infinitive": "existir",
       "type": "ir",
       "joker": false,
-      "present": { "yo": "existo", "tu": "existes", "el": "existe", "nosotros": "existimos", "vosotros": "existís", "ellos": "existen" }
+      "present": {
+        "yo": "existo",
+        "tu": "existes",
+        "el": "existe",
+        "nosotros": "existimos",
+        "vosotros": "existís",
+        "ellos": "existen"
+      },
+      "translation": "to exist"
     },
     {
       "infinitive": "insistir",
       "type": "ir",
       "joker": false,
-      "present": { "yo": "insisto", "tu": "insistes", "el": "insiste", "nosotros": "insistimos", "vosotros": "insistís", "ellos": "insisten" }
+      "present": {
+        "yo": "insisto",
+        "tu": "insistes",
+        "el": "insiste",
+        "nosotros": "insistimos",
+        "vosotros": "insistís",
+        "ellos": "insisten"
+      },
+      "translation": "to insist"
     },
     {
       "infinitive": "interrumpir",
       "type": "ir",
       "joker": false,
-      "present": { "yo": "interrumpo", "tu": "interrumpes", "el": "interrumpe", "nosotros": "interrumpimos", "vosotros": "interrumpís", "ellos": "interrumpen" }
+      "present": {
+        "yo": "interrumpo",
+        "tu": "interrumpes",
+        "el": "interrumpe",
+        "nosotros": "interrumpimos",
+        "vosotros": "interrumpís",
+        "ellos": "interrumpen"
+      },
+      "translation": "to interrupt"
     },
     {
       "infinitive": "sufrir",
       "type": "ir",
       "joker": false,
-      "present": { "yo": "sufro", "tu": "sufres", "el": "sufre", "nosotros": "sufrimos", "vosotros": "sufrís", "ellos": "sufren" }
+      "present": {
+        "yo": "sufro",
+        "tu": "sufres",
+        "el": "sufre",
+        "nosotros": "sufrimos",
+        "vosotros": "sufrís",
+        "ellos": "sufren"
+      },
+      "translation": "to suffer"
     },
     {
       "infinitive": "unir",
       "type": "ir",
       "joker": false,
-      "present": { "yo": "uno", "tu": "unes", "el": "une", "nosotros": "unimos", "vosotros": "unís", "ellos": "unen" }
+      "present": {
+        "yo": "uno",
+        "tu": "unes",
+        "el": "une",
+        "nosotros": "unimos",
+        "vosotros": "unís",
+        "ellos": "unen"
+      },
+      "translation": "to unite"
     },
     {
       "infinitive": "ser",
       "type": "er",
       "joker": true,
       "jokerKind": "fullyIrregular",
-      "present": { "yo": "soy", "tu": "eres", "el": "es", "nosotros": "somos", "vosotros": "sois", "ellos": "son" }
+      "present": {
+        "yo": "soy",
+        "tu": "eres",
+        "el": "es",
+        "nosotros": "somos",
+        "vosotros": "sois",
+        "ellos": "son"
+      },
+      "translation": "to be"
     },
     {
       "infinitive": "estar",
       "type": "ar",
       "joker": true,
       "jokerKind": "fullyIrregular",
-      "present": { "yo": "estoy", "tu": "estás", "el": "está", "nosotros": "estamos", "vosotros": "estáis", "ellos": "están" }
+      "present": {
+        "yo": "estoy",
+        "tu": "estás",
+        "el": "está",
+        "nosotros": "estamos",
+        "vosotros": "estáis",
+        "ellos": "están"
+      },
+      "translation": "to be"
     },
     {
       "infinitive": "ir",
       "type": "ir",
       "joker": true,
       "jokerKind": "fullyIrregular",
-      "present": { "yo": "voy", "tu": "vas", "el": "va", "nosotros": "vamos", "vosotros": "vais", "ellos": "van" }
+      "present": {
+        "yo": "voy",
+        "tu": "vas",
+        "el": "va",
+        "nosotros": "vamos",
+        "vosotros": "vais",
+        "ellos": "van"
+      },
+      "translation": "to go"
     },
     {
       "infinitive": "tener",
       "type": "er",
       "joker": true,
       "jokerKind": "fullyIrregular",
-      "present": { "yo": "tengo", "tu": "tienes", "el": "tiene", "nosotros": "tenemos", "vosotros": "tenéis", "ellos": "tienen" }
+      "present": {
+        "yo": "tengo",
+        "tu": "tienes",
+        "el": "tiene",
+        "nosotros": "tenemos",
+        "vosotros": "tenéis",
+        "ellos": "tienen"
+      },
+      "translation": "to have"
     },
     {
       "infinitive": "haber",
       "type": "er",
       "joker": true,
       "jokerKind": "fullyIrregular",
-      "present": { "yo": "he", "tu": "has", "el": "ha", "nosotros": "hemos", "vosotros": "habéis", "ellos": "han" }
+      "present": {
+        "yo": "he",
+        "tu": "has",
+        "el": "ha",
+        "nosotros": "hemos",
+        "vosotros": "habéis",
+        "ellos": "han"
+      },
+      "translation": "to have (aux)"
     },
     {
       "infinitive": "hacer",
       "type": "er",
       "joker": true,
       "jokerKind": "fullyIrregular",
-      "present": { "yo": "hago", "tu": "haces", "el": "hace", "nosotros": "hacemos", "vosotros": "hacéis", "ellos": "hacen" }
+      "present": {
+        "yo": "hago",
+        "tu": "haces",
+        "el": "hace",
+        "nosotros": "hacemos",
+        "vosotros": "hacéis",
+        "ellos": "hacen"
+      },
+      "translation": "to do"
     },
     {
       "infinitive": "decir",
       "type": "ir",
       "joker": true,
       "jokerKind": "fullyIrregular",
-      "present": { "yo": "digo", "tu": "dices", "el": "dice", "nosotros": "decimos", "vosotros": "decís", "ellos": "dicen" }
+      "present": {
+        "yo": "digo",
+        "tu": "dices",
+        "el": "dice",
+        "nosotros": "decimos",
+        "vosotros": "decís",
+        "ellos": "dicen"
+      },
+      "translation": "to say"
     },
     {
       "infinitive": "venir",
       "type": "ir",
       "joker": true,
       "jokerKind": "fullyIrregular",
-      "present": { "yo": "vengo", "tu": "vienes", "el": "viene", "nosotros": "venemos", "vosotros": "venís", "ellos": "vienen" }
+      "present": {
+        "yo": "vengo",
+        "tu": "vienes",
+        "el": "viene",
+        "nosotros": "venemos",
+        "vosotros": "venís",
+        "ellos": "vienen"
+      },
+      "translation": "to come"
     },
     {
       "infinitive": "poner",
       "type": "er",
       "joker": true,
       "jokerKind": "fullyIrregular",
-      "present": { "yo": "pongo", "tu": "pones", "el": "pone", "nosotros": "ponemos", "vosotros": "ponéis", "ellos": "ponen" }
+      "present": {
+        "yo": "pongo",
+        "tu": "pones",
+        "el": "pone",
+        "nosotros": "ponemos",
+        "vosotros": "ponéis",
+        "ellos": "ponen"
+      },
+      "translation": "to put"
     },
     {
       "infinitive": "saber",
       "type": "er",
       "joker": true,
       "jokerKind": "fullyIrregular",
-      "present": { "yo": "sé", "tu": "sabes", "el": "sabe", "nosotros": "sabemos", "vosotros": "sabéis", "ellos": "saben" }
+      "present": {
+        "yo": "sé",
+        "tu": "sabes",
+        "el": "sabe",
+        "nosotros": "sabemos",
+        "vosotros": "sabéis",
+        "ellos": "saben"
+      },
+      "translation": "to know"
     },
     {
       "infinitive": "traer",
       "type": "er",
       "joker": true,
       "jokerKind": "fullyIrregular",
-      "present": { "yo": "traigo", "tu": "traes", "el": "trae", "nosotros": "traemos", "vosotros": "traéis", "ellos": "traen" }
+      "present": {
+        "yo": "traigo",
+        "tu": "traes",
+        "el": "trae",
+        "nosotros": "traemos",
+        "vosotros": "traéis",
+        "ellos": "traen"
+      },
+      "translation": "to bring"
     },
     {
       "infinitive": "salir",
       "type": "ir",
       "joker": true,
       "jokerKind": "fullyIrregular",
-      "present": { "yo": "salgo", "tu": "sales", "el": "sale", "nosotros": "salimos", "vosotros": "salís", "ellos": "salen" }
+      "present": {
+        "yo": "salgo",
+        "tu": "sales",
+        "el": "sale",
+        "nosotros": "salimos",
+        "vosotros": "salís",
+        "ellos": "salen"
+      },
+      "translation": "to leave"
     },
     {
       "infinitive": "caer",
       "type": "er",
       "joker": true,
       "jokerKind": "fullyIrregular",
-      "present": { "yo": "caigo", "tu": "caes", "el": "cae", "nosotros": "caemos", "vosotros": "caéis", "ellos": "caen" }
+      "present": {
+        "yo": "caigo",
+        "tu": "caes",
+        "el": "cae",
+        "nosotros": "caemos",
+        "vosotros": "caéis",
+        "ellos": "caen"
+      },
+      "translation": "to fall"
     },
     {
       "infinitive": "ver",
       "type": "er",
       "joker": true,
       "jokerKind": "fullyIrregular",
-      "present": { "yo": "veo", "tu": "ves", "el": "ve", "nosotros": "vemos", "vosotros": "veis", "ellos": "ven" }
+      "present": {
+        "yo": "veo",
+        "tu": "ves",
+        "el": "ve",
+        "nosotros": "vemos",
+        "vosotros": "veis",
+        "ellos": "ven"
+      },
+      "translation": "to see"
     },
     {
       "infinitive": "dar",
       "type": "ar",
       "joker": true,
       "jokerKind": "fullyIrregular",
-      "present": { "yo": "doy", "tu": "das", "el": "da", "nosotros": "damos", "vosotros": "dais", "ellos": "dan" }
+      "present": {
+        "yo": "doy",
+        "tu": "das",
+        "el": "da",
+        "nosotros": "damos",
+        "vosotros": "dais",
+        "ellos": "dan"
+      },
+      "translation": "to give"
     },
     {
       "infinitive": "poder",
       "type": "er",
       "joker": true,
       "jokerKind": "stemChanging",
-      "present": { "yo": "puedo", "tu": "puedes", "el": "puede", "nosotros": "podemos", "vosotros": "podéis", "ellos": "pueden" }
+      "present": {
+        "yo": "puedo",
+        "tu": "puedes",
+        "el": "puede",
+        "nosotros": "podemos",
+        "vosotros": "podéis",
+        "ellos": "pueden"
+      },
+      "translation": "to be able"
     },
     {
       "infinitive": "querer",
       "type": "er",
       "joker": true,
       "jokerKind": "stemChanging",
-      "present": { "yo": "quiero", "tu": "quieres", "el": "quiere", "nosotros": "queremos", "vosotros": "queréis", "ellos": "quieren" }
+      "present": {
+        "yo": "quiero",
+        "tu": "quieres",
+        "el": "quiere",
+        "nosotros": "queremos",
+        "vosotros": "queréis",
+        "ellos": "quieren"
+      },
+      "translation": "to want"
     },
     {
       "infinitive": "entender",
       "type": "er",
       "joker": true,
       "jokerKind": "stemChanging",
-      "present": { "yo": "entiendo", "tu": "entiendes", "el": "entiende", "nosotros": "entendemos", "vosotros": "entendéis", "ellos": "entienden" }
+      "present": {
+        "yo": "entiendo",
+        "tu": "entiendes",
+        "el": "entiende",
+        "nosotros": "entendemos",
+        "vosotros": "entendéis",
+        "ellos": "entienden"
+      },
+      "translation": "to understand"
     },
     {
       "infinitive": "volver",
       "type": "er",
       "joker": true,
       "jokerKind": "stemChanging",
-      "present": { "yo": "vuelvo", "tu": "vuelves", "el": "vuelve", "nosotros": "volvemos", "vosotros": "volvéis", "ellos": "vuelven" }
+      "present": {
+        "yo": "vuelvo",
+        "tu": "vuelves",
+        "el": "vuelve",
+        "nosotros": "volvemos",
+        "vosotros": "volvéis",
+        "ellos": "vuelven"
+      },
+      "translation": "to return"
     },
     {
       "infinitive": "dormir",
       "type": "ir",
       "joker": true,
       "jokerKind": "stemChanging",
-      "present": { "yo": "duermo", "tu": "duermes", "el": "duerme", "nosotros": "dormimos", "vosotros": "dormís", "ellos": "duermen" }
+      "present": {
+        "yo": "duermo",
+        "tu": "duermes",
+        "el": "duerme",
+        "nosotros": "dormimos",
+        "vosotros": "dormís",
+        "ellos": "duermen"
+      },
+      "translation": "to sleep"
     },
     {
       "infinitive": "pedir",
       "type": "ir",
       "joker": true,
       "jokerKind": "stemChanging",
-      "present": { "yo": "pido", "tu": "pides", "el": "pide", "nosotros": "pedimos", "vosotros": "pedís", "ellos": "piden" }
+      "present": {
+        "yo": "pido",
+        "tu": "pides",
+        "el": "pide",
+        "nosotros": "pedimos",
+        "vosotros": "pedís",
+        "ellos": "piden"
+      },
+      "translation": "to ask for"
     },
     {
       "infinitive": "sentir",
       "type": "ir",
       "joker": true,
       "jokerKind": "stemChanging",
-      "present": { "yo": "siento", "tu": "sientes", "el": "siente", "nosotros": "sentimos", "vosotros": "sentís", "ellos": "sienten" }
+      "present": {
+        "yo": "siento",
+        "tu": "sientes",
+        "el": "siente",
+        "nosotros": "sentimos",
+        "vosotros": "sentís",
+        "ellos": "sienten"
+      },
+      "translation": "to feel"
     },
     {
       "infinitive": "preferir",
       "type": "ir",
       "joker": true,
       "jokerKind": "stemChanging",
-      "present": { "yo": "prefiero", "tu": "prefieres", "el": "prefiere", "nosotros": "preferimos", "vosotros": "preferís", "ellos": "prefieren" }
+      "present": {
+        "yo": "prefiero",
+        "tu": "prefieres",
+        "el": "prefiere",
+        "nosotros": "preferimos",
+        "vosotros": "preferís",
+        "ellos": "prefieren"
+      },
+      "translation": "to prefer"
     },
     {
       "infinitive": "empezar",
       "type": "ar",
       "joker": true,
       "jokerKind": "stemChanging",
-      "present": { "yo": "empiezo", "tu": "empiezas", "el": "empieza", "nosotros": "empezamos", "vosotros": "empezáis", "ellos": "empiezan" }
+      "present": {
+        "yo": "empiezo",
+        "tu": "empiezas",
+        "el": "empieza",
+        "nosotros": "empezamos",
+        "vosotros": "empezáis",
+        "ellos": "empiezan"
+      },
+      "translation": "to start"
     },
     {
       "infinitive": "cerrar",
       "type": "ar",
       "joker": true,
       "jokerKind": "stemChanging",
-      "present": { "yo": "cierro", "tu": "cierras", "el": "cierra", "nosotros": "cerramos", "vosotros": "cerráis", "ellos": "cierran" }
+      "present": {
+        "yo": "cierro",
+        "tu": "cierras",
+        "el": "cierra",
+        "nosotros": "cerramos",
+        "vosotros": "cerráis",
+        "ellos": "cierran"
+      },
+      "translation": "to close"
     },
     {
       "infinitive": "contar",
       "type": "ar",
       "joker": true,
       "jokerKind": "stemChanging",
-      "present": { "yo": "cuento", "tu": "cuentas", "el": "cuenta", "nosotros": "contamos", "vosotros": "contáis", "ellos": "cuentan" }
+      "present": {
+        "yo": "cuento",
+        "tu": "cuentas",
+        "el": "cuenta",
+        "nosotros": "contamos",
+        "vosotros": "contáis",
+        "ellos": "cuentan"
+      },
+      "translation": "to count"
     },
     {
       "infinitive": "encontrar",
       "type": "ar",
       "joker": true,
       "jokerKind": "stemChanging",
-      "present": { "yo": "encuentro", "tu": "encuentras", "el": "encuentra", "nosotros": "encontramos", "vosotros": "encontráis", "ellos": "encuentran" }
+      "present": {
+        "yo": "encuentro",
+        "tu": "encuentras",
+        "el": "encuentra",
+        "nosotros": "encontramos",
+        "vosotros": "encontráis",
+        "ellos": "encuentran"
+      },
+      "translation": "to find"
     },
     {
       "infinitive": "jugar",
       "type": "ar",
       "joker": true,
       "jokerKind": "stemChanging",
-      "present": { "yo": "juego", "tu": "juegas", "el": "juega", "nosotros": "jugamos", "vosotros": "jugáis", "ellos": "juegan" }
+      "present": {
+        "yo": "juego",
+        "tu": "juegas",
+        "el": "juega",
+        "nosotros": "jugamos",
+        "vosotros": "jugáis",
+        "ellos": "juegan"
+      },
+      "translation": "to play"
     },
     {
       "infinitive": "oír",
       "type": "ir",
       "joker": true,
       "jokerKind": "fullyIrregular",
-      "present": { "yo": "oigo", "tu": "oyes", "el": "oye", "nosotros": "oímos", "vosotros": "oís", "ellos": "oyen" }
+      "present": {
+        "yo": "oigo",
+        "tu": "oyes",
+        "el": "oye",
+        "nosotros": "oímos",
+        "vosotros": "oís",
+        "ellos": "oyen"
+      },
+      "translation": "to hear"
     },
     {
       "infinitive": "conocer",
       "type": "er",
       "joker": true,
       "jokerKind": "fullyIrregular",
-      "present": { "yo": "conozco", "tu": "conoces", "el": "conoce", "nosotros": "conocemos", "vosotros": "conocéis", "ellos": "conocen" }
+      "present": {
+        "yo": "conozco",
+        "tu": "conoces",
+        "el": "conoce",
+        "nosotros": "conocemos",
+        "vosotros": "conocéis",
+        "ellos": "conocen"
+      },
+      "translation": "to know"
     },
     {
       "infinitive": "conducir",
       "type": "ir",
       "joker": true,
       "jokerKind": "fullyIrregular",
-      "present": { "yo": "conduzco", "tu": "conduces", "el": "conduce", "nosotros": "conducimos", "vosotros": "conducís", "ellos": "conducen" }
+      "present": {
+        "yo": "conduzco",
+        "tu": "conduces",
+        "el": "conduce",
+        "nosotros": "conducimos",
+        "vosotros": "conducís",
+        "ellos": "conducen"
+      },
+      "translation": "to drive"
     },
     {
       "infinitive": "construir",
       "type": "ir",
       "joker": true,
       "jokerKind": "fullyIrregular",
-      "present": { "yo": "construyo", "tu": "construyes", "el": "construye", "nosotros": "construimos", "vosotros": "construís", "ellos": "construyen" }
+      "present": {
+        "yo": "construyo",
+        "tu": "construyes",
+        "el": "construye",
+        "nosotros": "construimos",
+        "vosotros": "construís",
+        "ellos": "construyen"
+      },
+      "translation": "to build"
     },
     {
       "infinitive": "seguir",
       "type": "ir",
       "joker": true,
       "jokerKind": "stemChanging",
-      "present": { "yo": "sigo", "tu": "sigues", "el": "sigue", "nosotros": "seguimos", "vosotros": "seguís", "ellos": "siguen" }
+      "present": {
+        "yo": "sigo",
+        "tu": "sigues",
+        "el": "sigue",
+        "nosotros": "seguimos",
+        "vosotros": "seguís",
+        "ellos": "siguen"
+      },
+      "translation": "to follow"
     },
     {
       "infinitive": "servir",
       "type": "ir",
       "joker": true,
       "jokerKind": "stemChanging",
-      "present": { "yo": "sirvo", "tu": "sirves", "el": "sirve", "nosotros": "servimos", "vosotros": "servís", "ellos": "sirven" }
+      "present": {
+        "yo": "sirvo",
+        "tu": "sirves",
+        "el": "sirve",
+        "nosotros": "servimos",
+        "vosotros": "servís",
+        "ellos": "sirven"
+      },
+      "translation": "to serve"
     },
     {
       "infinitive": "repetir",
       "type": "ir",
       "joker": true,
       "jokerKind": "stemChanging",
-      "present": { "yo": "repito", "tu": "repites", "el": "repite", "nosotros": "repetimos", "vosotros": "repetís", "ellos": "repiten" }
+      "present": {
+        "yo": "repito",
+        "tu": "repites",
+        "el": "repite",
+        "nosotros": "repetimos",
+        "vosotros": "repetís",
+        "ellos": "repiten"
+      },
+      "translation": "to repeat"
     }
   ]
 }

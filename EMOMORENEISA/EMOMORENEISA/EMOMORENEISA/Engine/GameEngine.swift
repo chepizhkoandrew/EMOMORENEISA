@@ -73,6 +73,15 @@ final class GameEngine: ObservableObject {
         phase = .readyToStart
     }
 
+    func reSpin() {
+        cellTimer?.cancel()
+        countdownTimer?.cancel()
+        stopListening()
+        selectedVerbs = picker.pick()
+        phase = .spinning
+        glog("⚙️ ENGINE", "Re-spin — verbs: \(selectedVerbs.map(\.infinitive).joined(separator: ", "))")
+    }
+
     func beginCountdown() {
         var count = 3
         phase = .countdown(count)

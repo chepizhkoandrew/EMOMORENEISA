@@ -2,6 +2,7 @@ import SwiftUI
 
 struct SpinningWheelView: View {
     let finalVerb: String
+    let translation: String?
     let isJoker: Bool
     let delay: Double
     let skipRequested: Bool
@@ -36,7 +37,7 @@ struct SpinningWheelView: View {
             }
         }
         .onAppear { startSpin() }
-        .onChange(of: skipRequested) { requested in
+        .onChange(of: skipRequested) { _, requested in
             if requested && !spinDone { revealVerb() }
         }
     }
@@ -62,12 +63,12 @@ struct SpinningWheelView: View {
     private var verbOverlay: some View {
         ZStack {
             RoundedRectangle(cornerRadius: 12)
-                .fill(Color.black.opacity(0.78))
-                .frame(height: 60)
+                .fill(Color.black.opacity(0.82))
+                .frame(height: translation != nil ? 80 : 60)
                 .padding(.horizontal, 8)
                 .opacity(verbOpacity)
 
-            VStack(spacing: 3) {
+            VStack(spacing: 2) {
                 Text(String(finalVerb.prefix(visibleLetters)))
                     .font(.system(size: 20, weight: .black, design: .monospaced))
                     .foregroundColor(isJoker ? .orange : .yellow)
@@ -76,6 +77,15 @@ struct SpinningWheelView: View {
                     .padding(.horizontal, 12)
                     .shadow(color: isJoker ? .orange.opacity(0.9) : .yellow.opacity(0.9), radius: 8)
                     .shadow(color: .black, radius: 2)
+
+                if let t = translation {
+                    Text(t)
+                        .font(.system(size: 11, weight: .regular, design: .monospaced))
+                        .foregroundColor(.white.opacity(0.5))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)
+                        .padding(.horizontal, 12)
+                }
 
                 if isJoker {
                     Text("JOKER")
