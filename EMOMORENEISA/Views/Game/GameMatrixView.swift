@@ -63,7 +63,8 @@ struct GameMatrixView: View {
                             MatrixCellView(
                                 cell: cell,
                                 isActive: isCellActive(cell),
-                                timerProgress: isCellActive(cell) ? timerProgress : 1.0
+                                timerProgress: isCellActive(cell) ? timerProgress : 1.0,
+                                showAnswerHint: engine.showAnswerHint
                             )
                             .frame(maxWidth: .infinity)
                             .frame(height: 52)

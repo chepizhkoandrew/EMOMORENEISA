@@ -5,6 +5,7 @@ struct HomeView: View {
     @State private var timerSeconds: Double = 2.0
     @State private var selectedTense: Tense = .present
     @State private var speechPermissionGranted = false
+    @AppStorage("showAnswerHint") private var showAnswerHint: Bool = false
 
     var body: some View {
         ZStack {
@@ -82,6 +83,16 @@ struct HomeView: View {
                     Slider(value: $timerSeconds, in: 1.0...8.0, step: 0.5)
                         .accentColor(.yellow)
                 }
+
+                HStack {
+                    Label("Show answer hint", systemImage: "eye.fill")
+                        .font(.system(size: 13, weight: .semibold, design: .rounded))
+                        .foregroundColor(.gray)
+                    Spacer()
+                    Toggle("", isOn: $showAnswerHint)
+                        .labelsHidden()
+                        .tint(.yellow)
+                }
             }
             .padding(20)
             .background(Color.white.opacity(0.07))
@@ -97,6 +108,7 @@ struct HomeView: View {
             Button {
                 engine.timerSeconds = timerSeconds
                 engine.selectedTense = selectedTense
+                engine.showAnswerHint = showAnswerHint
                 engine.startSpin()
             } label: {
                 HStack(spacing: 10) {

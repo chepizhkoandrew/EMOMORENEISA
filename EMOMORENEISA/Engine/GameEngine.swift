@@ -21,6 +21,7 @@ final class GameEngine: ObservableObject {
 
     var timerSeconds: Double = 2.0
     var selectedTense: Tense = .present
+    var showAnswerHint: Bool = false
 
     private var cellTimer: AnyCancellable?
     private var countdownTimer: AnyCancellable?

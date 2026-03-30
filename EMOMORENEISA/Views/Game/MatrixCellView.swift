@@ -4,6 +4,7 @@ struct MatrixCellView: View {
     let cell: GameCell
     let isActive: Bool
     let timerProgress: Double
+    let showAnswerHint: Bool
 
     var body: some View {
         ZStack {
@@ -19,7 +20,7 @@ struct MatrixCellView: View {
                     .padding(4)
             }
 
-            if cell.revealed || isActive {
+            if cell.revealed || (isActive && showAnswerHint) {
                 Text(cell.expectedConjugation)
                     .font(.system(size: 14, weight: .semibold, design: .rounded))
                     .foregroundColor(textColor)
