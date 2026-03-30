@@ -80,6 +80,22 @@ struct GameMatrixView: View {
             }
 
             Button {
+                engine.repeatRound()
+            } label: {
+                HStack(spacing: 5) {
+                    Image(systemName: "arrow.counterclockwise")
+                    Text("REPEAT")
+                }
+                .font(.system(size: 11, weight: .bold, design: .monospaced))
+                .foregroundColor(.yellow)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 7)
+                .background(Color.white.opacity(0.07))
+                .clipShape(Capsule())
+                .overlay(Capsule().stroke(Color.yellow.opacity(0.3), lineWidth: 1))
+            }
+
+            Button {
                 engine.enterResults()
             } label: {
                 Text("SUMMARY")

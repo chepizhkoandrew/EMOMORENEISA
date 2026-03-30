@@ -27,11 +27,6 @@ struct TypewriterIntroView: View {
     @State private var visibleVocabCount: Int = 0
 
     private var maxVocabCount: Int { chosenPhrase?.vocabulary.count ?? 0 }
-    private var tapHintText: String {
-        if !isDone { return "tap to skip" }
-        return "tap anywhere to continue"
-    }
-
     private static let phrases: [TypewriterPhrase] = loadPhrases()
 
     static func loadPhrases() -> [TypewriterPhrase] {
@@ -64,6 +59,15 @@ struct TypewriterIntroView: View {
                         .frame(height: 1)
 
                     bottomHalf(height: geo.size.height / 2)
+                }
+
+                VStack {
+                    Spacer()
+                    Text("Tap to skip")
+                        .font(.system(size: 13, weight: .medium, design: .monospaced))
+                        .foregroundColor(.white.opacity(0.35))
+                        .tracking(1)
+                        .padding(.bottom, 32)
                 }
             }
         }
@@ -122,12 +126,6 @@ struct TypewriterIntroView: View {
                 }
 
                 Spacer(minLength: 0)
-
-                Text(tapHintText)
-                    .font(.system(size: 11, weight: .medium, design: .monospaced))
-                    .foregroundColor(.white.opacity(0.35))
-                    .animation(.easeInOut(duration: 0.3), value: tapHintText)
-                    .padding(.bottom, 14)
             }
             .frame(height: height)
         } else {
@@ -148,11 +146,6 @@ struct TypewriterIntroView: View {
                     .scrollBounceBehavior(.basedOnSize)
                 }
 
-                Text(tapHintText)
-                    .font(.system(size: 13, weight: .medium, design: .monospaced))
-                    .foregroundColor(.white.opacity(0.35))
-                    .animation(.easeInOut(duration: 0.3), value: tapHintText)
-                    .padding(.bottom, 24)
             }
             .frame(height: height)
         }
@@ -271,6 +264,7 @@ struct SettingsSheetView: View {
     @Binding var timerSeconds: Double
     @Binding var selectedTense: Tense
     @Environment(\.dismiss) private var dismiss
+    @AppStorage("showAnswerHint") private var showAnswerHint: Bool = false
 
     var body: some View {
         NavigationView {
@@ -302,6 +296,16 @@ struct SettingsSheetView: View {
                         }
                         Slider(value: $timerSeconds, in: 1.0...8.0, step: 0.5)
                             .accentColor(.yellow)
+                    }
+
+                    HStack {
+                        Label("Show answer hint", systemImage: "eye.fill")
+                            .font(.system(size: 13, weight: .semibold, design: .monospaced))
+                            .foregroundColor(.gray)
+                        Spacer()
+                        Toggle("", isOn: $showAnswerHint)
+                            .labelsHidden()
+                            .tint(.yellow)
                     }
 
                     Spacer()

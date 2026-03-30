@@ -295,6 +295,17 @@ final class GameEngine: ObservableObject {
         phase = .results
     }
 
+    func repeatRound() {
+        cellTimer?.cancel()
+        postProcessTimer?.cancel()
+        stopListening()
+        isPostProcessing = false
+        lastResult = nil
+        reviewActiveCellIndex = nil
+        hideCorrect = false
+        startPlaying()
+    }
+
     // MARK: - Legacy retry (keeps ResultsView working)
     func retryMissed() {
         guard let r = round, !r.missedCells.isEmpty else { return }

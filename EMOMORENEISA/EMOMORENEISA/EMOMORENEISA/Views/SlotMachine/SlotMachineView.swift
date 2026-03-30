@@ -68,33 +68,14 @@ struct SlotMachineView: View {
                 Color.clear.frame(height: isLandscape ? 56 : 120)
             }
 
-            VStack {
-                Spacer()
-
-                if isSpinning {
-                    Text("tap to reveal")
-                        .font(.system(size: isLandscape ? 13 : 15, weight: .medium, design: .monospaced))
-                        .foregroundColor(.white.opacity(0.28))
+            if isSpinning || engine.phase == .readyToStart {
+                VStack {
+                    Spacer()
+                    Text("Tap to skip")
+                        .font(.system(size: 13, weight: .medium, design: .monospaced))
+                        .foregroundColor(.white.opacity(0.35))
                         .tracking(1)
-                        .transition(.opacity)
-                        .padding(.bottom, isLandscape ? 16 : 36)
-                } else if engine.phase == .readyToStart {
-                    Text("tap to practice")
-                        .font(.system(size: isLandscape ? 13 : 15, weight: .medium, design: .monospaced))
-                        .foregroundColor(.white.opacity(0.45))
-                        .tracking(1)
-                        .transition(.opacity)
-                        .padding(.bottom, isLandscape ? 16 : 36)
-                } else if case .countdown(let n) = engine.phase {
-                    Text("\(n)")
-                        .font(.system(size: isLandscape ? 60 : 100, weight: .black, design: .monospaced))
-                        .foregroundColor(.yellow)
-                        .shadow(color: .yellow.opacity(0.7), radius: 16)
-                        .transition(.scale.combined(with: .opacity))
-                        .id(n)
-                        .padding(.bottom, isLandscape ? 10 : 36)
-                } else {
-                    Color.clear.frame(height: isLandscape ? 56 : 120)
+                        .padding(.bottom, 32)
                 }
             }
         }
