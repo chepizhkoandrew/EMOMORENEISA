@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Professor Madrid — Learn Spanish</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --gold: #F5A623;
+      --gold-glow: rgba(245, 166, 35, 0.35);
+      --purple-deep: #050712;
+      --purple-mid: #130D2E;
+      --purple-accent: #2D1B4E;
+      --text: #FFFFFF;
+      --text-muted: rgba(255, 255, 255, 0.55);
+      --text-subtle: rgba(255, 255, 255, 0.30);
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      font-family: 'DM Sans', system-ui, -apple-system, sans-serif;
+      background: var(--purple-deep);
+      color: var(--text);
+      overflow-x: hidden;
+    }
+
+    /* ================================================================
+       HERO — 100vh, everything fits, no scroll needed
+    ================================================================ */
+    .hero {
+      position: relative;
+      width: 100%;
+      height: 100vh;
+      min-height: 640px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Radial background matching app's deep-space indigo */
+    .hero-bg {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 90% 80% at 55% 30%, #2D1B4E 0%, #180A35 45%, #070818 100%);
+      z-index: 0;
+    }
+
+    /* Subtle star-dot layer */
+    .stars {
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    /* ---- Top content area ---- */
+    .hero-top {
+      position: relative;
+      z-index: 20;
+      padding: 2.5rem 3rem 0;
+      text-align: center;
+      flex-shrink: 0;
+    }
+
+    .app-eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--gold);
+      opacity: 0.8;
+      margin-bottom: 0.9rem;
+    }
+
+    h1 {
+      font-family: 'Syne', sans-serif;
+      font-size: clamp(1.4rem, 6.5vw, 4rem);
+      font-weight: 800;
+      line-height: 1.15;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.6rem;
+      overflow-wrap: break-word;
+      hyphens: auto;
+      transform: scaleY(1.14);
+      transform-origin: top center;
+      display: block;
+    }
+
+    .tagline {
+      font-size: clamp(0.85rem, 3.5vw, 1.35rem);
+      font-weight: 500;
+      font-style: italic;
+      color: rgba(255, 255, 255, 0.80);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+      flex-wrap: wrap;
+      line-height: 1.4;
+    }
+
+    .tagline-static {
+      margin-right: 0.3em;
+    }
+
+    #typed-word {
+      color: var(--gold);
+      font-style: normal;
+      font-weight: 700;
+    }
+
+    .cursor {
+      display: inline-block;
+      width: 2px;
+      height: 1em;
+      background: var(--gold);
+      margin-left: 2px;
+      vertical-align: middle;
+      border-radius: 1px;
+      animation: blink 0.65s step-end infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0; }
+    }
+
+    /* ---- Dog middle zone ---- */
+    .hero-dog-zone {
+      position: relative;
+      flex: 1;
+      z-index: 10;
+      overflow: hidden;
+    }
+
+    .dog-wrap {
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      height: 100%;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+    }
+
+    .dog-img {
+      height: 100%;
+      width: auto;
+      max-width: 380px;
+      object-fit: contain;
+      object-position: bottom center;
+      display: block;
+      filter: drop-shadow(0 -20px 60px rgba(45, 27, 78, 0.5));
+    }
+
+    /* Speech bubble — anchored relative to dog zone */
+    .speech-bubble {
+      position: absolute;
+      top: 12%;
+      left: 50%;
+      transform: translateX(12px);
+      background: var(--gold);
+      color: #1a0d00;
+      font-weight: 700;
+      font-size: clamp(0.75rem, 2.5vw, 0.95rem);
+      padding: 0.55rem 1.1rem;
+      border-radius: 22px 22px 22px 5px;
+      white-space: nowrap;
+      box-shadow:
+        0 4px 24px var(--gold-glow),
+        0 1px 0 rgba(255,255,255,0.25) inset;
+      z-index: 30;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    /* ---- Bottom CTA area ---- */
+    .hero-bottom {
+      position: relative;
+      z-index: 20;
+      padding: 0 2rem 1.4rem;
+      text-align: center;
+      flex-shrink: 0;
+    }
+
+    .cta-group {
+      display: flex;
+      gap: 0.75rem;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-bottom: 1.4rem;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.8rem 1.7rem;
+      border-radius: 100px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.92rem;
+      font-weight: 600;
+      text-decoration: none;
+      cursor: pointer;
+      border: none;
+      transition: transform 0.18s, box-shadow 0.18s, opacity 0.18s;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+    }
+
+    .btn:active {
+      transform: translateY(0);
+    }
+
+    .btn-primary {
+      background: var(--gold);
+      color: #18080A;
+      box-shadow: 0 4px 20px var(--gold-glow);
+    }
+
+    .btn-primary:hover {
+      box-shadow: 0 8px 32px rgba(245, 166, 35, 0.5);
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.07);
+      color: rgba(255, 255, 255, 0.9);
+      border: 1.5px solid rgba(255, 255, 255, 0.18);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.11);
+    }
+
+    .btn svg {
+      flex-shrink: 0;
+    }
+
+    /* Footer line */
+    .hero-footer {
+      font-size: 0.72rem;
+      color: var(--text-subtle);
+    }
+
+    .hero-footer a {
+      color: rgba(255, 255, 255, 0.38);
+      text-decoration: none;
+      transition: color 0.15s;
+    }
+
+    .hero-footer a:hover {
+      color: rgba(255, 255, 255, 0.7);
+    }
+
+    /* ================================================================
+       HOW IT WORKS SECTION
+    ================================================================ */
+    #how-it-works {
+      background: linear-gradient(180deg, #070818 0%, #0A0C1E 100%);
+      padding: 5rem 3rem 6rem;
+    }
+
+    .section-header {
+      text-align: center;
+      margin-bottom: 3.5rem;
+    }
+
+    .section-eyebrow {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 0.75rem;
+    }
+
+    .section-title {
+      font-family: 'Syne', sans-serif;
+      font-size: clamp(1.8rem, 3.5vw, 2.8rem);
+      font-weight: 800;
+      letter-spacing: -0.025em;
+      margin-bottom: 1rem;
+    }
+
+    .section-desc {
+      font-size: 1.05rem;
+      color: var(--text-muted);
+      max-width: 520px;
+      line-height: 1.75;
+      margin: 0 auto;
+    }
+
+    /* Screenshots grid */
+    .features-grid {
+      display: flex;
+      gap: 2rem;
+      justify-content: center;
+      flex-wrap: wrap;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    .feature-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+      flex: 0 0 auto;
+    }
+
+    /* iPhone 15 Pro frame */
+    .iphone-frame {
+      position: relative;
+      width: 195px;
+      height: 422px;
+      background: #000;
+      border-radius: 44px;
+      border: 11px solid #1c1c1e;
+      box-shadow:
+        0 0 0 1.5px #3a3a3c,
+        0 0 0 0.5px rgba(255, 255, 255, 0.06) inset,
+        0 40px 100px rgba(0, 0, 0, 0.8),
+        0 10px 30px rgba(0, 0, 0, 0.5);
+      overflow: hidden;
+    }
+
+    /* Dynamic Island */
+    .iphone-frame::before {
+      content: '';
+      position: absolute;
+      top: 7px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 82px;
+      height: 26px;
+      background: #1c1c1e;
+      border-radius: 14px;
+      z-index: 10;
+    }
+
+    /* Right-side button */
+    .iphone-frame::after {
+      content: '';
+      position: absolute;
+      top: 80px;
+      right: -14px;
+      width: 3px;
+      height: 62px;
+      background: #2e2e30;
+      border-radius: 2px;
+      z-index: 20;
+    }
+
+    .iphone-frame img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: top center;
+      display: block;
+    }
+
+    .feature-label {
+      font-size: 0.78rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+      text-align: center;
+    }
+
+    .feature-desc {
+      font-size: 0.82rem;
+      color: var(--text-subtle);
+      text-align: center;
+      max-width: 160px;
+      line-height: 1.5;
+    }
+
+    /* ================================================================
+       RESPONSIVE
+    ================================================================ */
+    @media (max-width: 600px) {
+      .hero-top {
+        padding: 2rem 1.5rem 0;
+      }
+
+      h1 {
+        font-size: 2.4rem;
+      }
+
+      .speech-bubble {
+        right: calc(50% - 170px);
+        font-size: 0.85rem;
+        padding: 0.45rem 0.9rem;
+      }
+
+      .hero-bottom {
+        padding: 0 1.5rem 1.2rem;
+      }
+
+      .btn {
+        padding: 0.75rem 1.3rem;
+        font-size: 0.88rem;
+      }
+
+      #how-it-works {
+        padding: 4rem 1.5rem 5rem;
+      }
+
+      .features-grid {
+        gap: 1.5rem;
+      }
+
+      .iphone-frame {
+        width: 160px;
+        height: 347px;
+        border-radius: 36px;
+        border-width: 9px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ================================================================
+       HERO SECTION
+  ================================================================ -->
+  <section class="hero">
+    <div class="hero-bg"></div>
+    <canvas class="stars" id="stars"></canvas>
+
+    <!-- ---- Text at top ---- -->
+    <div class="hero-top">
+      <div class="app-eyebrow">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" style="margin-bottom:1px">
+          <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
+        </svg>
+        iOS app · Spanglish Learning
+      </div>
+
+      <h1>Professor Madrid</h1>
+
+      <p class="tagline">
+        <span class="tagline-static">Enseñarme,</span>
+        <span id="typed-word">enseñarte</span><span class="cursor"></span>.
+      </p>
+    </div>
+
+    <!-- ---- Dog zone ---- -->
+    <div class="hero-dog-zone">
+      <div class="dog-wrap">
+        <img
+          src="../EMOMORENEISA/EMOMORENEISA/EMOMORENEISA/Assets.xcassets/professor_dog.imageset/professor_dog.PNG"
+          alt="Professor Madrid"
+          class="dog-img"
+        >
+      </div>
+
+      <!-- Speech bubble -->
+      <div class="speech-bubble">¿Enseñarme... enseñarte? 🐾</div>
+    </div>
+
+    <!-- ---- CTA buttons at bottom ---- -->
+    <div class="hero-bottom">
+      <div class="cta-group">
+        <a href="https://apps.apple.com" class="btn btn-primary" target="_blank" rel="noopener">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
+          </svg>
+          Download the app
+        </a>
+        <a href="#how-it-works" class="btn btn-secondary">
+          How it works ↓
+        </a>
+      </div>
+
+      <div class="hero-footer">
+        © 2025 Professor Madrid &nbsp;·&nbsp;
+        <a href="#">Privacy Policy</a> &nbsp;·&nbsp;
+        <a href="#">Contact</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================================================================
+       HOW IT WORKS SECTION
+  ================================================================ -->
+  <section id="how-it-works">
+    <div class="section-header">
+      <div class="section-eyebrow">¿Cómo funciona?</div>
+      <h2 class="section-title">Learn Spanish, doggo style.</h2>
+      <p class="section-desc">
+        Professor Madrid blends AI tutoring, verb conjugation drills, and audio loops into
+        one surprisingly fun app. Your professor is a dog — he means well, mostly.
+      </p>
+    </div>
+
+    <div class="features-grid">
+
+      <div class="feature-card">
+        <div class="iphone-frame">
+          <img
+            src="../appstore/screenshots/01_home_splash.png"
+            alt="Daily motivational quote"
+            loading="lazy"
+          >
+        </div>
+        <div class="feature-label">Daily Motivation</div>
+        <div class="feature-desc">A new dark-humour quote to kick off every session</div>
+      </div>
+
+      <div class="feature-card">
+        <div class="iphone-frame">
+          <img
+            src="../appstore/screenshots/02_home_modes.png"
+            alt="Choose your learning mode"
+            loading="lazy"
+          >
+        </div>
+        <div class="feature-label">Two Learning Modes</div>
+        <div class="feature-desc">Chat Tutor or Verb Game — you pick the battlefield</div>
+      </div>
+
+      <div class="feature-card">
+        <div class="iphone-frame">
+          <img
+            src="../appstore/screenshots/07_chat_tutor_lesson.png"
+            alt="AI Chat Tutor lesson"
+            loading="lazy"
+          >
+        </div>
+        <div class="feature-label">AI Chat Tutor</div>
+        <div class="feature-desc">Conversational AI that teaches in Spanish from the first word</div>
+      </div>
+
+      <div class="feature-card">
+        <div class="iphone-frame">
+          <img
+            src="../appstore/screenshots/10_el_loro_playback.png"
+            alt="El Loro audio loop playback"
+            loading="lazy"
+          >
+        </div>
+        <div class="feature-label">El Loro 🦜</div>
+        <div class="feature-desc">Audio loops of your chat — listen, repeat, get fluent</div>
+      </div>
+
+      <div class="feature-card">
+        <div class="iphone-frame">
+          <img
+            src="../appstore/screenshots/12_verb_game_slot_machine.png"
+            alt="Slot machine verb picker"
+            loading="lazy"
+          >
+        </div>
+        <div class="feature-label">Spin the Wheel</div>
+        <div class="feature-desc">Three verbs picked by a slot machine — fate decides your lesson</div>
+      </div>
+
+      <div class="feature-card">
+        <div class="iphone-frame">
+          <img
+            src="../appstore/screenshots/13_verb_game_grid.png"
+            alt="Verb conjugation game grid"
+            loading="lazy"
+          >
+        </div>
+        <div class="feature-label">Conjugation Game</div>
+        <div class="feature-desc">Speak the forms aloud. Beat the clock. Don't embarrass the professor.</div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ================================================================
+       SCRIPTS
+  ================================================================ -->
+  <script>
+    /* ---- Star canvas ---- */
+    (function () {
+      const canvas = document.getElementById('stars');
+      const ctx = canvas.getContext('2d');
+      let stars = [];
+
+      function resize() {
+        canvas.width  = canvas.offsetWidth;
+        canvas.height = canvas.offsetHeight;
+      }
+
+      function generate() {
+        stars = [];
+        const count = Math.floor(canvas.width * canvas.height / 6000);
+        for (let i = 0; i < count; i++) {
+          stars.push({
+            x: Math.random() * canvas.width,
+            y: Math.random() * canvas.height,
+            r: Math.random() * 1.2 + 0.3,
+            a: Math.random() * 0.45 + 0.1
+          });
+        }
+      }
+
+      function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        stars.forEach(s => {
+          ctx.beginPath();
+          ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(255,255,255,${s.a})`;
+          ctx.fill();
+        });
+      }
+
+      function init() {
+        resize();
+        generate();
+        draw();
+      }
+
+      window.addEventListener('resize', init);
+      init();
+    })();
+
+    /* ---- Typewriter: loops between "enseñarme" and "enseñarte" ---- */
+    (function () {
+      const el     = document.getElementById('typed-word');
+      const base   = 'enseñ';
+      const wrong  = 'arme';   /* dog types this by "mistake" */
+      const right  = 'arte';   /* then corrects to this */
+
+      /* current suffix being displayed (start with right = "arte") */
+      let suffix   = right;
+      let charIdx  = right.length;
+
+      const DELAY_CHAR_TYPE   = 110;
+      const DELAY_CHAR_DELETE = 75;
+      const PAUSE_AFTER_WRONG = 1600;
+      const PAUSE_AFTER_RIGHT = 3200;
+
+      function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+      async function run() {
+        await sleep(1800); /* initial pause */
+
+        while (true) {
+          /* 1. Delete current suffix */
+          while (charIdx > 0) {
+            charIdx--;
+            el.textContent = base + suffix.slice(0, charIdx);
+            await sleep(DELAY_CHAR_DELETE);
+          }
+          await sleep(280);
+
+          /* 2. Type the WRONG word "arme" → dog's mistake */
+          suffix = wrong;
+          while (charIdx < wrong.length) {
+            charIdx++;
+            el.textContent = base + suffix.slice(0, charIdx);
+            await sleep(DELAY_CHAR_TYPE);
+          }
+          await sleep(PAUSE_AFTER_WRONG);
+
+          /* 3. Delete the wrong suffix */
+          while (charIdx > 0) {
+            charIdx--;
+            el.textContent = base + suffix.slice(0, charIdx);
+            await sleep(DELAY_CHAR_DELETE);
+          }
+          await sleep(220);
+
+          /* 4. Type the CORRECT word "arte" */
+          suffix = right;
+          while (charIdx < right.length) {
+            charIdx++;
+            el.textContent = base + suffix.slice(0, charIdx);
+            await sleep(DELAY_CHAR_TYPE);
+          }
+          await sleep(PAUSE_AFTER_RIGHT);
+        }
+      }
+
+      run();
+    })();
+
+    /* ---- Smooth scroll for anchor links ---- */
+    document.querySelectorAll('a[href^="#"]').forEach(function (link) {
+      link.addEventListener('click', function (e) {
+        const target = document.querySelector(link.getAttribute('href'));
+        if (target) {
+          e.preventDefault();
+          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      });
+    });
+  </script>
+
+</body>
+</html>
