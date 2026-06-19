@@ -182,7 +182,23 @@
         0 1px 0 rgba(255,255,255,0.25) inset;
       z-index: 30;
       text-align: left;
-      vertical-align: top;
+      min-width: 14ch;
+    }
+
+    .speech-bubble-text {
+      display: inline;
+    }
+
+    .bubble-cursor {
+      display: inline-block;
+      width: 2px;
+      height: 0.85em;
+      background: #1a0d00;
+      margin-left: 1px;
+      vertical-align: middle;
+      border-radius: 1px;
+      opacity: 0.6;
+      animation: blink 0.65s step-end infinite;
     }
 
     /* ---- Bottom CTA area ---- */
@@ -473,7 +489,7 @@
       </div>
 
       <!-- Speech bubble -->
-      <div class="speech-bubble">¿Enseñarme... enseñarte? 🐾</div>
+      <div class="speech-bubble"><span class="speech-bubble-text" id="bubble-text"></span><span class="bubble-cursor"></span></div>
     </div>
 
     <!-- ---- CTA buttons at bottom ---- -->
@@ -691,6 +707,53 @@
             await sleep(DELAY_CHAR_TYPE);
           }
           await sleep(PAUSE_AFTER_RIGHT);
+        }
+      }
+
+      run();
+    })();
+
+    /* ---- Speech bubble: cycling dog phrases ---- */
+    (function () {
+      const el = document.getElementById('bubble-text');
+
+      const phrases = [
+        "Sit. Stay. Conjugate.",
+        "Yo enseño. Tú aprendes. Maybe.",
+        "Spin wheel. Say verb. Good human.",
+        "AI tutor inside. I supervise.",
+        "¡Más verbos! Treats after.",
+        "Tu acento... it's fine. Keep going.",
+        "I don't know who teaches whom.",
+      ];
+
+      let phraseIdx = 0;
+      const TYPE_SPEED   = 45;
+      const DELETE_SPEED = 28;
+      const PAUSE_READ   = 2800;
+      const PAUSE_NEXT   = 300;
+
+      function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+      async function run() {
+        await sleep(600);
+        while (true) {
+          const text = phrases[phraseIdx % phrases.length];
+          phraseIdx++;
+
+          for (let i = 0; i <= text.length; i++) {
+            el.textContent = text.slice(0, i);
+            await sleep(TYPE_SPEED);
+          }
+
+          await sleep(PAUSE_READ);
+
+          for (let i = text.length; i >= 0; i--) {
+            el.textContent = text.slice(0, i);
+            await sleep(DELETE_SPEED);
+          }
+
+          await sleep(PAUSE_NEXT);
         }
       }
 
