@@ -43,7 +43,7 @@ struct MessageBubbleView: View {
 
     @ViewBuilder
     private var bubbleContent: some View {
-        let images = message.imageLocalPaths.compactMap { UIImage(contentsOfFile: $0) }
+        let images = message.resolvedImagePaths.compactMap { UIImage(contentsOfFile: $0) }
         VStack(alignment: .leading, spacing: 8) {
             if !images.isEmpty {
                 imageThumbnails(images)

@@ -26,7 +26,7 @@ final class AnnotationService {
 
         await MainActor.run { state = .loading }
 
-        let images = userMessage.imageLocalPaths.compactMap { UIImage(contentsOfFile: $0) }
+        let images = userMessage.resolvedImagePaths.compactMap { UIImage(contentsOfFile: $0) }
         let imageData = images.compactMap { $0.jpegData(compressionQuality: 0.72) }
 
         guard !imageData.isEmpty else {

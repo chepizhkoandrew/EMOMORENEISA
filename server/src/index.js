@@ -419,6 +419,72 @@ Example: [{"label":"perro marrón","translation":"brown dog","x":0.3,"y":0.65},{
   }
 });
 
+// Validate a spoken Spanish verb conjugation. Charges per word so users are
+// only billed for what they actually attempt, not for the whole game session.
+app.post("/v1/verb-check", requireUser, async (req, res) => {
+  const { transcript, expected, infinitive, pronoun } = req.body || {};
+  if (!transcript || !expected) {
+    return res.status(400).json({ error: "missing_fields" });
+  }
+
+  const cost = config.actionCosts.verbCheck;
+  const pre = await debit(req.user.id, cost, "verb_check", {});
+  if (!pre.ok && pre.error === "insufficient_treats") {
+    return res.status(402).json({ error: "insufficient_treats", balance: pre.balance });
+  }
+
+  const prompt = `Spanish verb conjugation check.
+Verb: "${infinitive || ""}", Pronoun: "${pronoun || ""}"
+Expected conjugation: "${expected}"
+User said (speech-to-text): "${transcript.trim()}"
+
+RULES — mark CORRECT if:
+- The user said the exact conjugation (with or without the subject pronoun).
+- Accent marks differ only (miró vs miro are the same word for this check).
+- A single-character STT artifact (b/v swap, missing or extra 's') is the only difference.
+
+Mark WRONG if:
+- The user said a different conjugation (wrong ending, wrong tense, or a completely different word).
+- The ending is wrong — endings are the most important part. "hablo" vs "habla" is WRONG.
+
+Reply with exactly one word: CORRECT or WRONG`;
+
+  try {
+    const geminiKey = config.geminiKey;
+    if (!geminiKey) {
+      if (pre.enforced) await credit(req.user.id, cost, "refund", "verb_check_no_key", {});
+      return res.status(503).json({ error: "verb_check_not_configured" });
+    }
+
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`;
+    const body = {
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: { temperature: 0, maxOutputTokens: 8 }
+    };
+
+    const response = await fetch(geminiUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(8000)
+    });
+
+    if (!response.ok) {
+      if (pre.enforced) await credit(req.user.id, cost, "refund", "verb_check_api_error", {});
+      return res.status(502).json({ error: "verb_check_api_error" });
+    }
+
+    const json = await response.json();
+    const text = json?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+    const correct = text.trim().toUpperCase().startsWith("CORRECT");
+
+    res.json({ correct, treatsCharged: cost });
+  } catch (e) {
+    if (pre.enforced) await credit(req.user.id, cost, "refund", "verb_check_failed", {});
+    res.status(502).json({ error: "verb_check_failed", detail: e.message });
+  }
+});
+
 // Verify a StoreKit 2 signed transaction (JWS) and credit the matching pack.
 app.post("/v1/topup", requireUser, async (req, res) => {
   const { signedTransaction } = req.body || {};

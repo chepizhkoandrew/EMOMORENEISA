@@ -56,14 +56,10 @@ final class SpeechService: NSObject {
 
         let req = SFSpeechAudioBufferRecognitionRequest()
         req.shouldReportPartialResults = true
-        req.taskHint = .search
+        req.taskHint = .dictation
         req.addsPunctuation = false
-        if recognizer.supportsOnDeviceRecognition {
-            req.requiresOnDeviceRecognition = true
-            glog("🎙  STT  ", "On-device recognition ✅")
-        } else {
-            glog("🎙  STT  ", "On-device recognition not available — using server")
-        }
+        req.requiresOnDeviceRecognition = false
+        glog("🎙  STT  ", "Using server-based recognition for best accuracy")
         if !contextualStrings.isEmpty {
             req.contextualStrings = contextualStrings
             glog("🎙  STT  ", "Contextual hints: \(contextualStrings.joined(separator: ", "))")

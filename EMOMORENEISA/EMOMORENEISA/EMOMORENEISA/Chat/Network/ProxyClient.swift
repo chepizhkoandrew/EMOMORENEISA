@@ -194,6 +194,23 @@ final class ProxyClient {
         return AnnotateResult(annotations: annotations)
     }
 
+    func verbCheck(
+        transcript: String,
+        expected: String,
+        infinitive: String,
+        pronoun: String
+    ) async throws -> Bool {
+        let body: [String: Any] = [
+            "transcript": transcript,
+            "expected": expected,
+            "infinitive": infinitive,
+            "pronoun": pronoun
+        ]
+        let json = try await postJSON(path: "/v1/verb-check", body: body, timeout: 10)
+        guard let correct = json["correct"] as? Bool else { throw ProxyError.decoding }
+        return correct
+    }
+
     // Sends a StoreKit 2 signed transaction (JWS) for server-side verification + crediting.
     func topup(signedTransaction: String) async throws -> WalletState {
         try walletState(from: await postJSON(path: "/v1/topup", body: ["signedTransaction": signedTransaction]))

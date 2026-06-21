@@ -80,4 +80,18 @@ final class LocalChatMessage {
     var isUser: Bool { senderEnum == .user }
     var isAssistant: Bool { senderEnum == .assistant }
     var isRootMessage: Bool { threadParentId == nil }
+
+    var resolvedImagePaths: [String] {
+        let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].path
+        return imageLocalPaths.map { path in
+            if FileManager.default.fileExists(atPath: path) { return path }
+            if !path.hasPrefix("/") { return docs + "/" + path }
+            if let range = path.range(of: "/Documents/") {
+                let relative = String(path[range.upperBound...])
+                let fixed = docs + "/" + relative
+                if FileManager.default.fileExists(atPath: fixed) { return fixed }
+            }
+            return path
+        }
+    }
 }

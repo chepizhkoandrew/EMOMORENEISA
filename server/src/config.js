@@ -87,7 +87,8 @@ export const config = {
     voice: num("COST_VOICE_MESSAGE", 2),
     streetView: num("COST_STREET_VIEW", 9),
     loro: num("COST_LORO_DRILL", 3),
-    annotate: num("COST_ANNOTATE", 6)
+    annotate: num("COST_ANNOTATE", 6),
+    verbCheck: num("COST_VERB_CHECK", 2)
   },
 
   pricing: {

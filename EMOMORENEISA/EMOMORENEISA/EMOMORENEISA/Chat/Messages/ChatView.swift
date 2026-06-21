@@ -22,6 +22,7 @@ struct ChatView: View {
     @State private var showGoalEditor = false
     @State private var parrotMessage: LocalChatMessage? = nil
     @State private var annotationTarget: AnnotationTarget? = nil
+    @State private var isVoiceSending = false
     @AppStorage("autoVoiceEnabled") private var autoVoiceEnabled: Bool = true
 
     private let openAI = ChatOpenAIService()
@@ -259,16 +260,16 @@ struct ChatView: View {
             }
             .padding(.horizontal, 16)
 
-            HStack(spacing: 12) {
+            HStack(spacing: 10) {
                 Button {
                     guard !isGenerating else { return }
                     showCamera = true
                 } label: {
-                    HStack(spacing: 10) {
+                    HStack(spacing: 8) {
                         Image(systemName: "camera.fill")
-                            .font(.system(size: 22, weight: .semibold))
+                            .font(.system(size: 20, weight: .semibold))
                         Text("Camera")
-                            .font(.system(size: 20, weight: .semibold, design: .rounded))
+                            .font(.system(size: 18, weight: .semibold, design: .rounded))
                     }
                     .foregroundColor(isGenerating ? AppColors.textTertiary : .white)
                     .frame(maxWidth: .infinity)
@@ -283,11 +284,11 @@ struct ChatView: View {
                     guard !isGenerating else { return }
                     showPhotoPicker = true
                 } label: {
-                    HStack(spacing: 10) {
+                    HStack(spacing: 8) {
                         Image(systemName: "photo.on.rectangle.angled")
-                            .font(.system(size: 22, weight: .semibold))
+                            .font(.system(size: 20, weight: .semibold))
                         Text("Photos")
-                            .font(.system(size: 20, weight: .semibold, design: .rounded))
+                            .font(.system(size: 18, weight: .semibold, design: .rounded))
                     }
                     .foregroundColor(isGenerating ? AppColors.textTertiary : .white)
                     .frame(maxWidth: .infinity)
@@ -297,6 +298,8 @@ struct ChatView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 18))
                 }
                 .disabled(isGenerating)
+
+                recordButton
             }
             .padding(.horizontal, 16)
         }
@@ -355,6 +358,51 @@ struct ChatView: View {
                 }
             }
         }, perform: {})
+    }
+
+    // MARK: - Record Button (bottom row)
+
+    private var recordButton: some View {
+        let isRec = audioRecorder.isRecording
+        let isBusy = isGenerating || isVoiceSending
+        let activeColor = Color.red
+        return Button {
+            guard !isBusy else { return }
+            if isRec {
+                isVoiceSending = true
+                Task {
+                    let transcript = await audioRecorder.stopAndTranscribe()
+                    await MainActor.run {
+                        isVoiceSending = false
+                        if !transcript.isEmpty {
+                            inputText = transcript
+                            sendMessage()
+                        }
+                    }
+                }
+            } else {
+                TTSService.shared.stop()
+                try? audioRecorder.start()
+            }
+        } label: {
+            HStack(spacing: 8) {
+                if isVoiceSending {
+                    ProgressView().tint(.white).scaleEffect(0.75)
+                } else {
+                    Image(systemName: isRec ? "stop.fill" : "mic.fill")
+                        .font(.system(size: 20, weight: .semibold))
+                }
+                Text(isRec ? "Stop" : "Record")
+                    .font(.system(size: 18, weight: .semibold, design: .rounded))
+            }
+            .foregroundColor(isBusy ? AppColors.textTertiary : (isRec ? .white : .white))
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 18)
+            .background(isRec ? activeColor.opacity(0.85) : (isBusy ? Color.white.opacity(0.05) : Color.white.opacity(0.10)))
+            .overlay(RoundedRectangle(cornerRadius: 18).stroke(isRec ? activeColor : Color.white.opacity(0.18), lineWidth: 1))
+            .clipShape(RoundedRectangle(cornerRadius: 18))
+        }
+        .disabled(isBusy)
     }
 
     // MARK: - Recording Overlay
@@ -554,14 +602,16 @@ struct ChatView: View {
 
     private func saveImages(_ images: [UIImage], sessionId: UUID) -> [String] {
         guard !images.isEmpty else { return [] }
-        let dir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-            .appendingPathComponent("esp-images/\(sessionId.uuidString)", isDirectory: true)
+        let relativeDir = "esp-images/\(sessionId.uuidString)"
+        let docsDir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        let dir = docsDir.appendingPathComponent(relativeDir, isDirectory: true)
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         return images.compactMap { img in
-            let url = dir.appendingPathComponent(UUID().uuidString + ".jpg")
+            let filename = UUID().uuidString + ".jpg"
+            let url = dir.appendingPathComponent(filename)
             guard let data = img.jpegData(compressionQuality: 0.72) else { return nil }
             try? data.write(to: url)
-            return url.path
+            return relativeDir + "/" + filename
         }
     }
 

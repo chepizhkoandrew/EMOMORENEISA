@@ -49,11 +49,10 @@ struct AnnotationCanvasView: View {
     @State private var voiceRecorder = AudioRecorder()
     @State private var voiceState: VoiceState = .idle
     @State private var lastVoiceReply: String? = nil
-    @State private var isPressing = false
     private let openAI = ChatOpenAIService()
 
     private var firstImage: UIImage? {
-        userMessage.imageLocalPaths.first.flatMap { UIImage(contentsOfFile: $0) }
+        userMessage.resolvedImagePaths.first.flatMap { UIImage(contentsOfFile: $0) }
     }
 
     private var currentZoom: CGFloat { min(5.0, max(1.0, zoomBase * zoomDelta)) }
@@ -350,8 +349,6 @@ struct AnnotationCanvasView: View {
 
     private var voiceChatBar: some View {
         HStack(spacing: 12) {
-            micButton
-
             if voiceState == .transcribing || voiceState == .generating {
                 HStack(spacing: 6) {
                     ForEach(0..<3, id: \.self) { i in
@@ -362,6 +359,7 @@ struct AnnotationCanvasView: View {
                             .animation(.easeInOut(duration: 0.5).repeatForever().delay(Double(i) * 0.15), value: pulsing)
                     }
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
             } else if let reply = lastVoiceReply {
                 Text(reply)
                     .font(.system(size: 13, design: .rounded))
@@ -385,11 +383,13 @@ struct AnnotationCanvasView: View {
                     }
                 }
             } else {
-                Text("Hold mic to chat about what you see")
+                Text("Tap mic to chat about what you see")
                     .font(.system(size: 12, design: .rounded))
                     .foregroundColor(.white.opacity(0.35))
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
+
+            micButton
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
@@ -400,33 +400,29 @@ struct AnnotationCanvasView: View {
 
     private var micButton: some View {
         let isActive = voiceState == .recording
-        return ZStack {
-            Circle()
-                .fill(isActive ? Color.red : Color.white.opacity(0.12))
-                .frame(width: 44, height: 44)
-                .overlay(Circle().stroke(isActive ? Color.red.opacity(0.5) : Color.white.opacity(0.2), lineWidth: 1.5))
-                .scaleEffect(isActive ? 1.1 : 1.0)
-                .animation(.easeInOut(duration: 0.2), value: isActive)
+        return Button {
+            if voiceState == .idle {
+                voiceState = .recording
+                try? voiceRecorder.start()
+            } else if voiceState == .recording {
+                handleVoiceStop()
+            }
+        } label: {
+            ZStack {
+                Circle()
+                    .fill(isActive ? Color.red : Color.white.opacity(0.12))
+                    .frame(width: 44, height: 44)
+                    .overlay(Circle().stroke(isActive ? Color.red.opacity(0.5) : Color.white.opacity(0.2), lineWidth: 1.5))
+                    .scaleEffect(isActive ? 1.1 : 1.0)
+                    .animation(.easeInOut(duration: 0.2), value: isActive)
 
-            Image(systemName: isActive ? "waveform" : "mic.fill")
-                .font(.system(size: 16, weight: .semibold))
-                .foregroundColor(isActive ? .white : .white.opacity(0.7))
+                Image(systemName: isActive ? "stop.fill" : "mic.fill")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(isActive ? .white : .white.opacity(0.7))
+            }
         }
-        .disabled(voiceState == .transcribing || voiceState == .generating)
-        .simultaneousGesture(
-            DragGesture(minimumDistance: 0)
-                .onChanged { _ in
-                    guard !isPressing, voiceState == .idle else { return }
-                    isPressing = true
-                    voiceState = .recording
-                    try? voiceRecorder.start()
-                }
-                .onEnded { _ in
-                    guard isPressing else { return }
-                    isPressing = false
-                    handleVoiceStop()
-                }
-        )
+        .buttonStyle(.plain)
+        .disabled(voiceState == .transcribing || voiceState == .generating || voiceState == .speaking)
     }
 
     private func handleVoiceStop() {
