@@ -345,6 +345,74 @@ app.post("/v1/loro/stream", requireUser, async (req, res) => {
   res.end();
 });
 
+// Street Vision annotation: given an image and the Spanish object list already
+// produced by /v1/chat, returns normalized (x,y) centers for each object so the
+// app can render interactive leader-line annotations over the photo.
+app.post("/v1/annotate", requireUser, async (req, res) => {
+  if (!config.openaiKey) return res.status(503).json({ error: "chat_not_configured" });
+
+  const { imageData, objectList } = req.body || {};
+  if (!Array.isArray(imageData) || imageData.length === 0) {
+    return res.status(400).json({ error: "missing_image" });
+  }
+
+  const cost = config.actionCosts.annotate;
+  const pre = await debit(req.user.id, cost, "annotate_image", { model: config.models.vision });
+  if (!pre.ok && pre.error === "insufficient_treats") {
+    return res.status(402).json({ error: "insufficient_treats", balance: pre.balance });
+  }
+
+  const prompt = `Look at this image carefully. The following objects were identified in it from a Spanish description: "${objectList || "objects in the scene"}"
+
+For each distinct visible object or element in the image, return a JSON array where each item has:
+- "label": the concise Spanish label (noun + adjective when appropriate, 1-3 words, e.g. "perro marrón", "mesa roja", "gorra azul")
+- "x": the horizontal center of the object as a decimal from 0.0 (left edge) to 1.0 (right edge)
+- "y": the vertical center of the object as a decimal from 0.0 (top edge) to 1.0 (bottom edge)
+
+Return between 3 and 8 annotations for the most visually prominent objects. The labels must match the objects mentioned in the Spanish description. Return ONLY a valid JSON array with no other text, no markdown, no explanation.
+Example: [{"label":"perro marrón","x":0.3,"y":0.65},{"label":"mesa de madera","x":0.7,"y":0.4}]`;
+
+  try {
+    const result = await openaiChat({
+      userText: prompt,
+      imageData,
+      model: config.models.vision,
+      maxTokens: 500,
+      temperature: 0.1
+    });
+
+    const cleaned = (result.text || "").trim().replace(/```json/g, "").replace(/```/g, "").trim();
+    let annotations;
+    try {
+      annotations = JSON.parse(cleaned);
+      if (!Array.isArray(annotations)) throw new Error("not_array");
+    } catch (_) {
+      if (pre.enforced) await credit(req.user.id, cost, "refund", "annotate_parse_failed", {});
+      return res.status(502).json({ error: "annotate_parse_failed", detail: "Model did not return valid JSON" });
+    }
+
+    annotations = annotations
+      .filter(a => typeof a.label === "string" && typeof a.x === "number" && typeof a.y === "number")
+      .map(a => ({ label: a.label.trim(), x: Math.min(1, Math.max(0, a.x)), y: Math.min(1, Math.max(0, a.y)) }));
+
+    const rawCost = chatCostUsd(result.usage.inputTokens, result.usage.outputTokens);
+    await record({
+      userId: req.user.id,
+      kind: "annotate",
+      provider: "openai",
+      inputTokens: result.usage.inputTokens,
+      outputTokens: result.usage.outputTokens,
+      rawCostUsd: rawCost,
+      treatsCharged: cost
+    });
+
+    res.json({ annotations, treatsCharged: cost });
+  } catch (e) {
+    if (pre.enforced) await credit(req.user.id, cost, "refund", "annotate_failed", {});
+    res.status(e.status || 502).json({ error: "annotate_failed", detail: e.message });
+  }
+});
+
 // Verify a StoreKit 2 signed transaction (JWS) and credit the matching pack.
 app.post("/v1/topup", requireUser, async (req, res) => {
   const { signedTransaction } = req.body || {};
