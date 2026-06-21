@@ -369,6 +369,11 @@ For each distinct visible object or element in the image, return a JSON array wh
 - "x": the horizontal center of the object as a decimal from 0.0 (left edge) to 1.0 (right edge)
 - "y": the vertical center of the object as a decimal from 0.0 (top edge) to 1.0 (bottom edge)
 
+IMPORTANT RULES:
+- The (x, y) coordinates must point to the exact visual center of ONE specific instance of the object in the image. Do not average across multiple instances.
+- If there are multiple identical objects (e.g. three candles, two chairs), pick the single most clearly visible one and point precisely to its center. Do not place the dot between them.
+- Each annotation must correspond to a single, distinct object whose center you can pinpoint precisely.
+
 Return between 3 and 8 annotations for the most visually prominent objects. The labels must match the objects mentioned in the Spanish description. Return ONLY a valid JSON array with no other text, no markdown, no explanation.
 Example: [{"label":"perro marrón","x":0.3,"y":0.65},{"label":"mesa de madera","x":0.7,"y":0.4}]`;
 
