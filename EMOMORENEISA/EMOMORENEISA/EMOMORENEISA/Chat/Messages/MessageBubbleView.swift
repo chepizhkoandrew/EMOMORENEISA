@@ -5,6 +5,7 @@ struct MessageBubbleView: View {
     let onReplyInThread: () -> Void
     let onPlayFromHere: () -> Void
     let onParrot: () -> Void
+    var onAnnotate: (() -> Void)? = nil
 
     var body: some View {
         HStack(alignment: .bottom, spacing: 10) {
@@ -12,6 +13,11 @@ struct MessageBubbleView: View {
 
             VStack(alignment: message.isUser ? .trailing : .leading, spacing: 5) {
                 bubbleContent
+                    .overlay(alignment: .topTrailing) {
+                        if message.isAssistant, let annotate = onAnnotate {
+                            annotateButton(action: annotate)
+                        }
+                    }
                 if message.isAssistant {
                     footer
                 }
@@ -154,12 +160,17 @@ struct MessageBubbleView: View {
                         ProgressView()
                             .tint(.yellow)
                             .scaleEffect(0.85)
-                    } else {
-                        Image(systemName: isPlaying
-                              ? (isPausedHere ? "play.fill" : "pause.fill")
-                              : "speaker.fill")
+                    } else if isPlaying {
+                        Image(systemName: isPausedHere ? "play.fill" : "pause.fill")
                             .font(.system(size: 18))
+                            .foregroundColor(.yellow)
                             .contentTransition(.symbolEffect(.replace))
+                    } else {
+                        Image("seagull_speaker_icon")
+                            .resizable()
+                            .scaledToFill()
+                            .frame(width: actionButtonSize, height: actionButtonSize)
+                            .clipShape(Circle())
                     }
                 }
                 .foregroundColor(isPlaying || isLoadingThis ? .yellow : AppColors.textTertiary)
@@ -186,6 +197,19 @@ struct MessageBubbleView: View {
                     .overlay(Circle().stroke(Color.white.opacity(0.12), lineWidth: 1))
             }
         }
+    }
+
+    private func annotateButton(action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image("seagull_vision_icon")
+                .resizable()
+                .scaledToFill()
+                .frame(width: 32, height: 32)
+                .clipShape(Circle())
+                .overlay(Circle().stroke(Color.yellow.opacity(0.6), lineWidth: 2))
+                .shadow(color: Color.yellow.opacity(0.4), radius: 5)
+        }
+        .offset(x: 10, y: -10)
     }
 
     @ViewBuilder

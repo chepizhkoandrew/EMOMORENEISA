@@ -105,8 +105,25 @@ Decisions locked with the user: hard paywall (no free tier), 5x margin over load
 - [x] Server: /v1/tts, /v1/loro, /v1/loro/stream read `format` from body and call getVoice; metering bills only uncached (Gemini-hitting) seconds, tags provider:"cache" on hits. Legacy builds omit `format` -> default PCM -> unchanged.
 - [x] iOS: ProxyClient sends `format:"aac"` on tts/loro/loro-stream; ParrotService.decodeSegment writes correct extension (aac/m4a/wav); LoopingParrotPlayer.urlForSegment + TTSService.fetchTTS/cachedChunkURL scan aac/m4a/wav (AAC played natively, only PCM WAV-wrapped).
 - [x] Deployed to Railway; voice-cache bucket auto-created. Stream smoke test (format:"aac") PASS 2x: run1 all-AAC 7/7, firstSeg 7.7s; run2 CACHE HIT firstSeg 1.6s / full 4.9s (no Gemini). No English fallback.
-- [ ] fastlane beta Build 11 (ships iOS AAC end-to-end + api.professormadrid.com domain)
+- [x] fastlane beta Build 11 (1.0) ARCHIVE+EXPORT+UPLOAD SUCCEEDED, processed on TestFlight. Ships iOS AAC end-to-end (smaller/faster Loro + chat TTS) on the api.professormadrid.com domain.
 
-### [ ] Step: Billing model doc + StoreKit products
+### [x] Step: Customer-facing billing explainer (in-app)
+- [x] New BillingInfoView.swift (Chat/Billing/) — "How treats work": what treats are, what uses them (chat ~5 / voice ~2 / Street View 20 free-then-9 / Loro ~3 / word-help ~6, mirroring server config.actionCosts), ways to save (auto-voice off, 20 free SV/day), how top-ups work (pack tiers + bonus curve), how we calculate (no margins exposed), good-to-know (never expire, one-time not subscription), Terms/Privacy links.
+- [x] Linked from PaywallView via "How treats work" button (sheet). Removed stale footer claim "chat keeps working even at zero" (server enforces 402 on chat at 0 balance) and replaced with accurate one-time/bonus/no-expiry copy.
+- [x] Project uses synchronized file groups so the new file is auto-compiled; `xcodebuild ... build` BUILD SUCCEEDED.
+- [x] RESOLVED zero-balance policy: per user, do NOT advertise free chat; hard-paywall stands; the fact lives in T&C (Sec 4.3) + FAQ. Explainer already matches enforcement.
+- [x] terms/privacy pages now live at professormadrid.com/terms + /privacy (both 200).
+
+### [x] Step: Legal + consent surfaces (landing site T&C/Privacy/FAQ + in-app registration consent)
+- [x] Landing site: full Terms & Conditions page (website/terms.html) incl. billing-system explanation (treats = virtual currency, packs/bonus, no free tier at zero, trial grant, no refunds except via Apple, no expiry now).
+- [x] Landing site: Privacy Policy page (website/privacy.html) — data collected, processors (Supabase/Railway/OpenAI/Google), cookies, rights, children.
+- [x] Landing site: FAQ page (website/faq.html) — treats/billing, auto-voice off, Street View free tier, refunds, zero-balance behaviour.
+- [x] Landing site: cookie + privacy acknowledgement banner on index.html (localStorage pm_cookie_ack_v1); footer links fixed (Terms/Privacy/FAQ/Contact) from "#" to real pages.
+- [x] cleanUrls: root vercel.json + website/vercel.json (deploy root) — /terms /privacy /faq resolve (verified 200, clean URLs).
+- [x] In-app: registration consent under SignInView buttons — markdown Text "By continuing, you agree to our Terms & Conditions and Privacy Policy" with tappable links to /terms + /privacy.
+- [x] Deployed website to Vercel prod (aliased professormadrid.com); xcodebuild iOS BUILD SUCCEEDED.
+- [ ] NOT yet shipped to TestFlight: the SignInView consent + BillingInfoView changes need a new `fastlane beta` build to reach devices.
+
+### [ ] Step: Internal billing model doc + StoreKit product copy (margins, NOT customer-facing)
 - Conversation Pack tiers ($5.99/$11.99/$24.99/$49.99) with bonus curve
 - Earn/bonus caps, expiry/breakage policy, T&C pricing schema

@@ -21,6 +21,7 @@ struct ChatView: View {
     @State private var goalFlash = false
     @State private var showGoalEditor = false
     @State private var parrotMessage: LocalChatMessage? = nil
+    @State private var annotationTarget: AnnotationTarget? = nil
     @AppStorage("autoVoiceEnabled") private var autoVoiceEnabled: Bool = true
 
     private let openAI = ChatOpenAIService()
@@ -104,6 +105,13 @@ struct ChatView: View {
                 level: authState.profile?.levelEnum.displayLabel ?? "Beginner"
             )
         }
+        .fullScreenCover(item: $annotationTarget) { target in
+            AnnotationCanvasView(
+                assistantMessage: target.assistantMessage,
+                userMessage: target.userMessage,
+                sessionId: session.id
+            )
+        }
         .fullScreenCover(isPresented: $showGoalEditor) {
             GoalEditorSheet(
                 initialGoal: session.sessionGoal ?? session.topic ?? ""
@@ -125,6 +133,7 @@ struct ChatView: View {
             ScrollView {
                 LazyVStack(spacing: 14) {
                     ForEach(rootMessages) { message in
+                        let precedingImageMsg = userMessageWithImages(preceding: message)
                         MessageBubbleView(
                             message: message,
                             onReplyInThread: {
@@ -141,6 +150,15 @@ struct ChatView: View {
                             },
                             onParrot: {
                                 parrotMessage = message
+                            },
+                            onAnnotate: precedingImageMsg.map { userMsg in
+                                {
+                                    annotationTarget = AnnotationTarget(
+                                        id: message.id,
+                                        assistantMessage: message,
+                                        userMessage: userMsg
+                                    )
+                                }
                             }
                         )
                         .id(message.id)
@@ -641,6 +659,24 @@ struct ChatView: View {
             }
         }
     }
+
+    private func userMessageWithImages(preceding assistantMessage: LocalChatMessage) -> LocalChatMessage? {
+        guard assistantMessage.isAssistant else { return nil }
+        let msgs = rootMessages
+        guard let idx = msgs.firstIndex(where: { $0.id == assistantMessage.id }), idx > 0 else { return nil }
+        for i in stride(from: idx - 1, through: 0, by: -1) {
+            let msg = msgs[i]
+            if msg.isUser && !msg.imageLocalPaths.isEmpty { return msg }
+            if msg.isAssistant { break }
+        }
+        return nil
+    }
+}
+
+struct AnnotationTarget: Identifiable {
+    let id: UUID
+    let assistantMessage: LocalChatMessage
+    let userMessage: LocalChatMessage
 }
 
 struct GoalEditorSheet: View {

@@ -166,6 +166,34 @@ final class ProxyClient {
         try walletState(from: await postJSON(path: "/v1/bootstrap", body: [:]))
     }
 
+    struct AnnotateResult {
+        let annotations: [AnnotationItem]
+
+        var annotationsJSON: String {
+            let data = (try? JSONEncoder().encode(annotations)) ?? Data()
+            return String(data: data, encoding: .utf8) ?? "[]"
+        }
+    }
+
+    func annotate(imageData: [Data], objectList: String) async throws -> AnnotateResult {
+        let body: [String: Any] = [
+            "imageData": imageData.map { $0.base64EncodedString() },
+            "objectList": objectList
+        ]
+        let json = try await postJSON(path: "/v1/annotate", body: body, timeout: 45)
+        guard let rawAnnotations = json["annotations"] as? [[String: Any]] else {
+            throw ProxyError.decoding
+        }
+        let annotations = rawAnnotations.compactMap { item -> AnnotationItem? in
+            guard let label = item["label"] as? String,
+                  let x = (item["x"] as? NSNumber)?.doubleValue,
+                  let y = (item["y"] as? NSNumber)?.doubleValue else { return nil }
+            let translation = (item["translation"] as? String) ?? ""
+            return AnnotationItem(label: label, translation: translation, x: x, y: y)
+        }
+        return AnnotateResult(annotations: annotations)
+    }
+
     // Sends a StoreKit 2 signed transaction (JWS) for server-side verification + crediting.
     func topup(signedTransaction: String) async throws -> WalletState {
         try walletState(from: await postJSON(path: "/v1/topup", body: ["signedTransaction": signedTransaction]))

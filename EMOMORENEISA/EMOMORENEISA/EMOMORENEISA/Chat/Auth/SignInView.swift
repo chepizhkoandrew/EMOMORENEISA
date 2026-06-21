@@ -86,9 +86,29 @@ struct SignInView: View {
                         .padding(.top, 16)
                 }
 
+                if !isLoading {
+                    consentNotice
+                        .padding(.horizontal, 32)
+                        .padding(.top, 24)
+                }
+
                 Spacer()
             }
         }
+    }
+
+    private var consentNotice: some View {
+        let terms = "https://professormadrid.com/terms"
+        let privacy = "https://professormadrid.com/privacy"
+        let text = try? AttributedString(
+            markdown: "By continuing, you agree to our [Terms & Conditions](\(terms)) and [Privacy Policy](\(privacy))."
+        )
+        return Text(text ?? "By continuing, you agree to our Terms & Conditions and Privacy Policy.")
+            .font(.system(size: 12, weight: .regular, design: .monospaced))
+            .foregroundColor(.white.opacity(0.45))
+            .tint(.yellow)
+            .multilineTextAlignment(.center)
+            .lineSpacing(4)
     }
 
     private func handleAppleSignIn(_ result: Result<ASAuthorization, Error>) {

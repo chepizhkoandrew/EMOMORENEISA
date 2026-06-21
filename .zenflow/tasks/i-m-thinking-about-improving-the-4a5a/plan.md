@@ -1,30 +1,57 @@
-# Auto
+# Street Vision Annotation Feature — Implementation Plan
 
-## Configuration
-- **Artifacts Path**: {@artifacts_path} → `.zenflow/tasks/{task_id}`
+## Overview
+Add an interactive photo annotation layer to the Street Vision (Visual Mode) chat. When the AI responds to a photo with Spanish object descriptions, a new button appears on the assistant message bubble (top-right overlay). Tapping it opens a fullscreen view of the photo with infographic-style annotations: colored labels connected to objects by leader lines. Tapping a label speaks that Spanish word aloud using on-device TTS.
 
-## Agent Instructions
+## Architecture Decisions
+- **Object coordinates**: Second API call to GPT-4.1 vision model (`/v1/annotate`) asking for normalized (x, y) centers for each identified object. Feasible, accurate, same model already used for Street Vision.
+- **Storage**: New SwiftData model `StreetAnnotation` keyed on `assistantMessageId`. Annotations stored as a JSON string. Cached like Loros — never re-fetched if already stored.
+- **Rendering**: SwiftUI `Canvas` for leader lines + positioned `Button` labels in a `ZStack`. Label positions pushed outward from image center using vector math. TTS via on-device `AVSpeechSynthesizer` (same as Parrot word tap).
+- **Button placement**: Overlay on top-right corner of assistant message bubble (`.overlay(alignment: .topTrailing)`), offset slightly outside. Opposite corner from the speaker button at bottom-right.
+- **Cost**: 6 treats per annotation (lighter than streetView at 9). Cached annotations cost 0.
 
-Ask the user questions when anything is unclear or needs their input. This includes:
-- Ambiguous or incomplete requirements
-- Technical decisions that affect architecture or user experience
-- Trade-offs that require business context
+## Steps
 
-Do not make assumptions on important decisions — get clarification first.
+### [x] Step 1: Technical Spec
+Write spec + plan (this file).
 
-**Debug requests, questions, and investigations:** answer or investigate first. Do not create a plan upfront — the user needs an answer, not a plan. A plan may become relevant later once the investigation reveals what needs to change.
+### [x] Step 2: Server — annotate endpoint
+- Add `annotate: 6` to `actionCosts` in `config.js`
+- Add `POST /v1/annotate` to `index.js`: receives `imageData[]` + `objectList` text, calls GPT-4.1 vision, returns `{ annotations: [{label, x, y}] }`
 
-**For all other tasks**, before writing any code, assess the scope of the actual change (not the prompt length — a one-sentence prompt can describe a large feature). Scale your approach:
+### [x] Step 3: iOS — StreetAnnotation model
+- Create `Chat/Annotation/StreetAnnotation.swift`
+- `@Model class StreetAnnotation` with `assistantMessageId`, `userMessageId`, `sessionId`, `annotationsJSON`, `createdAt`
+- `struct AnnotationItem: Codable, Identifiable` with `label`, `x`, `y`
 
-- **Trivial** (typo, config tweak, single obvious change): implement directly, no plan needed.
-- **Small** (a few files, clear what to do): write 2–3 sentences in `plan.md` describing what and why, then implement. No substeps.
-- **Medium** (multiple components, design decisions, edge cases): write a plan in `plan.md` with requirements, affected files, key decisions, verification. Break into 3–5 steps.
-- **Large** (new feature, cross-cutting, unclear scope): gather requirements and write a technical spec first (`requirements.md`, `spec.md` in `{@artifacts_path}/`). Then write `plan.md` with concrete steps referencing the spec.
+### [x] Step 4: iOS — ProxyClient extension
+- Add `struct AnnotateResult` + `func annotate(imageData:objectList:)` to `ProxyClient.swift`
 
-**Skip planning and implement directly when** the task is trivial, or the user explicitly asks to "just do it" / gives a clear direct instruction.
+### [x] Step 5: iOS — AnnotationService
+- Create `Chat/Annotation/AnnotationService.swift`
+- `@Observable class` with states: `idle`, `loading`, `ready([AnnotationItem])`, `failed(String)`
+- Checks SwiftData cache first; falls back to server call; saves result
 
-To reflect the actual purpose of the first step, you can rename it to something more relevant (e.g., Planning, Investigation). Do NOT remove meta information like comments for any step.
+### [x] Step 6: iOS — AnnotationCanvasView
+- Create `Chat/Annotation/AnnotationCanvasView.swift`
+- Fullscreen dark overlay with `.scaledToFit()` image
+- `GeometryReader` to compute rendered image frame → map (x,y) to screen coordinates
+- SwiftUI `Canvas` for leader lines + dot at object point
+- Positioned `Button` labels (colored, bold, rounded rectangle background)
+- Tapping label plays TTS via `AVSpeechSynthesizer` with `es-ES` voice
+- Loading spinner while fetching; error retry button
 
-Rule of thumb for step size: each step = a coherent unit of work (component, endpoint, test suite). Not too granular (single function), not too broad (entire feature). Unit tests are part of each step, not separate.
+### [x] Step 7: iOS — MessageBubbleView
+- Add `onAnnotate: (() -> Void)?` parameter
+- When non-nil (and message is assistant), add overlay button at `.topTrailing` of `bubbleContent`
+- `eye.circle.fill` SF Symbol, yellow color, dark circular background, offset x:10 y:-10
 
-Update `{@artifacts_path}/plan.md` if it makes sense to have a plan and task has more than 1 big step.
+### [x] Step 8: iOS — ChatView
+- Add `struct AnnotationTarget: Identifiable` with `assistantMessage` + `userMessage`
+- Add `@State private var annotationTarget: AnnotationTarget?`
+- Private helper `userMessageWithImages(preceding:)` to find preceding user message with images
+- Wire `onAnnotate` closure in `messageList` ForEach
+- Add `.fullScreenCover(item: $annotationTarget)` presenting `AnnotationCanvasView`
+
+### [x] Step 9: iOS — EMOMORENEISAApp
+- Add `StreetAnnotation.self` to the SwiftData schema array

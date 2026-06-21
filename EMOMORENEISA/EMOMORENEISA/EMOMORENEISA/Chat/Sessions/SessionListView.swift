@@ -103,11 +103,13 @@ struct SessionListView: View {
                 Text("\(wallet.balanceTreats)")
                     .font(.system(size: 15, weight: .bold, design: .rounded))
                     .foregroundColor(.black)
+                    .fixedSize()
             }
             .padding(.horizontal, 10)
             .padding(.vertical, 5)
             .background(Color.yellow)
             .clipShape(Capsule())
+            .fixedSize()
         }
         .buttonStyle(.plain)
     }

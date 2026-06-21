@@ -5,6 +5,7 @@ struct PaywallView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var store = StoreManager.shared
     @State private var wallet = WalletManager.shared
+    @State private var showInfo = false
 
     var body: some View {
         NavigationStack {
@@ -33,11 +34,19 @@ struct PaywallView: View {
                             .multilineTextAlignment(.center)
                     }
 
-                    Text("Treats never expire. Your Spanish chat keeps working even at zero — voice and Street View use treats.")
+                    Button {
+                        showInfo = true
+                    } label: {
+                        Label("How treats work", systemImage: "info.circle")
+                            .font(.subheadline.weight(.medium))
+                    }
+                    .padding(.top, 4)
+
+                    Text("Treats never expire. Bigger packs include bonus treats. One-time purchase — no subscription.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
-                        .padding(.top, 8)
+                        .padding(.top, 4)
                 }
                 .padding()
             }
@@ -47,6 +56,9 @@ struct PaywallView: View {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Close") { dismiss() }
                 }
+            }
+            .sheet(isPresented: $showInfo) {
+                BillingInfoView()
             }
             .task {
                 store.start()

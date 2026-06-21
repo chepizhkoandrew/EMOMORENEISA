@@ -253,6 +253,7 @@ struct NewSessionView: View {
             withAnimation(.spring(response: 0.40, dampingFraction: 0.85)) {
                 step = .streetViewPhotos
             }
+            showStreetCamera = true
         }) {
             ZStack(alignment: .trailing) {
                 RoundedRectangle(cornerRadius: 24)

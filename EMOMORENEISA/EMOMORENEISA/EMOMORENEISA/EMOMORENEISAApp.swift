@@ -18,7 +18,8 @@ struct EMOMORENEISAApp: App {
             LocalChatSession.self,
             LocalChatMessage.self,
             ParrotPhrase.self,
-            MemoryCard.self
+            MemoryCard.self,
+            StreetAnnotation.self
         ])
         let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
         return try! ModelContainer(for: schema, configurations: [config])

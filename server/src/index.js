@@ -366,6 +366,7 @@ app.post("/v1/annotate", requireUser, async (req, res) => {
 
 For each distinct visible object or element in the image, return a JSON array where each item has:
 - "label": the concise Spanish label (noun + adjective when appropriate, 1-3 words, e.g. "perro marrón", "mesa roja", "gorra azul")
+- "translation": the English translation of the label (1-3 words, e.g. "brown dog", "red table", "blue cap")
 - "x": the horizontal center of the object as a decimal from 0.0 (left edge) to 1.0 (right edge)
 - "y": the vertical center of the object as a decimal from 0.0 (top edge) to 1.0 (bottom edge)
 
@@ -375,7 +376,7 @@ IMPORTANT RULES:
 - Each annotation must correspond to a single, distinct object whose center you can pinpoint precisely.
 
 Return between 3 and 8 annotations for the most visually prominent objects. The labels must match the objects mentioned in the Spanish description. Return ONLY a valid JSON array with no other text, no markdown, no explanation.
-Example: [{"label":"perro marrón","x":0.3,"y":0.65},{"label":"mesa de madera","x":0.7,"y":0.4}]`;
+Example: [{"label":"perro marrón","translation":"brown dog","x":0.3,"y":0.65},{"label":"mesa de madera","translation":"wooden table","x":0.7,"y":0.4}]`;
 
   try {
     const result = await openaiChat({
@@ -398,7 +399,7 @@ Example: [{"label":"perro marrón","x":0.3,"y":0.65},{"label":"mesa de madera","
 
     annotations = annotations
       .filter(a => typeof a.label === "string" && typeof a.x === "number" && typeof a.y === "number")
-      .map(a => ({ label: a.label.trim(), x: Math.min(1, Math.max(0, a.x)), y: Math.min(1, Math.max(0, a.y)) }));
+      .map(a => ({ label: a.label.trim(), translation: typeof a.translation === "string" ? a.translation.trim() : "", x: Math.min(1, Math.max(0, a.x)), y: Math.min(1, Math.max(0, a.y)) }));
 
     const rawCost = chatCostUsd(result.usage.inputTokens, result.usage.outputTokens);
     await record({
