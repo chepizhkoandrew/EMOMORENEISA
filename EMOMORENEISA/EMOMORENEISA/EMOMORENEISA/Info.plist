@@ -2,15 +2,35 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.353195660969-ff6luandfvauj7odempe0k2imsnh98k5</string>
+			</array>
+		</dict>
+	</array>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>remote-notification</string>
+		<string>audio</string>
 	</array>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>Used to hear your spoken Spanish verb conjugation answers.</string>
+	<string>Used to hear your spoken Spanish answers and record voice messages in the Chat Tutor.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
-	<string>Used to check your spoken Spanish verb conjugation answers.</string>
-	<key>GeminiAPIKey</key>
-	<string>$(GEMINI_API_KEY)</string>
+	<string>Used to check your spoken Spanish answers and transcribe voice messages.</string>
+	<key>ProxyBaseURL</key>
+	<string>https://api.professormadrid.com</string>
+	<key>SupabaseURL</key>
+	<string>https://rbbgayxvrobzlndprcwt.supabase.co</string>
+	<key>SupabaseAnonKey</key>
+	<string>sb_publishable_smtUKBiVG1VRccHaK27LKw_PygBGtff</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Used to share photos with the tutor in Visual Mode sessions.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Used to take photos for Visual Mode sessions with your Spanish tutor.</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 </dict>
 </plist>

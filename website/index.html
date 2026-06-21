@@ -96,40 +96,6 @@
       display: block;
     }
 
-    .tagline {
-      font-size: clamp(0.85rem, 3.5vw, 1.35rem);
-      font-weight: 500;
-      font-style: italic;
-      color: rgba(255, 255, 255, 0.80);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0;
-      flex-wrap: wrap;
-      line-height: 1.4;
-    }
-
-    .tagline-static {
-      margin-right: 0.3em;
-    }
-
-    #typed-word {
-      color: var(--gold);
-      font-style: normal;
-      font-weight: 700;
-    }
-
-    .cursor {
-      display: inline-block;
-      width: 2px;
-      height: 1em;
-      background: var(--gold);
-      margin-left: 2px;
-      vertical-align: middle;
-      border-radius: 1px;
-      animation: blink 0.65s step-end infinite;
-    }
-
     @keyframes blink {
       0%, 100% { opacity: 1; }
       50%       { opacity: 0; }
@@ -164,25 +130,107 @@
       filter: drop-shadow(0 -20px 60px rgba(45, 27, 78, 0.5));
     }
 
-    /* Speech bubble — anchored relative to dog zone */
+    /* ---- Thought-trail dots ---- */
+    .tt-dot {
+      position: absolute;
+      background: var(--gold);
+      border-radius: 50%;
+      z-index: 29;
+      box-shadow: 0 2px 8px var(--gold-glow);
+    }
+    .tt-1 { width: 13px; height: 13px; top: 50%; left: 51%; }
+    .tt-2 { width: 8px;  height: 8px;  top: 54%; left: 48%; }
+    .tt-3 { width: 5px;  height: 5px;  top: 57%; left: 45%; }
+
+    /* ---- Cloud thought bubble ---- */
     .speech-bubble {
       position: absolute;
-      top: 12%;
-      left: 50%;
-      transform: translateX(12px);
+      top: 34%;
+      left: 52%;
       background: var(--gold);
       color: #1a0d00;
       font-weight: 700;
-      font-size: clamp(0.75rem, 2.5vw, 0.95rem);
-      padding: 0.55rem 1.1rem;
-      border-radius: 22px 22px 22px 5px;
-      white-space: nowrap;
+      font-size: clamp(0.72rem, 2.3vw, 0.88rem);
+      line-height: 1.4;
+      padding: 0.85rem 1.1rem;
+      border-radius: 50% 50% 50% 50% / 40% 40% 60% 60%;
       box-shadow:
-        0 4px 24px var(--gold-glow),
+        0 6px 28px var(--gold-glow),
         0 1px 0 rgba(255,255,255,0.25) inset;
       z-index: 30;
-      text-align: left;
-      min-width: 14ch;
+      width: 205px;
+      height: 88px;
+      display: flex;
+      align-items: flex-start;
+      justify-content: flex-start;
+    }
+
+    /* Cloud bump — top-left lobe */
+    .speech-bubble::before {
+      content: '';
+      position: absolute;
+      width: 68px;
+      height: 52px;
+      background: var(--gold);
+      border-radius: 50%;
+      top: -28px;
+      left: 14px;
+      box-shadow: 0 -3px 12px var(--gold-glow);
+    }
+
+    /* Cloud bump — top-right lobe */
+    .speech-bubble::after {
+      content: '';
+      position: absolute;
+      width: 50px;
+      height: 42px;
+      background: var(--gold);
+      border-radius: 50%;
+      top: -22px;
+      right: 22px;
+      box-shadow: 0 -2px 10px var(--gold-glow);
+    }
+
+    /* ---- Floating dream items ---- */
+    .dream {
+      position: absolute;
+      z-index: 25;
+      pointer-events: none;
+      height: 72px;
+      width: auto;
+      object-fit: contain;
+      filter: drop-shadow(0 4px 12px rgba(0,0,0,0.4));
+    }
+
+    .d-kitten  { left: 7%;   top: 6%;  animation: drift-a 7.2s ease-in-out infinite;       mix-blend-mode: screen;   }
+    .d-seagull { right: 5%;  top: 2%;  animation: drift-b 9.1s ease-in-out infinite 1.1s;  mix-blend-mode: multiply; height: 80px; }
+    .d-hotdog  { left: 4%;   top: 34%; animation: drift-c 6.4s ease-in-out infinite 2.6s;  mix-blend-mode: multiply; }
+    .d-stick   { right: 4%;  top: 24%; animation: drift-a 8.3s ease-in-out infinite 1.7s;  mix-blend-mode: screen;   height: 60px; }
+    .d-cheese  { left: 12%;  top: 54%; animation: drift-b 7.8s ease-in-out infinite 3.1s;  mix-blend-mode: multiply; height: 62px; }
+    .d-pasta   { right: 7%;  top: 50%; animation: drift-d 8.7s ease-in-out infinite 0.6s;  mix-blend-mode: screen;   }
+    .d-books   { left: 28%;  top: 1%;  animation: drift-c 6.8s ease-in-out infinite 2.2s;  mix-blend-mode: multiply; height: 64px; }
+
+    @keyframes drift-a {
+      0%,100% { transform: translate(0,    0)    rotate(0deg)   scale(1);    }
+      25%     { transform: translate(10px,-18px) rotate(6deg)   scale(1.05); }
+      55%     { transform: translate(-8px, -5px) rotate(-4deg)  scale(0.97); }
+      78%     { transform: translate(14px,  8px) rotate(9deg)   scale(1.03); }
+    }
+    @keyframes drift-b {
+      0%,100% { transform: translate( 0,   -6px) rotate(-4deg)  scale(1);    }
+      35%     { transform: translate(-14px, 10px) rotate(7deg)   scale(1.06); }
+      70%     { transform: translate( 10px,-16px) rotate(-9deg)  scale(0.95); }
+    }
+    @keyframes drift-c {
+      0%,100% { transform: translate(4px,    0)   rotate(8deg)   scale(1);    }
+      20%     { transform: translate(-12px,-14px) rotate(-5deg)  scale(1.07); }
+      55%     { transform: translate( 14px, 12px) rotate(14deg)  scale(0.94); }
+      80%     { transform: translate( -4px,-18px) rotate(-11deg) scale(1.03); }
+    }
+    @keyframes drift-d {
+      0%,100% { transform: translate(-5px,  2px) rotate(-6deg)  scale(1);    }
+      40%     { transform: translate( 16px,-12px) rotate(10deg)  scale(1.04); }
+      65%     { transform: translate(-10px,  8px) rotate(-3deg)  scale(0.98); }
     }
 
     .speech-bubble-text {
@@ -420,12 +468,6 @@
         font-size: 2.4rem;
       }
 
-      .speech-bubble {
-        right: calc(50% - 170px);
-        font-size: 0.85rem;
-        padding: 0.45rem 0.9rem;
-      }
-
       .hero-bottom {
         padding: 0 1.5rem 1.2rem;
       }
@@ -471,11 +513,6 @@
       </div>
 
       <h1>Professor Madrid</h1>
-
-      <p class="tagline">
-        <span class="tagline-static">Enseñarme,</span>
-        <span id="typed-word">enseñarte</span><span class="cursor"></span>.
-      </p>
     </div>
 
     <!-- ---- Dog zone ---- -->
@@ -488,7 +525,21 @@
         >
       </div>
 
-      <!-- Speech bubble -->
+      <!-- Floating dream items -->
+      <img class="dream d-kitten"  src="assets/dream_kitten.png"  alt="">
+      <img class="dream d-seagull" src="assets/dream_seagull.png" alt="">
+      <img class="dream d-hotdog"  src="assets/dream_hotdog.png"  alt="">
+      <img class="dream d-stick"   src="assets/dream_stick.png"   alt="">
+      <img class="dream d-cheese"  src="assets/dream_cheese.png"  alt="">
+      <img class="dream d-pasta"   src="assets/dream_pasta.png"   alt="">
+      <img class="dream d-books"   src="assets/dream_books.png"   alt="">
+
+      <!-- Thought trail (dots from dog's mouth to bubble) -->
+      <span class="tt-dot tt-1"></span>
+      <span class="tt-dot tt-2"></span>
+      <span class="tt-dot tt-3"></span>
+
+      <!-- Speech bubble (thought cloud) -->
       <div class="speech-bubble"><span class="speech-bubble-text" id="bubble-text"></span><span class="bubble-cursor"></span></div>
     </div>
 
@@ -569,11 +620,11 @@
         <div class="iphone-frame">
           <img
             src="assets/10_el_loro_playback.png"
-            alt="El Loro audio loop playback"
+            alt="Seagull Steven audio loop playback"
             loading="lazy"
           >
         </div>
-        <div class="feature-label">El Loro 🦜</div>
+        <div class="feature-label">Seagull Steven 🦜</div>
         <div class="feature-desc">Audio loops of your chat — listen, repeat, get fluent</div>
       </div>
 
@@ -650,67 +701,6 @@
 
       window.addEventListener('resize', init);
       init();
-    })();
-
-    /* ---- Typewriter: loops between "enseñarme" and "enseñarte" ---- */
-    (function () {
-      const el     = document.getElementById('typed-word');
-      const base   = 'enseñ';
-      const wrong  = 'arme';   /* dog types this by "mistake" */
-      const right  = 'arte';   /* then corrects to this */
-
-      /* current suffix being displayed (start with right = "arte") */
-      let suffix   = right;
-      let charIdx  = right.length;
-
-      const DELAY_CHAR_TYPE   = 110;
-      const DELAY_CHAR_DELETE = 75;
-      const PAUSE_AFTER_WRONG = 1600;
-      const PAUSE_AFTER_RIGHT = 3200;
-
-      function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
-
-      async function run() {
-        await sleep(1800); /* initial pause */
-
-        while (true) {
-          /* 1. Delete current suffix */
-          while (charIdx > 0) {
-            charIdx--;
-            el.textContent = base + suffix.slice(0, charIdx);
-            await sleep(DELAY_CHAR_DELETE);
-          }
-          await sleep(280);
-
-          /* 2. Type the WRONG word "arme" → dog's mistake */
-          suffix = wrong;
-          while (charIdx < wrong.length) {
-            charIdx++;
-            el.textContent = base + suffix.slice(0, charIdx);
-            await sleep(DELAY_CHAR_TYPE);
-          }
-          await sleep(PAUSE_AFTER_WRONG);
-
-          /* 3. Delete the wrong suffix */
-          while (charIdx > 0) {
-            charIdx--;
-            el.textContent = base + suffix.slice(0, charIdx);
-            await sleep(DELAY_CHAR_DELETE);
-          }
-          await sleep(220);
-
-          /* 4. Type the CORRECT word "arte" */
-          suffix = right;
-          while (charIdx < right.length) {
-            charIdx++;
-            el.textContent = base + suffix.slice(0, charIdx);
-            await sleep(DELAY_CHAR_TYPE);
-          }
-          await sleep(PAUSE_AFTER_RIGHT);
-        }
-      }
-
-      run();
     })();
 
     /* ---- Speech bubble: cycling dog phrases ---- */

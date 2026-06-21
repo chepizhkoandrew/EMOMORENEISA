@@ -1,0 +1,15 @@
+{
+  "status": "submitted",
+  "action": "Proceed",
+  "file_path": ".zenflow/tasks/we-have-created-a-new-feature-fo-ad2f/final_review.md",
+  "results_file": "/Users/andriichepizhko/Downloads/IOSSPANISHGAME/.zenflow/tasks/we-have-created-a-new-feature-fo-ad2f/artifact_review_7c1a8da0-7764-40c0-874b-1ea6e4612dff.json",
+  "answers": [
+    {
+      "question": "How would you like to proceed?",
+      "selected": "Proceed"
+    },
+    {
+      "question": "Any feedback or changes needed?"
+    }
+  ]
+}

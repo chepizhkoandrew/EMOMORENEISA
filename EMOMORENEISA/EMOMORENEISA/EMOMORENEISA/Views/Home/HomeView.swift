@@ -1,4 +1,5 @@
 import SwiftUI
+import SwiftData
 
 struct CountdownOverlayView: View {
     let count: Int
@@ -54,9 +55,13 @@ struct CountdownOverlayView: View {
 
 struct HomeView: View {
     @StateObject private var engine = GameEngine()
-    @State private var timerSeconds: Double = 4.0
-    @State private var selectedTense: Tense = .present
+    @Environment(AuthState.self) private var authState
+    @AppStorage("timerSeconds") private var timerSeconds: Double = 4.0
+    @AppStorage("selectedTenseName") private var selectedTenseName: String = Tense.present.rawValue
     @State private var speechPermissionGranted = false
+    @State private var showModeSelector: Bool = false
+
+    private var selectedTense: Tense { Tense(rawValue: selectedTenseName) ?? .present }
 
     var body: some View {
         ZStack {
@@ -64,16 +69,36 @@ struct HomeView: View {
 
             switch engine.phase {
             case .idle:
-                TypewriterIntroView(
-                    onContinue: {
-                        engine.timerSeconds = timerSeconds
-                        engine.selectedTense = selectedTense
-                        engine.startSpin()
-                    },
-                    timerSeconds: $timerSeconds,
-                    selectedTense: $selectedTense
-                )
-                .transition(.opacity)
+                if showModeSelector {
+                    if authState.isLoading {
+                        ProgressView()
+                            .tint(.yellow)
+                            .scaleEffect(1.4)
+                            .transition(.opacity)
+                    } else if authState.isSignedIn {
+                        ModeSelectorView(onVerbGame: {
+                            engine.timerSeconds = timerSeconds
+                            engine.selectedTense = selectedTense
+                            engine.startSpin()
+                        })
+                        .environment(authState)
+                        .transition(.opacity)
+                        .task { await WalletManager.shared.bootstrap() }
+                    } else {
+                        SignInView()
+                            .environment(authState)
+                            .transition(.opacity)
+                    }
+                } else {
+                    TypewriterIntroView(
+                        onContinue: {
+                            withAnimation(.easeInOut(duration: 0.3)) {
+                                showModeSelector = true
+                            }
+                        }
+                    )
+                    .transition(.opacity)
+                }
 
             case .spinning, .readyToStart, .countdown:
                 SlotMachineView()

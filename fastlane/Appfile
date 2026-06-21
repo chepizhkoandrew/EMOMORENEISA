@@ -1,0 +1,6 @@
+app_identifier "com.professormadrid.app"
+apple_dev_portal_id ENV["APPLE_ID"]
+itunes_connect_id ENV["APPLE_ID"]
+
+team_id "PL2R8BF574"
+itc_team_id ENV["ITC_TEAM_ID"]

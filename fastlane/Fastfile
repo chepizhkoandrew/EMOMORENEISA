@@ -1,0 +1,159 @@
+default_platform(:ios)
+
+XCPROJECT = "EMOMORENEISA/EMOMORENEISA/EMOMORENEISA.xcodeproj"
+XCSCHEME  = "EMOMORENEISA"
+BUNDLE_ID = "com.professormadrid.app"
+APP_NAME  = "Professor Madrid"
+APPLE_ID  = "6782026883"
+KEY_ID    = "V86ZAHA4K5"
+ISSUER_ID = "75f5fa5e-e967-4854-a15f-e5d21f4cea40"
+KEY_PATH  = File.expand_path("../appstore/keys/AuthKey_V86ZAHA4K5.p8", __dir__)
+
+api_key = nil
+
+before_all do
+  api_key = app_store_connect_api_key(
+    key_id:      KEY_ID,
+    issuer_id:   ISSUER_ID,
+    key_filepath: KEY_PATH,
+    duration:    1200,
+    in_house:    false
+  )
+end
+
+platform :ios do
+
+  desc "Build and upload to TestFlight"
+  lane :beta do
+    build_number = latest_testflight_build_number(api_key: api_key) + 1
+    increment_build_number(
+      build_number: build_number,
+      xcodeproj:    XCPROJECT
+    )
+
+    timestamp    = Time.now.strftime("%Y-%m-%d_%H%M%S")
+    project_root = File.expand_path("..", __dir__)
+    archive_path = File.expand_path("~/Library/Developer/Xcode/Archives/#{timestamp}/ProfessorMadrid.xcarchive")
+    export_path  = "#{project_root}/build"
+    export_opts  = "#{project_root}/appstore/ExportOptions.plist"
+    ipa_path     = "#{export_path}/EMOMORENEISA.ipa"
+
+    FileUtils.mkdir_p(File.dirname(archive_path))
+    FileUtils.mkdir_p(export_path)
+
+    File.write(export_opts, <<~PLIST)
+      <?xml version="1.0" encoding="UTF-8"?>
+      <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+      <plist version="1.0"><dict>
+        <key>method</key><string>app-store</string>
+        <key>signingStyle</key><string>automatic</string>
+        <key>teamID</key><string>PL2R8BF574</string>
+      </dict></plist>
+    PLIST
+
+    sh(
+      "xcodebuild",
+      "-scheme", XCSCHEME,
+      "-project", "#{project_root}/#{XCPROJECT}",
+      "-configuration", "Release",
+      "-destination", "generic/platform=iOS",
+      "-archivePath", archive_path,
+      "CODE_SIGN_STYLE=Automatic",
+      "DEVELOPMENT_TEAM=PL2R8BF574",
+      "-allowProvisioningUpdates",
+      "-authenticationKeyPath", KEY_PATH,
+      "-authenticationKeyID", KEY_ID,
+      "-authenticationKeyIssuerID", ISSUER_ID,
+      "archive"
+    )
+
+    sh(
+      "xcodebuild",
+      "-exportArchive",
+      "-archivePath", archive_path,
+      "-exportPath", export_path,
+      "-exportOptionsPlist", export_opts,
+      "-allowProvisioningUpdates",
+      "-authenticationKeyPath", KEY_PATH,
+      "-authenticationKeyID", KEY_ID,
+      "-authenticationKeyIssuerID", ISSUER_ID
+    )
+
+    upload_to_testflight(
+      api_key:                    api_key,
+      app_identifier:             BUNDLE_ID,
+      apple_id:                   APPLE_ID,
+      ipa:                        ipa_path,
+      skip_waiting_for_build_processing: true,
+      changelog:                  "Bug fixes and improvements"
+    )
+  end
+
+  desc "Upload metadata and screenshots to App Store Connect"
+  lane :metadata do
+    deliver(
+      api_key:              api_key,
+      app_identifier:       BUNDLE_ID,
+      skip_binary_upload:   true,
+      skip_screenshots:     false,
+      screenshots_path:     "../appstore/screenshots",
+      metadata_path:        "metadata",
+      submit_for_review:    false,
+      force:                true,
+      overwrite_screenshots: true,
+      sync_screenshots:     true,
+      copyright:            "2026 priroda.tech",
+      support_url:          { "en-US" => "https://professormadrid.com" },
+      precheck_include_in_app_purchases: false,
+      app_review_information: {
+        first_name:         "Andrii",
+        last_name:          "Chepizhko",
+        phone_number:       "+380 68 072 1898",
+        email_address:      "andrii.chepizhko@gmail.com",
+        demo_user:          "",
+        demo_password:      "",
+        notes:              "No login required to test the app. All features are accessible without an account."
+      }
+    )
+  end
+
+  desc "Submit existing build for App Store review"
+  lane :submit do
+    deliver(
+      api_key:            api_key,
+      skip_binary_upload: true,
+      skip_screenshots:   true,
+      metadata_path:      "fastlane/metadata",
+      submit_for_review:  true,
+      automatic_release:  false,
+      force:              true,
+      submission_information: {
+        add_id_info_uses_idfa:                   false,
+        add_id_info_serves_ads:                  false,
+        add_id_info_tracks_action:               false,
+        add_id_info_tracks_install:              false,
+        add_id_info_limits_tracking:             true,
+        content_rights_has_rights:               true,
+        content_rights_contains_third_party_content: false,
+        export_compliance_platform:              "ios",
+        export_compliance_compliance_required:   false,
+        export_compliance_encryption_updated:    false,
+        export_compliance_app_type:              nil,
+        export_compliance_uses_encryption:       false,
+        export_compliance_is_exempt:             false,
+        export_compliance_contains_proprietary_cryptography: false,
+        export_compliance_contains_third_party_cryptography:  false,
+        export_compliance_available_on_french_store: false
+      },
+      precheck_include_in_app_purchases: false
+    )
+  end
+
+  desc "Full release: build → TestFlight → metadata → submit for review"
+  lane :release do
+    beta
+    metadata
+    submit
+  end
+
+end

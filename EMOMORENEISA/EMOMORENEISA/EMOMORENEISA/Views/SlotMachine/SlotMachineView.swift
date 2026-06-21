@@ -6,6 +6,7 @@ struct SlotMachineView: View {
 
     @State private var stoppedCount = 0
     @State private var skipSpinRequested = false
+    @State private var showSettings = false
 
     private var isLandscape: Bool { verticalSizeClass == .compact }
     private var isSpinning: Bool { engine.phase == .spinning }
@@ -33,6 +34,14 @@ struct SlotMachineView: View {
                         engine.reSpin()
                     } label: {
                         Image(systemName: "arrow.clockwise")
+                            .font(.system(size: 17, weight: .semibold, design: .monospaced))
+                            .foregroundColor(.white.opacity(0.55))
+                    }
+                    .padding(.trailing, 14)
+                    Button {
+                        showSettings = true
+                    } label: {
+                        Image(systemName: "gearshape.fill")
                             .font(.system(size: 17, weight: .semibold, design: .monospaced))
                             .foregroundColor(.white.opacity(0.55))
                     }
@@ -82,6 +91,9 @@ struct SlotMachineView: View {
         .animation(.easeInOut(duration: 0.3), value: engine.phase == .readyToStart)
         .contentShape(Rectangle())
         .onTapGesture { handleTap() }
+        .sheet(isPresented: $showSettings) {
+            SettingsSheetView()
+        }
     }
 
     private func handleTap() {

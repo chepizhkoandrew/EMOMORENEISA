@@ -1,0 +1,27 @@
+[
+  {
+    "severity": "medium",
+    "title": "Daily reminder toggle has no effect on notification scheduling",
+    "file": "./EMOMORENEISA/EMOMORENEISA/EMOMORENEISA/Memorize/Notifications/MemoryCardNotificationService.swift",
+    "line": 29,
+    "description": "`refresh(dueCount:)` always schedules the recurring N1 notification whenever due cards exist, but it never checks the `loro.notifyDaily` setting. The settings UI exposes a 'Daily reminder' toggle, so users can disable it in UI yet still continue receiving reminders.",
+    "evidence": [
+      "./EMOMORENEISA/EMOMORENEISA/EMOMORENEISA/Memorize/Views/MemorizeSettingsView.swift:17",
+      "./EMOMORENEISA/EMOMORENEISA/EMOMORENEISA/Memorize/Notifications/MemoryCardNotificationService.swift:29"
+    ],
+    "recommendation": "Read `loro.notifyDaily` inside `MemoryCardNotificationService.refresh`; if disabled, remove pending N1 requests and return without scheduling."
+  },
+  {
+    "severity": "medium",
+    "title": "Auto-advance setting is never honored by the session player",
+    "file": "./EMOMORENEISA/EMOMORENEISA/EMOMORENEISA/Memorize/Views/SRSPlayerView.swift",
+    "line": 91,
+    "description": "The settings screen stores `loro.autoAdvance`, but `SRSPlayerView` unconditionally calls `advance()` after each completed visit. This makes the toggle misleading and non-functional.",
+    "evidence": [
+      "./EMOMORENEISA/EMOMORENEISA/EMOMORENEISA/Memorize/Views/MemorizeSettingsView.swift:15",
+      "./EMOMORENEISA/EMOMORENEISA/EMOMORENEISA/Memorize/Views/SRSPlayerView.swift:82",
+      "./EMOMORENEISA/EMOMORENEISA/EMOMORENEISA/Memorize/Views/SRSPlayerView.swift:91"
+    ],
+    "recommendation": "Gate `advance()` behind the persisted `loro.autoAdvance` flag and provide a manual 'Next word' action when auto-advance is disabled."
+  }
+]

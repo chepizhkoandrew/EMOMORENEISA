@@ -1,0 +1,56 @@
+[
+  {
+    "title": "\"Daily reminder\" settings toggle is inert — disabling it has no effect",
+    "severity": "medium",
+    "category": "correctness",
+    "file": "EMOMORENEISA/EMOMORENEISA/EMOMORENEISA/Memorize/Views/MemorizeSettingsView.swift",
+    "line": 37,
+    "description": "MemorizeSettingsView writes the `loro.notifyDaily` @AppStorage flag (declared line 17, toggled line 37), but MemoryCardNotificationService.refresh(dueCount:) never reads it. The service unconditionally schedules the N1 daily reminder whenever dueCount > 0 and notifications are authorized. A user who turns OFF \"Daily reminder\" will still receive the daily notification, so the control silently does nothing. This is a user-facing correctness defect (a settings toggle that lies), not just a deferred-scope gap.",
+    "recommendation": "Gate notification scheduling on the setting: read `loro.notifyDaily` (e.g. via the existing AppStorageBacked wrapper) inside MemoryCardNotificationService.refresh and remove/skip the N1 request when it is false. Alternatively pass the flag into refresh(dueCount:enabled:) from the Hub/container .task that already calls it."
+  },
+  {
+    "title": "\"Auto-advance words\" settings toggle is inert — session always auto-advances",
+    "severity": "low",
+    "category": "correctness",
+    "file": "EMOMORENEISA/EMOMORENEISA/EMOMORENEISA/Memorize/Views/MemorizeSettingsView.swift",
+    "line": 33,
+    "description": "The `loro.autoAdvance` @AppStorage flag (declared line 15, toggled line 33) is never read anywhere. SRSPlayerView.handleVisitComplete() always calls advance() → startCurrent() on player.isDone regardless of the setting, so disabling auto-advance has no effect. Another settings control with no consumer.",
+    "recommendation": "Either honor the flag in SRSPlayerView (read `loro.autoAdvance`; when false, stop after onVisitDidComplete and require an explicit Next tap before startCurrent), or remove the toggle from the Settings form until the behavior is wired."
+  },
+  {
+    "title": "Replaying a mastered (archived) phrase in Chat spawns a duplicate exposure-1 card",
+    "severity": "low",
+    "category": "correctness",
+    "file": "EMOMORENEISA/EMOMORENEISA/EMOMORENEISA/Memorize/Engine/MemoryCardService.swift",
+    "line": 62,
+    "description": "createCard's idempotency guard is scoped to non-archived cards (`$0.sourceParrotId == phrase.id && !$0.isArchived`). Once a card is archived (mastered at exposure 13), completing the same parrot loop again in Chat passes the guard and inserts a brand-new exposure-1 card for the same sourceParrotId. The word then appears twice in Vocabulary and is double-counted by knownCount/derived metrics. The plan deliberately avoids a unique constraint on sourceParrotId to allow future re-teach (Step 1 risk note), so this is plan-acceptable, but the current path produces a silent data/UX smell rather than routing through the intended reteach() action.",
+    "recommendation": "Decide the re-teach contract explicitly: either match an archived card too and route to reteach() (reset exposure and un-archive in place), or keep the duplicate but de-duplicate by sourceParrotId in Vocabulary/known-count displays. At minimum add a code comment documenting that a duplicate is intentional here."
+  },
+  {
+    "title": "Capacity gates and management actions are implemented but never invoked",
+    "severity": "low",
+    "category": "maintainability",
+    "file": "EMOMORENEISA/EMOMORENEISA/EMOMORENEISA/Memorize/Engine/MemoryCardService.swift",
+    "line": 181,
+    "description": "checkGates(...) has no call sites, and the management actions (snooze, markAlreadyKnown, reteach, delete) are not surfaced by any view (only setAllPaused is wired, via the vacation toggle). Consequently the Capacity settings (dailyNewLimit, maxActiveLearning, maxNearTermLoad in MemorizeSettingsView lines 26-28) are inert: a user can change them but nothing consumes them. The implementation report explicitly defers this (Step 14 PARTIAL, gate enforcement \"wired to the Hub add-affordance later\"), so this is documented incomplete scope rather than a regression, but the live Capacity settings present configuration the app does not yet honor.",
+    "recommendation": "Per the plan this is deferred; acceptable to land. To avoid a misleading UI, either hide the Capacity section behind a 'coming soon' state or add the swipe-action/gate wiring before exposing those steppers. Keep the unused service methods (they are correct and tested) but flag them with a TODO referencing the deferral."
+  },
+  {
+    "title": "Hub / ModeSelector / Stats rebuild MemoryCardService and full-fetch on every body evaluation",
+    "severity": "low",
+    "category": "performance",
+    "file": "EMOMORENEISA/EMOMORENEISA/EMOMORENEISA/Memorize/Views/LoroMemorizeHubView.swift",
+    "line": 1,
+    "description": "Several views construct a new MemoryCardService(context:) and call buildQueue()/dueCount()/derived metrics directly inside `body` (and the Home badge). Each of these performs a full FetchDescriptor<MemoryCard> fetch plus Swift-side filter/sort, and for nearTermLoad a forward simulation per card. Recomputing on every SwiftUI re-render is wasteful and will scale poorly as the card count grows; it also bypasses @Query-driven invalidation.",
+    "recommendation": "Cache the service (e.g. @State built once in init/.task) and memoize derived counts, or back the lists with @Query and compute due/metrics from the query results rather than re-fetching inside body. Low priority at current data volumes."
+  },
+  {
+    "title": "Cards created while Vacation mode is on are not auto-paused",
+    "severity": "low",
+    "category": "correctness",
+    "file": "EMOMORENEISA/EMOMORENEISA/EMOMORENEISA/Memorize/Engine/MemoryCardService.swift",
+    "line": 56,
+    "description": "Vacation mode pauses existing cards via setAllPaused(true) (Settings onChange). But createCard does not consult the `loro.vacationMode` flag, so a phrase completed in Chat while vacation mode is active is inserted with isPaused = false and immediately becomes due in 20 min, partially defeating the vacation pause. Edge case, low impact.",
+    "recommendation": "When vacation mode is enabled, set isPaused = true on newly created cards (read the flag in createCard, or have the vacation toggle re-pause on next Hub appear)."
+  }
+]

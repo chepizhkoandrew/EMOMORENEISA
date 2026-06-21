@@ -15,18 +15,15 @@ struct TypewriterPhrase: Codable {
 
 struct TypewriterIntroView: View {
     let onContinue: () -> Void
-    @Binding var timerSeconds: Double
-    @Binding var selectedTense: Tense
 
     @State private var displayedText: String = ""
     @State private var cursorVisible: Bool = true
     @State private var isDone: Bool = false
     @State private var typingTask: Task<Void, Never>? = nil
-    @State private var showSettings: Bool = false
     @State private var chosenPhrase: TypewriterPhrase? = nil
-    @State private var visibleVocabCount: Int = 0
+    @State private var cardAppear: Bool = false
+    @State private var glowPulse: Bool = false
 
-    private var maxVocabCount: Int { chosenPhrase?.vocabulary.count ?? 0 }
     private static let phrases: [TypewriterPhrase] = loadPhrases()
 
     static func loadPhrases() -> [TypewriterPhrase] {
@@ -47,179 +44,162 @@ struct TypewriterIntroView: View {
     private var isLandscape: Bool { verticalSizeClass == .compact }
 
     var body: some View {
-        GeometryReader { geo in
-            ZStack {
-                Color.black.ignoresSafeArea()
+        ZStack {
+            GameBackground()
 
+            DreamParticlesView()
+                .allowsHitTesting(false)
+
+            GeometryReader { geo in
                 VStack(spacing: 0) {
-                    topHalf(height: geo.size.height / 2)
+                    Color.clear.frame(height: geo.safeAreaInsets.top + 30)
 
-                    Rectangle()
-                        .fill(Color.white.opacity(0.08))
-                        .frame(height: 1)
+                    Spacer(minLength: 0)
 
-                    bottomHalf(height: geo.size.height / 2)
-                }
+                    dogAndQuoteSection(geo: geo)
+                        .padding(.horizontal, isLandscape ? 48 : 20)
+                        .opacity(cardAppear ? 1 : 0)
+                        .scaleEffect(cardAppear ? 1 : 0.96)
+                        .animation(.spring(response: 0.5, dampingFraction: 0.75), value: cardAppear)
 
-                VStack {
-                    Spacer()
-                    Text("Tap to skip")
-                        .font(.system(size: 13, weight: .medium, design: .monospaced))
-                        .foregroundColor(.white.opacity(0.35))
-                        .tracking(1)
-                        .padding(.bottom, 32)
+                    Spacer(minLength: 0)
+
+                    Color.clear.frame(height: geo.safeAreaInsets.bottom + 20)
                 }
             }
         }
+        .ignoresSafeArea()
         .onTapGesture { handleTap() }
         .onAppear {
+            cardAppear = true
             startTyping()
             startCursorBlink()
+            startGlowPulse()
         }
         .onDisappear { typingTask?.cancel() }
-        .sheet(isPresented: $showSettings) {
-            SettingsSheetView(timerSeconds: $timerSeconds, selectedTense: $selectedTense)
-        }
     }
 
-    private func topHalf(height: CGFloat) -> some View {
-        ZStack(alignment: .topTrailing) {
+    // MARK: - Dog + Quote Section
+
+    private func dogAndQuoteSection(geo: GeometryProxy) -> some View {
+        let cardHeight: CGFloat = isLandscape
+            ? min(geo.size.height * 0.50, 180.0)
+            : min(geo.size.height * 0.36, 240.0)
+        let dogHeight: CGFloat = isLandscape ? 220 : 300
+        let dogVisibleAbove: CGFloat = isLandscape ? 130 : 180
+
+        return ZStack(alignment: .topLeading) {
+            Image("professor_dog")
+                .resizable()
+                .scaledToFit()
+                .frame(height: dogHeight)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+            quoteCard(geo: geo, cardHeight: cardHeight)
+                .padding(.top, dogVisibleAbove)
+        }
+        .frame(height: cardHeight + dogVisibleAbove)
+    }
+
+    // MARK: - Quote Card
+
+    private func quoteCard(geo: GeometryProxy, cardHeight: CGFloat) -> some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 28)
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            Color.clear,
+                            Color(red: 0.07, green: 0.06, blue: 0.18).opacity(0.88),
+                            Color(red: 0.07, green: 0.06, blue: 0.18).opacity(0.94)
+                        ],
+                        startPoint: .top,
+                        endPoint: UnitPoint(x: 0.5, y: 0.55)
+                    )
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 28)
+                        .stroke(
+                            LinearGradient(
+                                colors: [
+                                    Color.yellow.opacity(glowPulse && !isDone ? 0.45 : 0.18),
+                                    Color.white.opacity(0.06)
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ),
+                            lineWidth: 1.5
+                        )
+                )
+                .shadow(
+                    color: Color.yellow.opacity(glowPulse && !isDone ? 0.14 : 0.04),
+                    radius: 28
+                )
+                .animation(.easeInOut(duration: 1.6).repeatForever(autoreverses: true), value: glowPulse)
+
             VStack(alignment: .leading, spacing: 0) {
-                Spacer().frame(height: 80)
+                Text("\"")
+                    .font(.system(size: 40, weight: .black, design: .monospaced))
+                    .foregroundColor(.yellow.opacity(0.25))
+                    .padding(.leading, 4)
+                    .padding(.top, -8)
 
                 Text(displayedAttributedText)
-                    .font(.system(size: 19, weight: .medium, design: .monospaced))
-                    .multilineTextAlignment(.leading)
+                    .font(.system(size: isLandscape ? 15 : 17, weight: .medium, design: .monospaced))
+                    .foregroundColor(.white)
                     .lineSpacing(6)
+                    .multilineTextAlignment(.leading)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, 32)
 
                 Spacer(minLength: 0)
-            }
-            .frame(maxWidth: .infinity, maxHeight: height)
 
-            Button { showSettings = true } label: {
-                Image(systemName: "line.3.horizontal")
-                    .font(.system(size: 22, weight: .medium))
-                    .foregroundColor(.white.opacity(0.35))
-                    .padding(20)
+                Text("\"")
+                    .font(.system(size: 40, weight: .black, design: .monospaced))
+                    .foregroundColor(.yellow.opacity(0.25))
+                    .frame(maxWidth: .infinity, alignment: .trailing)
+                    .padding(.trailing, 4)
+                    .padding(.bottom, -8)
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            .padding(.horizontal, 28)
+            .padding(.vertical, 22)
         }
-        .frame(height: height)
-        .clipped()
+        .frame(maxWidth: .infinity)
+        .frame(height: cardHeight)
     }
 
-    @ViewBuilder
-    private func bottomHalf(height: CGFloat) -> some View {
-        if isLandscape {
-            VStack(spacing: 0) {
-                if isDone, let phrase = chosenPhrase, !phrase.vocabulary.isEmpty {
-                    HStack(alignment: .top, spacing: 0) {
-                        ForEach(Array(phrase.vocabulary.prefix(visibleVocabCount).enumerated()), id: \.offset) { _, word in
-                            vocabWordView(word: word, fontSize: 13, spanishSize: 15)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .transition(.opacity)
-                        }
-                    }
-                    .padding(.horizontal, 20)
-                    .padding(.top, 20)
-                }
-
-                Spacer(minLength: 0)
-            }
-            .frame(height: height)
-        } else {
-            ZStack(alignment: .bottom) {
-                if isDone, let phrase = chosenPhrase, !phrase.vocabulary.isEmpty {
-                    ScrollView {
-                        VStack(alignment: .leading, spacing: 0) {
-                            Spacer().frame(height: 24)
-                            ForEach(Array(phrase.vocabulary.prefix(visibleVocabCount).enumerated()), id: \.offset) { idx, word in
-                                vocabWordView(word: word, fontSize: 15, spanishSize: 17)
-                                    .padding(.horizontal, 32)
-                                    .padding(.bottom, idx < phrase.vocabulary.count - 1 ? 20 : 0)
-                                    .transition(.opacity.combined(with: .move(edge: .bottom)))
-                            }
-                            Spacer().frame(height: 56)
-                        }
-                    }
-                    .scrollBounceBehavior(.basedOnSize)
-                }
-
-            }
-            .frame(height: height)
-        }
-    }
-
-    private func vocabWordView(word: VocabWord, fontSize: CGFloat, spanishSize: CGFloat) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(alignment: .firstTextBaseline, spacing: 0) {
-                Text(word.english)
-                    .font(.system(size: fontSize, weight: .semibold, design: .monospaced))
-                    .foregroundColor(.white.opacity(0.6))
-                Text("  →  ")
-                    .font(.system(size: fontSize - 2, weight: .regular, design: .monospaced))
-                    .foregroundColor(.white.opacity(0.3))
-                Text(word.spanish)
-                    .font(.system(size: spanishSize, weight: .bold, design: .monospaced))
-                    .foregroundColor(.yellow)
-                    .shadow(color: .yellow.opacity(0.4), radius: 4)
-            }
-            ForEach(word.examples, id: \.self) { example in
-                Text("• \(example)")
-                    .font(.system(size: fontSize - 3, weight: .regular, design: .monospaced))
-                    .foregroundColor(.white.opacity(0.35))
-                    .lineSpacing(3)
-            }
-        }
-    }
+    // MARK: - Attributed text
 
     private var displayedAttributedText: AttributedString {
         var base = AttributedString(displayedText)
         base.foregroundColor = .white
         var cursor = AttributedString("|")
-        cursor.foregroundColor = cursorVisible ? .yellow : .clear
+        cursor.foregroundColor = cursorVisible ? Color.yellow : Color.clear
         return base + cursor
     }
 
+    // MARK: - Logic
+
     private func handleTap() {
         if !isDone {
-            // Tap 1: skip typing, show full dark ending, auto-reveal examples
             typingTask?.cancel()
             if let phrase = chosenPhrase {
                 displayedText = phrase.base + phrase.darkEnding
             }
             finishTyping()
         } else {
-            // Tap 2: navigate
             onContinue()
         }
     }
 
     private func finishTyping() {
         isDone = true
-        scheduleVocabReveal()
-    }
-
-    private func scheduleVocabReveal() {
-        guard let phrase = chosenPhrase else { return }
-        let count = phrase.vocabulary.count
-        for i in 0..<count {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5 + Double(i) * 0.6) {
-                withAnimation(.easeOut(duration: 0.4)) {
-                    if visibleVocabCount < i + 1 {
-                        visibleVocabCount = i + 1
-                    }
-                }
-            }
-        }
     }
 
     private func startTyping() {
         let phrase = Self.phrases.randomElement() ?? Self.phrases[0]
         chosenPhrase = phrase
         displayedText = ""
-        visibleVocabCount = 0
         typingTask = Task {
             for char in phrase.base + phrase.lightEnding {
                 guard !Task.isCancelled else { return }
@@ -252,6 +232,13 @@ struct TypewriterIntroView: View {
         }
     }
 
+    private func startGlowPulse() {
+        Task {
+            try? await Task.sleep(nanoseconds: 200_000_000)
+            await MainActor.run { glowPulse = true }
+        }
+    }
+
     private func typingDelay(for char: Character) -> Double {
         if ".!?".contains(char) { return Double.random(in: 0.22...0.50) }
         if ",;:".contains(char) { return Double.random(in: 0.10...0.22) }
@@ -261,66 +248,98 @@ struct TypewriterIntroView: View {
 }
 
 struct SettingsSheetView: View {
-    @Binding var timerSeconds: Double
-    @Binding var selectedTense: Tense
-    @Environment(\.dismiss) private var dismiss
+    @AppStorage("timerSeconds") var timerSeconds: Double = 4.0
+    @AppStorage("selectedTenseName") var selectedTenseName: String = Tense.present.rawValue
     @AppStorage("showAnswerHint") private var showAnswerHint: Bool = false
+    @Environment(\.dismiss) private var dismiss
+
+    private var tenseBinding: Binding<Tense> {
+        Binding(
+            get: { Tense(rawValue: selectedTenseName) ?? .present },
+            set: { selectedTenseName = $0.rawValue }
+        )
+    }
 
     var body: some View {
         NavigationView {
             ZStack {
-                Color.black.ignoresSafeArea()
-                VStack(spacing: 28) {
-                    VStack(alignment: .leading, spacing: 10) {
-                        Label("Tense", systemImage: "book.closed.fill")
-                            .font(.system(size: 13, weight: .semibold, design: .monospaced))
-                            .foregroundColor(.gray)
-                        Picker("Tense", selection: $selectedTense) {
-                            ForEach(Tense.allCases) { tense in
-                                Text(tense.displayLabel).tag(tense)
+                AppBackground()
+
+                VStack(spacing: 24) {
+                    settingCard {
+                        VStack(alignment: .leading, spacing: 14) {
+                            Label("Tense", systemImage: "book.closed.fill")
+                                .font(.system(size: 15, weight: .bold, design: .monospaced))
+                                .foregroundColor(AppColors.textSecondary)
+
+                            Picker("Tense", selection: tenseBinding) {
+                                ForEach(Tense.allCases) { tense in
+                                    Text(tense.displayLabel).tag(tense)
+                                }
                             }
+                            .pickerStyle(.segmented)
+                            .colorMultiply(AppColors.accent)
                         }
-                        .pickerStyle(.segmented)
-                        .colorMultiply(.yellow)
                     }
 
-                    VStack(alignment: .leading, spacing: 10) {
+                    settingCard {
+                        VStack(alignment: .leading, spacing: 14) {
+                            HStack {
+                                Label("Timer per word", systemImage: "timer")
+                                    .font(.system(size: 15, weight: .bold, design: .monospaced))
+                                    .foregroundColor(AppColors.textSecondary)
+                                Spacer()
+                                Text(String(format: "%.1fs", timerSeconds))
+                                    .font(.system(size: 22, weight: .black, design: .monospaced))
+                                    .foregroundColor(AppColors.accent)
+                                    .shadow(color: AppColors.accent.opacity(0.5), radius: 6)
+                            }
+                            Slider(value: $timerSeconds, in: 1.0...8.0, step: 0.5)
+                                .accentColor(.yellow)
+                        }
+                    }
+
+                    settingCard {
                         HStack {
-                            Label("Timer per word", systemImage: "timer")
-                                .font(.system(size: 13, weight: .semibold, design: .monospaced))
-                                .foregroundColor(.gray)
+                            Label("Show answer hint", systemImage: "eye.fill")
+                                .font(.system(size: 15, weight: .bold, design: .monospaced))
+                                .foregroundColor(AppColors.textSecondary)
                             Spacer()
-                            Text(String(format: "%.1fs", timerSeconds))
-                                .font(.system(size: 16, weight: .bold, design: .monospaced))
-                                .foregroundColor(.yellow)
+                            Toggle("", isOn: $showAnswerHint)
+                                .labelsHidden()
+                                .tint(.yellow)
+                                .scaleEffect(1.1)
                         }
-                        Slider(value: $timerSeconds, in: 1.0...8.0, step: 0.5)
-                            .accentColor(.yellow)
-                    }
-
-                    HStack {
-                        Label("Show answer hint", systemImage: "eye.fill")
-                            .font(.system(size: 13, weight: .semibold, design: .monospaced))
-                            .foregroundColor(.gray)
-                        Spacer()
-                        Toggle("", isOn: $showAnswerHint)
-                            .labelsHidden()
-                            .tint(.yellow)
                     }
 
                     Spacer()
                 }
-                .padding(24)
+                .padding(20)
             }
             .navigationTitle("Settings")
-            .navigationBarTitleDisplayMode(.inline)
+            .navigationBarTitleDisplayMode(.large)
+            .toolbarColorScheme(.dark, for: .navigationBar)
+            .toolbarBackground(AppColors.backgroundTop, for: .navigationBar)
+            .toolbarBackground(.visible, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Done") { dismiss() }
+                        .font(.system(size: 16, weight: .bold))
                         .foregroundColor(.yellow)
                 }
             }
         }
         .preferredColorScheme(.dark)
+    }
+
+    private func settingCard<Content: View>(@ViewBuilder content: () -> Content) -> some View {
+        content()
+            .padding(20)
+            .background(AppColors.cardBackground)
+            .overlay(
+                RoundedRectangle(cornerRadius: 18)
+                    .stroke(AppColors.cardBorder, lineWidth: 1)
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 18))
     }
 }

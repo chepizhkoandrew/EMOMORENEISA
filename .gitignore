@@ -11,3 +11,36 @@ DerivedData/
 *.dSYM.zip
 *.dSYM
 .zencoder/
+
+# API keys - never commit
+EMOMORENEISA/EMOMORENEISA/EMOMORENEISA/Secrets.xcconfig
+appstore/keys/
+
+# Node / Railway proxy server
+node_modules/
+server/node_modules/
+**/node_modules/
+*.log
+npm-debug.log*
+.env
+.env.local
+server/.env
+.railway/
+
+# Fastlane
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/**/*.png
+fastlane/test_output/
+build/
+
+# Xcode
+*.xcuserstate
+*.pbxuser
+!default.pbxuser
+*.mode1v3
+!default.mode1v3
+*.mode2v3
+!default.mode2v3
+*.perspectivev3
+!default.perspectivev3

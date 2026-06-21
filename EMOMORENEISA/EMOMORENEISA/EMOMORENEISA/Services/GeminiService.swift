@@ -2,9 +2,7 @@ import Foundation
 
 final class GeminiService {
     private let apiKey: String = {
-        let fromBundle = Bundle.main.infoDictionary?["GeminiAPIKey"] as? String ?? ""
-        if !fromBundle.isEmpty { return fromBundle }
-        return "AIzaSyARi-BgFBIrpov2a448A7ehnbsIepeyTfc"
+        Bundle.main.infoDictionary?["GeminiAPIKey"] as? String ?? ""
     }()
     private let endpoint = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
 
