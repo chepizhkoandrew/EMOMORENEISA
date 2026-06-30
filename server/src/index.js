@@ -1,10 +1,11 @@
 import express from "express";
 import { config, featureFlags } from "./config.js";
 import { requireUser } from "./auth.js";
-import { openaiChat } from "./providers.js";
+import { openaiChat, openaiTranscribe } from "./providers.js";
 import { getVoice } from "./voicecache.js";
 import { chatCostUsd, ttsCostUsd, analystCostUsd } from "./pricing.js";
 import { getWallet, debit, credit, grantTrialIfNeeded, recordTopup } from "./wallet.js";
+import { supabase } from "./supabase.js";
 import { record } from "./meter.js";
 import { verifyStoreKitJWS } from "./appstore.js";
 
@@ -101,17 +102,17 @@ app.post("/v1/tts", requireUser, async (req, res) => {
   const { text } = req.body || {};
   if (!text || typeof text !== "string") return res.status(400).json({ error: "missing_text" });
   const format = req.body?.format === "aac" ? "aac" : "pcm";
+  const validContexts = new Set(["scene","label","loro","encouragement","sentence","default"]);
+  const context = (typeof req.body?.context === "string" && validContexts.has(req.body.context))
+    ? req.body.context : "default";
 
-  // Flat voice cost, debited up front; refunded if no provider returns audio.
   const cost = config.actionCosts.voice;
   const pre = await debit(req.user.id, cost, "voice_message", {});
   if (!pre.ok && pre.error === "insufficient_treats") {
     return res.status(402).json({ error: "insufficient_treats", balance: pre.balance });
   }
 
-  // Gemini-only (with retry/backoff) behind the shared AAC cache; tutor speech is
-  // Spanish so we never fall back to the English-accented OpenAI voice.
-  const audio = await getVoice(text, { format });
+  const audio = await getVoice(text, { format, context });
   if (!audio) {
     if (pre.enforced) await credit(req.user.id, cost, "refund", "voice_message_failed", {});
     return res.status(502).json({ error: "tts_failed" });
@@ -131,6 +132,42 @@ app.post("/v1/tts", requireUser, async (req, res) => {
   });
 
   res.json({ provider: audio.provider, mime: audio.mime, audioBase64: audio.audioBase64, treatsCharged: cost });
+});
+
+// Speech-to-text. Routed server-side through OpenAI gpt-4o-transcribe (most
+// accurate at Spanish word endings) so the mic no longer depends on the flaky
+// preview Gemini path. Not separately debited — the turn it belongs to (chat /
+// voice / verb-check) is what carries the cost.
+app.post("/v1/transcribe", requireUser, async (req, res) => {
+  if (!config.openaiKey) return res.status(503).json({ error: "stt_not_configured" });
+  const { audioBase64, mime, language, prompt } = req.body || {};
+  if (!audioBase64 || typeof audioBase64 !== "string") {
+    return res.status(400).json({ error: "missing_audio" });
+  }
+
+  let buf;
+  try {
+    buf = Buffer.from(audioBase64, "base64");
+  } catch (_) {
+    return res.status(400).json({ error: "bad_audio" });
+  }
+  if (!buf.length) return res.status(400).json({ error: "empty_audio" });
+
+  const mimeType = typeof mime === "string" && mime ? mime : "audio/mp4";
+  const ext = mimeType.includes("wav") ? "wav" : mimeType.includes("mpeg") ? "mp3" : "m4a";
+
+  try {
+    const { text, error } = await openaiTranscribe(buf, {
+      filename: `audio.${ext}`,
+      mimeType,
+      language: typeof language === "string" && language ? language : undefined,
+      prompt: typeof prompt === "string" && prompt ? prompt : undefined
+    });
+    if (error) return res.status(502).json({ error: "stt_failed", detail: error });
+    res.json({ text });
+  } catch (e) {
+    res.status(502).json({ error: "stt_failed", detail: e.message });
+  }
 });
 
 // Utility completions (transcript enhancement, session summary, background analyst).
@@ -427,6 +464,8 @@ app.post("/v1/verb-check", requireUser, async (req, res) => {
     return res.status(400).json({ error: "missing_fields" });
   }
 
+  const normalizedTranscript = transcript.trim().toLowerCase().replace(/[.,!?¿¡;:"'()\[\]]+$/, "").replace(/^[.,!?¿¡;:"'()\[\]]+/, "").trim();
+
   const cost = config.actionCosts.verbCheck;
   const pre = await debit(req.user.id, cost, "verb_check", {});
   if (!pre.ok && pre.error === "insufficient_treats") {
@@ -436,12 +475,14 @@ app.post("/v1/verb-check", requireUser, async (req, res) => {
   const prompt = `Spanish verb conjugation check.
 Verb: "${infinitive || ""}", Pronoun: "${pronoun || ""}"
 Expected conjugation: "${expected}"
-User said (speech-to-text): "${transcript.trim()}"
+User said (speech-to-text): "${normalizedTranscript}"
 
 RULES — mark CORRECT if:
 - The user said the exact conjugation (with or without the subject pronoun).
+- Capitalization differences (e.g. "Partes" vs "partes") are CORRECT — ignore case entirely.
 - Accent marks differ only (miró vs miro are the same word for this check).
 - A single-character STT artifact (b/v swap, missing or extra 's') is the only difference.
+- Trailing punctuation from speech recognition (period, comma) should be ignored.
 
 Mark WRONG if:
 - The user said a different conjugation (wrong ending, wrong tense, or a completely different word).
@@ -523,6 +564,42 @@ app.post("/v1/topup", requireUser, async (req, res) => {
 
   const wallet = await getWallet(req.user.id);
   res.json({ ...walletPayload(req.user.id, wallet), duplicate: Boolean(result.duplicate), creditedTreats: result.duplicate ? 0 : pack.totalTreats });
+});
+
+// Redeem a coupon code. The RPC validates the code, prevents double-redemption,
+// increments the use counter, and credits the wallet atomically.
+app.post("/v1/coupon/redeem", requireUser, async (req, res) => {
+  const { code } = req.body || {};
+  if (!code || typeof code !== "string" || !code.trim()) {
+    return res.status(400).json({ error: "missing_code" });
+  }
+
+  const sb = supabase();
+  if (!sb) return res.status(503).json({ error: "wallet_not_configured" });
+
+  const { data, error } = await sb.rpc("redeem_coupon", {
+    p_user_id: req.user.id,
+    p_code: code.trim().toUpperCase()
+  });
+
+  if (error) return res.status(502).json({ error: "redeem_failed", detail: error.message });
+
+  if (!data.ok) {
+    const statusMap = {
+      not_found: 404,
+      inactive: 404,
+      expired: 410,
+      max_uses: 410,
+      already_redeemed: 409
+    };
+    return res.status(statusMap[data.error] || 400).json({ error: data.error });
+  }
+
+  const wallet = await getWallet(req.user.id);
+  res.json({
+    ...walletPayload(req.user.id, wallet),
+    creditedTreats: Number(data.treats_credited)
+  });
 });
 
 app.use((req, res) => res.status(404).json({ error: "not_found" }));

@@ -48,13 +48,27 @@ final class ProxyClient {
     // Returns raw decoded audio plus its MIME type. AAC is requested so the
     // server serves a compact, cache-backed file; PCM is wrapped into WAV by the
     // caller only when the server returns it (legacy/uncompressed fallback).
-    func tts(text: String) async throws -> (data: Data, mime: String) {
-        let json = try await postJSON(path: "/v1/tts", body: ["text": text, "format": "aac"])
+    func tts(text: String, context: String = "default") async throws -> (data: Data, mime: String) {
+        let json = try await postJSON(path: "/v1/tts", body: ["text": text, "format": "aac", "context": context])
         guard let b64 = json["audioBase64"] as? String, let data = Data(base64Encoded: b64) else {
             throw ProxyError.decoding
         }
         let mime = (json["mime"] as? String) ?? "audio/pcm;rate=24000"
         return (data, mime)
+    }
+
+    // Speech-to-text via the proxy (OpenAI gpt-4o-transcribe server-side — most
+    // accurate at catching Spanish word endings). Not separately billed; the
+    // turn it belongs to carries the cost. Returns "" on silence/empty audio.
+    func transcribe(audioData: Data, mime: String = "audio/mp4", language: String? = nil, prompt: String? = nil) async throws -> String {
+        var body: [String: Any] = [
+            "audioBase64": audioData.base64EncodedString(),
+            "mime": mime
+        ]
+        if let language, !language.isEmpty { body["language"] = language }
+        if let prompt, !prompt.isEmpty { body["prompt"] = prompt }
+        let json = try await postJSON(path: "/v1/transcribe", body: body, timeout: 30)
+        return (json["text"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
     }
 
     struct LoroResult {
@@ -216,6 +230,19 @@ final class ProxyClient {
         try walletState(from: await postJSON(path: "/v1/topup", body: ["signedTransaction": signedTransaction]))
     }
 
+    struct CouponResult {
+        let walletState: WalletState
+        let creditedTreats: Int
+    }
+
+    // Redeems a coupon code. Throws ProxyError.http on invalid/expired/already-used codes.
+    func redeemCoupon(code: String) async throws -> CouponResult {
+        let json = try await postJSON(path: "/v1/coupon/redeem", body: ["code": code])
+        let state = walletState(from: json)
+        let credited = (json["creditedTreats"] as? NSNumber)?.intValue ?? 0
+        return CouponResult(walletState: state, creditedTreats: credited)
+    }
+
     private func walletState(from json: [String: Any]) -> WalletState {
         WalletState(
             balanceTreats: (json["balanceTreats"] as? NSNumber)?.intValue ?? 0,
@@ -259,6 +286,10 @@ final class ProxyClient {
         let (respData, response) = try await URLSession.shared.data(for: req)
         let status = (response as? HTTPURLResponse)?.statusCode ?? -1
         let json = (try? JSONSerialization.jsonObject(with: respData)) as? [String: Any] ?? [:]
+
+        if status != 200 {
+            print("[PROXY] \(method) \(path) → HTTP \(status) | body: \(String(data: respData, encoding: .utf8)?.prefix(200) ?? "<binary>")")
+        }
 
         if status == 200 { return json }
 

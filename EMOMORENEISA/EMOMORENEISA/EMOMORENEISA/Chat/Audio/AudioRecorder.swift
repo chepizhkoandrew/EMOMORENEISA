@@ -14,14 +14,17 @@ final class AudioRecorder {
 
     func start() throws {
         let session = AVAudioSession.sharedInstance()
+        print("[STT] start() — setting category .playAndRecord")
         try session.setCategory(.playAndRecord, mode: .default, options: [.duckOthers, .defaultToSpeaker])
         try session.setActive(true)
+        print("[STT] AVAudioSession active — category: \(session.category.rawValue), inputs: \(session.availableInputs?.map { $0.portName } ?? [])")
 
         let url = FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString + ".m4a")
         audioFileURL = url
         recordingStartTime = Date()
         peakLevel = 0
+        print("[STT] Recording to: \(url.lastPathComponent)")
 
         let settings: [String: Any] = [
             AVFormatIDKey: Int(kAudioFormatMPEG4AAC),
@@ -32,8 +35,9 @@ final class AudioRecorder {
 
         recorder = try AVAudioRecorder(url: url, settings: settings)
         recorder?.isMeteringEnabled = true
-        recorder?.record()
+        let started = recorder?.record() ?? false
         isRecording = true
+        print("[STT] recorder.record() → \(started ? "✅ started" : "❌ FAILED to start")")
 
         levelTimer = Timer.scheduledTimer(withTimeInterval: 0.05, repeats: true) { [weak self] _ in
             self?.recorder?.updateMeters()
@@ -61,25 +65,32 @@ final class AudioRecorder {
         recordingStartTime = nil
         peakLevel = 0
 
+        print("[STT] stopAndTranscribe — duration: \(String(format: "%.2f", duration))s, peak: \(String(format: "%.3f", peak))")
+
         try? AVAudioSession.sharedInstance().setCategory(.ambient, mode: .default, options: [.mixWithOthers])
         try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
 
-        guard let url = audioFileURL else { return "" }
+        guard let url = audioFileURL else {
+            print("[STT] ⚠️ No audio file URL — aborting")
+            return ""
+        }
         audioFileURL = nil
 
         guard duration >= 0.8 else {
-            print("[STT] Recording too short (\(String(format: "%.2f", duration))s) — skipping")
+            print("[STT] ❌ Recording too short (\(String(format: "%.2f", duration))s) — skipping")
             try? FileManager.default.removeItem(at: url)
             return ""
         }
 
         guard peak > 0.06 else {
-            print("[STT] Recording too quiet (peak=\(String(format: "%.3f", peak))) — skipping")
+            print("[STT] ❌ Recording too quiet (peak=\(String(format: "%.3f", peak))) — skipping (threshold=0.06)")
             try? FileManager.default.removeItem(at: url)
             return ""
         }
 
+        print("[STT] ✅ Recording passed guards — duration: \(String(format: "%.2f", duration))s, peak: \(String(format: "%.3f", peak))")
         let result = await transcribeViaProxy(url: url)
+        print("[STT] Final transcript: '\(result)'")
         try? FileManager.default.removeItem(at: url)
         return result
     }
