@@ -6,6 +6,7 @@ struct ChatView: View {
     let session: LocalChatSession
     @Environment(AuthState.self) private var authState
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.dismiss) private var dismiss
 
     @State private var inputText: String = ""
     @State private var isGenerating: Bool = false
@@ -17,7 +18,6 @@ struct ChatView: View {
     @State private var showPhotoPicker = false
     @State private var showCamera = false
     @State private var audioRecorder = AudioRecorder()
-    @State private var isTranscribing = false
     @State private var goalFlash = false
     @State private var showGoalEditor = false
     @State private var parrotMessage: LocalChatMessage? = nil
@@ -55,9 +55,13 @@ struct ChatView: View {
                 inputBar
             }
         }
+        .navigationBarBackButtonHidden(true)
         .navigationBarTitleDisplayMode(.inline)
         .toolbarColorScheme(.dark, for: .navigationBar)
         .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                BackButton { dismiss() }
+            }
             ToolbarItem(placement: .principal) {
                 Text(session.title ?? session.topic ?? session.modeEnum.displayLabel)
                     .font(.system(size: 16, weight: .semibold, design: .rounded))
@@ -118,11 +122,6 @@ struct ChatView: View {
                 initialGoal: session.sessionGoal ?? session.topic ?? ""
             ) { newGoal in
                 updateSessionGoal(newGoal)
-            }
-        }
-        .overlay {
-            if audioRecorder.isRecording || isTranscribing {
-                recordingOverlay
             }
         }
     }
@@ -239,8 +238,6 @@ struct ChatView: View {
     private var inputBar: some View {
         VStack(spacing: 10) {
             HStack(spacing: 10) {
-                micIconButton
-
                 TextField("", text: $inputText, axis: .vertical)
                     .font(.system(size: 26, design: .rounded))
                     .foregroundColor(AppColors.textPrimary)
@@ -309,57 +306,6 @@ struct ChatView: View {
         .overlay(Rectangle().frame(height: 0.5).foregroundColor(AppColors.cardBorder), alignment: .top)
     }
 
-    private var micIconButton: some View {
-        let isRecording = audioRecorder.isRecording
-        let isActive = isRecording || isTranscribing
-        let bgColor: Color = isActive ? (isRecording ? .red : .yellow) : AppColors.inputBackground
-
-        return ZStack {
-            Circle()
-                .fill(bgColor)
-                .frame(width: 52, height: 52)
-                .overlay(Circle().stroke(isActive ? Color.clear : AppColors.inputBorder, lineWidth: 1))
-                .shadow(color: isActive ? bgColor.opacity(0.5) : .clear, radius: 8)
-
-            if isTranscribing {
-                ProgressView()
-                    .tint(isRecording ? .white : .black)
-                    .scaleEffect(0.85)
-            } else if isRecording {
-                VoiceWaveformView(
-                    audioLevel: audioRecorder.audioLevel,
-                    color: .white,
-                    barCount: 5,
-                    maxHeight: 22,
-                    barWidth: 3,
-                    spacing: 3
-                )
-            } else {
-                Image(systemName: "mic.fill")
-                    .font(.system(size: 22, weight: .semibold))
-                    .foregroundColor(AppColors.textSecondary)
-            }
-        }
-        .onLongPressGesture(minimumDuration: .infinity, pressing: { isPressing in
-            guard !isGenerating else { return }
-            if isPressing && !audioRecorder.isRecording {
-                TTSService.shared.stop()
-                do { try audioRecorder.start() } catch {
-                    errorMessage = "Mic error: \(error.localizedDescription)"
-                }
-            } else if !isPressing && audioRecorder.isRecording {
-                isTranscribing = true
-                Task {
-                    let transcript = await audioRecorder.stopAndTranscribe()
-                    await MainActor.run {
-                        if !transcript.isEmpty { inputText = transcript }
-                        isTranscribing = false
-                    }
-                }
-            }
-        }, perform: {})
-    }
-
     // MARK: - Record Button (bottom row)
 
     private var recordButton: some View {
@@ -388,14 +334,21 @@ struct ChatView: View {
             HStack(spacing: 8) {
                 if isVoiceSending {
                     ProgressView().tint(.white).scaleEffect(0.75)
-                } else {
-                    Image(systemName: isRec ? "stop.fill" : "mic.fill")
+                    Text("Sending…")
+                        .font(.system(size: 18, weight: .semibold, design: .rounded))
+                } else if isRec {
+                    Image(systemName: "stop.fill")
                         .font(.system(size: 20, weight: .semibold))
+                    Text("Stop")
+                        .font(.system(size: 18, weight: .semibold, design: .rounded))
+                } else {
+                    Image(systemName: "mic.fill")
+                        .font(.system(size: 20, weight: .semibold))
+                    Text("Record")
+                        .font(.system(size: 18, weight: .semibold, design: .rounded))
                 }
-                Text(isRec ? "Stop" : "Record")
-                    .font(.system(size: 18, weight: .semibold, design: .rounded))
             }
-            .foregroundColor(isBusy ? AppColors.textTertiary : (isRec ? .white : .white))
+            .foregroundColor(isBusy && !isVoiceSending ? AppColors.textTertiary : .white)
             .frame(maxWidth: .infinity)
             .padding(.vertical, 18)
             .background(isRec ? activeColor.opacity(0.85) : (isBusy ? Color.white.opacity(0.05) : Color.white.opacity(0.10)))
@@ -403,48 +356,6 @@ struct ChatView: View {
             .clipShape(RoundedRectangle(cornerRadius: 18))
         }
         .disabled(isBusy)
-    }
-
-    // MARK: - Recording Overlay
-
-    private var recordingOverlay: some View {
-        ZStack {
-            Color.black.opacity(0.88).ignoresSafeArea()
-
-            VStack(spacing: 32) {
-                if isTranscribing {
-                    ProgressView()
-                        .tint(.yellow)
-                        .scaleEffect(1.8)
-                    Text("Transcribing…")
-                        .font(.system(size: 17, weight: .medium, design: .rounded))
-                        .foregroundColor(AppColors.textSecondary)
-                } else {
-                    Image(systemName: "mic.fill")
-                        .font(.system(size: 32))
-                        .foregroundColor(.red)
-
-                    VoiceWaveformView(
-                        audioLevel: audioRecorder.audioLevel,
-                        color: .red,
-                        barCount: 9,
-                        maxHeight: 60,
-                        barWidth: 5,
-                        spacing: 6
-                    )
-
-                    VStack(spacing: 8) {
-                        Text("Recording")
-                            .font(.system(size: 18, weight: .semibold, design: .rounded))
-                            .foregroundColor(AppColors.textPrimary)
-                        Text("Release mic to transcribe")
-                            .font(.system(size: 14, design: .rounded))
-                            .foregroundColor(AppColors.textTertiary)
-                    }
-                }
-            }
-        }
-        .transition(.opacity)
     }
 
     // MARK: - Error Banner
@@ -629,7 +540,10 @@ struct ChatView: View {
                 topic: session.sessionGoal ?? session.topic
             )
         case .visual:
-            systemPrompt = PromptBuilder.visualSystemPrompt(profile: authState.profile)
+            systemPrompt = PromptBuilder.visualSystemPrompt(
+                profile: authState.profile,
+                goal: session.sessionGoal ?? session.topic
+            )
         }
 
         let history = Array(rootMessages.filter { $0.textContent != nil }.suffix(20))
@@ -654,7 +568,8 @@ struct ChatView: View {
             )
             addMessage(assistantMsg)
             if autoVoiceEnabled && !TTSService.shared.isQueueActive {
-                TTSService.shared.speak(text: reply, messageId: assistantMsg.id)
+                let ttsContext = imageData.isEmpty ? "sentence" : "scene"
+                TTSService.shared.speak(text: reply, messageId: assistantMsg.id, context: ttsContext)
             }
 
             let lastUserMsg = rootMessages.last(where: { $0.isUser })
@@ -803,9 +718,7 @@ struct GoalEditorSheet: View {
             .toolbarBackground(.visible, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Cancel") { dismiss() }
-                        .foregroundColor(.white)
-                        .font(.system(size: 17, design: .rounded))
+                    BackButton { dismiss() }
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Save") {

@@ -292,7 +292,7 @@ INSERT INTO pricing_config (
     jsonb_build_object('product_id','treats_4999','usd',49.99,'base_treats',4999,'bonus_pct',48,'total_treats',7399,'headline_conversations',74)
   ),
   jsonb_build_object(
-    'trial_grant_treats', 50,
+    'trial_grant_treats', 250,
     'earn_complete_loro', 3,
     'earn_per_n_messages', jsonb_build_object('n', 20, 'treats', 5),
     'earn_audio_engagement', 2,

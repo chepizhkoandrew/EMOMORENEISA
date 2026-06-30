@@ -4,12 +4,6 @@ final class GoalClassifierService {
     static let shared = GoalClassifierService()
     private init() {}
 
-    private let apiKey: String = {
-        Bundle.main.infoDictionary?["OpenAIAPIKey"] as? String ?? ""
-    }()
-    private let endpoint = "https://api.openai.com/v1/chat/completions"
-    private let model = "gpt-4o-mini"
-
     func classify(
         userMessage: String,
         tutorReply: String,
@@ -39,34 +33,9 @@ final class GoalClassifierService {
             currentGoal: currentGoal
         )
 
-        let body: [String: Any] = [
-            "model": model,
-            "messages": [["role": "user", "content": prompt]],
-            "temperature": 0,
-            "max_tokens": 60,
-        ]
-
-        guard let url = URL(string: endpoint),
-              let bodyData = try? JSONSerialization.data(withJSONObject: body) else {
-            return nil
-        }
-
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
-        request.httpBody = bodyData
-        request.timeoutInterval = 10
-
         do {
-            let (data, _) = try await URLSession.shared.data(for: request)
-            guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-                  let choices = json["choices"] as? [[String: Any]],
-                  let message = choices.first?["message"] as? [String: Any],
-                  let content = message["content"] as? String else {
-                return nil
-            }
-            return parseClassifierResponse(content)
+            let raw = try await ProxyClient.shared.utility(prompt: prompt, kind: "goal_classifier", maxTokens: 60)
+            return parseClassifierResponse(raw)
         } catch {
             glog("🎯 GOAL", "Classifier error: \(error.localizedDescription)")
             return nil

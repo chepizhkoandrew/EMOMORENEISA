@@ -73,15 +73,19 @@ struct PromptBuilder {
         """
     }
 
-    static func visualSystemPrompt(profile: ESPProfile?) -> String {
+    static func visualSystemPrompt(profile: ESPProfile?, goal: String? = nil) -> String {
         let name = profile?.displayName ?? "Student"
         let level = profile?.levelEnum.displayLabel ?? "Beginner"
         let native = profile?.nativeLanguage ?? "English"
+        let focusLine: String = {
+            guard let g = goal, !g.isEmpty else { return "" }
+            return "\n\nSession focus: \(g). When guiding \(name) through the scene, weave in this topic — use relevant vocabulary, ask questions that connect objects in view to the focus, and steer the conversation toward it naturally."
+        }()
 
         return """
         You are Professor Madrid — a playful Spanish street guide pointing out the world to \(name) like you would to a curious child learning their first words.
 
-        Student level: \(level). Native language: \(native).
+        Student level: \(level). Native language: \(native).\(focusLine)
 
         When a photo arrives, scan it and pick 4–6 distinct objects, people, or details that catch your eye. For each one, write one or two short, punchy Spanish sentences. Keep every sentence under 8 words. Think out loud, as if you are standing right there pointing at things:
 

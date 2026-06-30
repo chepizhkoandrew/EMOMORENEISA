@@ -31,11 +31,24 @@ export const config = {
     chat: str("MODEL_CHAT", "gpt-4.1"),
     vision: str("MODEL_VISION", "gpt-4.1"),
     analyst: str("MODEL_ANALYST", "gpt-4o-mini"),
+    // NOTE: every Gemini TTS model on the generativelanguage API is Preview-only
+    // (flash-preview-tts, pro-preview-tts, 3.1-flash-tts-preview). Google
+    // documents that these models randomly return text instead of audio -> HTTP
+    // 500, which is the root cause of our intermittent 502s. There is no GA
+    // Gemini TTS on this endpoint (the GA gemini-*-tts models live on Cloud TTS,
+    // which needs service-account auth). Hence the OpenAI fallback below.
     ttsGemini: str("MODEL_TTS_GEMINI", "gemini-2.5-flash-preview-tts"),
-    // Fallback is ALSO Gemini (never a different-language engine). By default it
-    // retries the same flash model; set to another Gemini TTS model to switch.
+    // Secondary Gemini attempt before falling back to OpenAI. Defaults to the
+    // same flash model; point at another Gemini TTS model to switch.
     ttsGeminiFallback: str("MODEL_TTS_GEMINI_FALLBACK", "gemini-2.5-flash-preview-tts"),
-    ttsOpenAI: str("MODEL_TTS_OPENAI", "tts-1")
+    // Multilingual OpenAI voice model — officially supports Spanish with
+    // native-level pronunciation (50+ languages), so this is a first-class
+    // fallback, not a degraded English-accent stopgap. Used whenever the preview
+    // Gemini model fails so audio is never silent.
+    ttsOpenAI: str("MODEL_TTS_OPENAI", "gpt-4o-mini-tts"),
+    // OpenAI speech-to-text. gpt-4o-transcribe is the most accurate for catching
+    // Spanish word endings (the part that matters most for the verb game).
+    transcribe: str("MODEL_TRANSCRIBE", "gpt-4o-transcribe")
   },
 
   // Voice synthesis behaviour. Spanish audio must stay on Gemini; the OpenAI
@@ -46,8 +59,41 @@ export const config = {
     retries: num("TTS_RETRIES", 3),
     retryBaseMs: num("TTS_RETRY_BASE_MS", 600),
     loroConcurrency: num("LORO_TTS_CONCURRENCY", 2),
-    allowOpenAIFallback: bool("TTS_ALLOW_OPENAI_FALLBACK", false)
+    // Gemini TTS is a preview-only model with a tight per-minute request cap and
+    // intermittent empty responses. Fall back to OpenAI's multilingual voice
+    // (good native Spanish) so audio is never silent. Set false to force Gemini.
+    allowOpenAIFallback: bool("TTS_ALLOW_OPENAI_FALLBACK", true),
+    openaiVoice: str("TTS_OPENAI_VOICE", "onyx")
   },
+
+  // Google Cloud Text-to-Speech (GA). Unlike the Gemini generativelanguage TTS
+  // models (all Preview-only, randomly drop audio -> 502s), Cloud TTS ships GA
+  // "Chirp 3: HD" Spanish voices that are reliable and natural. It uses a
+  // service account (OAuth2), not the simple API key, so credentials are the
+  // full service-account JSON, provided raw via GOOGLE_TTS_CREDENTIALS or
+  // base64 via GOOGLE_TTS_CREDENTIALS_B64. When credentials are present this
+  // becomes the PRIMARY voice engine (Gemini/OpenAI remain as fallbacks).
+  cloudTts: (() => {
+    let credentials = null;
+    const rawB64 = process.env.GOOGLE_TTS_CREDENTIALS_B64;
+    const raw = process.env.GOOGLE_TTS_CREDENTIALS;
+    try {
+      if (rawB64) credentials = JSON.parse(Buffer.from(rawB64, "base64").toString("utf8"));
+      else if (raw) credentials = JSON.parse(raw);
+    } catch (e) {
+      console.warn("[config] GOOGLE_TTS_CREDENTIALS parse failed:", e.message);
+    }
+    return {
+      credentials,
+      enabled: bool("CLOUD_TTS_ENABLED", !!credentials),
+      // es-ES = Spain (Castilian), es-US = Latin American. Professor Madrid -> es-ES.
+      languageCode: str("CLOUD_TTS_LANGUAGE", "es-ES"),
+      // Chirp 3 HD voice. Format: {locale}-Chirp3-HD-{Name}. Achird is a warm male voice.
+      voiceName: str("CLOUD_TTS_VOICE", "es-ES-Chirp3-HD-Achird"),
+      // 1.0 = normal speed, 0.9 = slightly slower (better for language learning).
+      speakingRate: num("CLOUD_TTS_SPEAKING_RATE", 0.9)
+    };
+  })(),
 
   // Shared, deduplicated voice cache. Generated audio is transcoded to AAC and
   // stored in Supabase Storage keyed by hash(model+voice+bitrate+text), so the
@@ -63,7 +109,7 @@ export const config = {
 
   // Apple / StoreKit
   appleBundleId: str("APPLE_BUNDLE_ID", "com.professormadrid.app"),
-  trialGrantTreats: num("TRIAL_GRANT_TREATS", 50),
+  trialGrantTreats: num("TRIAL_GRANT_TREATS", 250),
 
   // Consumable treat packs (product_id -> grant). bonus_pct is informational;
   // total_treats is what actually gets credited. Override via PACKS_JSON env.

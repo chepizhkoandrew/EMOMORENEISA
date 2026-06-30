@@ -12,13 +12,9 @@ final class AudioRecorder {
     private var recordingStartTime: Date?
     private var peakLevel: Float = 0
 
-    private var geminiAPIKey: String {
-        Bundle.main.object(forInfoDictionaryKey: "GeminiAPIKey") as? String ?? ""
-    }
-
     func start() throws {
         let session = AVAudioSession.sharedInstance()
-        try session.setCategory(.record, mode: .default, options: [])
+        try session.setCategory(.playAndRecord, mode: .default, options: [.duckOthers, .defaultToSpeaker])
         try session.setActive(true)
 
         let url = FileManager.default.temporaryDirectory
@@ -65,6 +61,7 @@ final class AudioRecorder {
         recordingStartTime = nil
         peakLevel = 0
 
+        try? AVAudioSession.sharedInstance().setCategory(.ambient, mode: .default, options: [.mixWithOthers])
         try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
 
         guard let url = audioFileURL else { return "" }
@@ -82,7 +79,7 @@ final class AudioRecorder {
             return ""
         }
 
-        let result = await transcribeWithGemini(url: url)
+        let result = await transcribeViaProxy(url: url)
         try? FileManager.default.removeItem(at: url)
         return result
     }
@@ -96,6 +93,7 @@ final class AudioRecorder {
         audioLevel = 0
         recordingStartTime = nil
         peakLevel = 0
+        try? AVAudioSession.sharedInstance().setCategory(.ambient, mode: .default, options: [.mixWithOthers])
         try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
         if let url = audioFileURL {
             try? FileManager.default.removeItem(at: url)
@@ -103,81 +101,28 @@ final class AudioRecorder {
         }
     }
 
-    // MARK: - Gemini Flash STT
+    // MARK: - Proxy STT (OpenAI gpt-4o-transcribe, server-side)
 
-    private func transcribeWithGemini(url: URL) async -> String {
+    private func transcribeViaProxy(url: URL) async -> String {
         guard let audioData = try? Data(contentsOf: url), !audioData.isEmpty else {
             print("[STT] Audio file missing or empty")
             return ""
         }
-        print("[STT] Audio file size: \(audioData.count) bytes")
-        let key = geminiAPIKey
-        guard !key.isEmpty, !key.hasPrefix("$("),
-              let apiURL = URL(string: "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=\(key)") else {
-            print("[STT] Gemini key missing: '\(key.prefix(12))…'")
-            return ""
-        }
-        print("[STT] Sending to Gemini STT…")
-
-        var request = URLRequest(url: apiURL)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.timeoutInterval = 20
-
-        let body: [String: Any] = [
-            "contents": [
-                [
-                    "parts": [
-                        [
-                            "inlineData": [
-                                "mimeType": "audio/mp4",
-                                "data": audioData.base64EncodedString()
-                            ]
-                        ],
-                        [
-                            "text": "You are a transcription engine. Listen to the audio and transcribe what is spoken. The speaker may use English, Spanish, or both. Add correct Spanish accent marks (á, é, í, ó, ú, ñ) where needed. If the audio contains no speech, is silent, or is unclear, respond with exactly the string: [EMPTY]. Return ONLY the transcribed words — nothing else."
-                        ]
-                    ],
-                    "role": "user"
-                ]
-            ]
-        ]
-
-        request.httpBody = try? JSONSerialization.data(withJSONObject: body)
-
+        print("[STT] Audio file size: \(audioData.count) bytes — sending to proxy…")
         do {
-            let (data, response) = try await URLSession.shared.data(for: request)
-            let status = (response as? HTTPURLResponse)?.statusCode ?? 0
-            guard status == 200 else {
-                let snippet = String(data: data, encoding: .utf8)?.prefix(300) ?? ""
-                print("[STT] Gemini HTTP \(status): \(snippet)")
+            let transcript = try await ProxyClient.shared.transcribe(
+                audioData: audioData,
+                mime: "audio/mp4",
+                prompt: "Spanish/English speech. Preserve exact word endings and Spanish accents (á, é, í, ó, ú, ñ)."
+            )
+            if transcript.isEmpty {
+                print("[STT] Proxy returned empty/no speech")
                 return ""
             }
-
-            guard
-                let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-                let candidates = json["candidates"] as? [[String: Any]],
-                let firstCandidate = candidates.first,
-                let content = firstCandidate["content"] as? [String: Any],
-                let parts = content["parts"] as? [[String: Any]],
-                let firstPart = parts.first,
-                let text = firstPart["text"] as? String
-            else {
-                print("[STT] Gemini unexpected response")
-                return ""
-            }
-
-            let transcript = text.trimmingCharacters(in: .whitespacesAndNewlines)
-
-            if transcript == "[EMPTY]" || transcript.isEmpty {
-                print("[STT] Gemini returned empty/no speech")
-                return ""
-            }
-
-            print("[STT] Gemini transcript: \(transcript.prefix(100))")
+            print("[STT] Proxy transcript: \(transcript.prefix(100))")
             return transcript
         } catch {
-            print("[STT] Gemini error: \(error)")
+            print("[STT] Proxy error: \(error)")
             return ""
         }
     }

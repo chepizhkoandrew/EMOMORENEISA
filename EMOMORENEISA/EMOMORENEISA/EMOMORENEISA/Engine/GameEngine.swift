@@ -35,15 +35,13 @@ final class GameEngine: ObservableObject {
     var timerSeconds: Double = 4.0
     var selectedTense: Tense = .present
 
-    private let postProcessingWindow: Double = 1.5
-
     private var cellTimer: AnyCancellable?
     private var countdownTimer: AnyCancellable?
-    private var postProcessTimer: AnyCancellable?
+    private var retryTimer: AnyCancellable?
     private var listeningGeneration: Int = 0
 
     private let picker = VerbPicker()
-    private let speech = SpeechService()
+    private let audioRecorder = AudioRecorder()
 
     var activeCell: GameCell? {
         guard let round, activeCellIndex < round.cells.count else { return nil }
@@ -108,9 +106,8 @@ final class GameEngine: ObservableObject {
         round = newRound
         activeCellIndex = 0
         phase = .playing
-        glog("⚙️ ENGINE", "Playing — \(newRound.cells.count) cells | timer \(timerSeconds)s | post-window \(postProcessingWindow)s")
+        glog("⚙️ ENGINE", "Playing — \(newRound.cells.count) cells | timer \(timerSeconds)s")
         startCellTimer()
-        startListening()
     }
 
     private func startCellTimer() {
@@ -119,6 +116,8 @@ final class GameEngine: ObservableObject {
 
         guard let cell = activeCell else { return }
         glog("⚙️ ENGINE", "▶︎ Cell \(activeCellIndex + 1)/\(round?.cells.count ?? 0): [\(cell.pronoun.displayLabel)] [\(cell.verb.infinitive)] → expected \"\(cell.expectedConjugation)\"")
+
+        startListening()
 
         cellTimer = Timer.publish(every: 0.05, on: .main, in: .common)
             .autoconnect()
@@ -133,33 +132,29 @@ final class GameEngine: ObservableObject {
 
     private func cellTimedOut() {
         cellTimer?.cancel()
-        guard let cell = activeCell else { return }
-        glog("⏱ TIMER ", "⌛ Expired for \"\(cell.expectedConjugation)\" — opening post-processing window (\(postProcessingWindow)s)")
+        guard activeCell != nil else { return }
+        glog("⏱ TIMER ", "⌛ Expired — stopping recording, transcribing via proxy")
 
+        isListening = false
         isPostProcessing = true
-        postProcessTimer?.cancel()
-        postProcessTimer = Just(())
-            .delay(for: .seconds(postProcessingWindow), scheduler: RunLoop.main)
-            .sink { [weak self] _ in
-                guard let self, self.isPostProcessing else { return }
-                glog("⏱ TIMER ", "❌ Post-window expired — marking missed (no STT arrived)")
-                self.isPostProcessing = false
-                self.markActiveCell(correct: false, cellIndex: self.activeCellIndex)
-                self.advanceCell()
-            }
+        let cellIndex = activeCellIndex
+
+        Task {
+            let transcribed = await audioRecorder.stopAndTranscribe()
+            guard self.isPostProcessing else { return }
+            self.isPostProcessing = false
+            glog("⏱ TIMER ", "✅ Proxy transcript: '\(transcribed)'")
+            self.submitAnswer(transcribed, atCellIndex: cellIndex)
+        }
     }
 
-    func submitAnswer(_ transcribed: String) {
-        guard let cell = activeCell else {
-            glog("⚙️ ENGINE", "submitAnswer — no active cell, ignoring")
+    private func submitAnswer(_ transcribed: String, atCellIndex cellIndex: Int) {
+        guard let r = round, cellIndex < r.cells.count else {
+            glog("⚙️ ENGINE", "submitAnswer — invalid cell index \(cellIndex), ignoring")
             return
         }
 
-        let cellIndex = activeCellIndex
-        cellTimer?.cancel()
-        postProcessTimer?.cancel()
-        isPostProcessing = false
-
+        let cell = r.cells[cellIndex]
         glog("⚙️ ENGINE", "STT delivered for \"\(cell.expectedConjugation)\": '\(transcribed)'")
 
         Task {
@@ -205,7 +200,6 @@ final class GameEngine: ObservableObject {
     }
 
     private func advanceCell() {
-        stopListening()
         guard let r = round else { return }
         let next = activeCellIndex + 1
 
@@ -220,7 +214,6 @@ final class GameEngine: ObservableObject {
                 self.lastResult = nil
                 self.activeCellIndex = next
                 self.startCellTimer()
-                self.startListening()
             }
         } else {
             let correct = r.cells.filter { $0.state == .correct }.count
@@ -234,6 +227,8 @@ final class GameEngine: ObservableObject {
 
     // MARK: - Review mode
 
+    private let retryRecordingSeconds: Double = 5.0
+
     func retryCell(at cellIndex: Int) {
         guard phase == .review,
               let r = round,
@@ -244,31 +239,42 @@ final class GameEngine: ObservableObject {
         reviewActiveCellIndex = cellIndex
         liveTranscript = ""
         lastResult = nil
-        isListening = true
         listeningGeneration += 1
         let gen = listeningGeneration
 
         let cell = r.cells[cellIndex]
         glog("⚙️ ENGINE", "🔄 Retry cell \(cellIndex + 1): [\(cell.pronoun.displayLabel)] [\(cell.verb.infinitive)] → \"\(cell.expectedConjugation)\"")
 
-        speech.startListening(
-            contextualStrings: sttHints(for: cell),
-            onPartialResult: { [weak self] partial in
+        do {
+            try audioRecorder.start()
+            isListening = true
+        } catch {
+            glog("🎙  STT  ", "⚠️ AudioRecorder start failed for retry: \(error)")
+            return
+        }
+
+        retryTimer?.cancel()
+        retryTimer = Just(())
+            .delay(for: .seconds(retryRecordingSeconds), scheduler: RunLoop.main)
+            .sink { [weak self] _ in
                 guard let self, self.listeningGeneration == gen else { return }
-                self.liveTranscript = partial
-            },
-            onFinalResult: { [weak self] transcribed in
-                guard let self, self.listeningGeneration == gen else {
-                    glog("🎙  STT  ", "⚠️ Stale retry result discarded")
-                    return
-                }
-                self.isListening = false
-                let capturedIndex = self.reviewActiveCellIndex
-                self.reviewActiveCellIndex = nil
-                self.liveTranscript = ""
-                self.submitRetryAnswer(transcribed, cellIndex: capturedIndex ?? cellIndex)
+                self.deliverRetry(cellIndex: cellIndex, gen: gen)
             }
-        )
+    }
+
+    private func deliverRetry(cellIndex: Int, gen: Int) {
+        guard listeningGeneration == gen else { return }
+        isListening = false
+        retryTimer?.cancel()
+        let capturedCellIndex = reviewActiveCellIndex ?? cellIndex
+        reviewActiveCellIndex = nil
+        liveTranscript = ""
+
+        Task {
+            let transcribed = await audioRecorder.stopAndTranscribe()
+            glog("⚙️ ENGINE", "🔄 Retry transcript: '\(transcribed)'")
+            self.submitRetryAnswer(transcribed, cellIndex: capturedCellIndex)
+        }
     }
 
     func cancelRetry() {
@@ -308,7 +314,7 @@ final class GameEngine: ObservableObject {
 
     func repeatRound() {
         cellTimer?.cancel()
-        postProcessTimer?.cancel()
+        retryTimer?.cancel()
         stopListening()
         isPostProcessing = false
         lastResult = nil
@@ -328,13 +334,12 @@ final class GameEngine: ObservableObject {
         phase = .playing
         glog("⚙️ ENGINE", "Retry — \(retry.cells.count) missed cells")
         startCellTimer()
-        startListening()
     }
 
     func newRound() {
         cellTimer?.cancel()
         countdownTimer?.cancel()
-        postProcessTimer?.cancel()
+        retryTimer?.cancel()
         stopListening()
         isPostProcessing = false
         lastResult = nil
@@ -348,45 +353,15 @@ final class GameEngine: ObservableObject {
 
     private func startListening() {
         listeningGeneration += 1
-        let gen = listeningGeneration
         isListening = true
         liveTranscript = ""
-        glog("🎙  STT  ", "startListening gen=\(gen)")
-
-        let hints = sttHints(for: activeCell)
-
-        speech.startListening(
-            contextualStrings: hints,
-            onPartialResult: { [weak self] partial in
-                guard let self, self.listeningGeneration == gen else { return }
-                self.liveTranscript = partial
-            },
-            onFinalResult: { [weak self] transcribed in
-                guard let self, self.isListening, self.listeningGeneration == gen else {
-                    glog("🎙  STT  ", "⚠️ Stale result discarded gen=\(gen) — '\(transcribed)'")
-                    return
-                }
-                self.stopListening()
-                self.submitAnswer(transcribed)
-            }
-        )
-    }
-
-    private func sttHints(for cell: GameCell?) -> [String] {
-        guard let cell else { return [] }
-        return sttHints(for: cell)
-    }
-
-    private func sttHints(for cell: GameCell) -> [String] {
-        let conj = cell.expectedConjugation
-        let pronounForms = cell.pronoun.displayLabel
-            .components(separatedBy: " / ")
-            .map { $0.trimmingCharacters(in: .whitespaces) }
-        var hints = [conj]
-        for p in pronounForms {
-            hints.append("\(p) \(conj)")
+        glog("🎙  STT  ", "Start recording gen=\(listeningGeneration)")
+        do {
+            try audioRecorder.start()
+        } catch {
+            glog("🎙  STT  ", "⚠️ AudioRecorder start failed: \(error)")
+            isListening = false
         }
-        return hints
     }
 
     private func stopListening() {
@@ -394,7 +369,8 @@ final class GameEngine: ObservableObject {
             glog("🎙  STT  ", "stopListening gen=\(listeningGeneration)")
         }
         isListening = false
-        speech.stopListening()
+        retryTimer?.cancel()
+        audioRecorder.cancel()
     }
 
     private func localFallback(transcribed: String, expected: String) -> Bool {
