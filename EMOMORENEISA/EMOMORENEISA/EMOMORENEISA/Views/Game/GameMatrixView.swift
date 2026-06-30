@@ -65,11 +65,61 @@ struct GameMatrixView: View {
 
             Spacer()
 
-            if isReview {
+            if engine.phase == .playing {
+                playingControls
+            } else if isReview {
                 reviewControls
             }
         }
         .padding(.bottom, 6)
+    }
+
+    private var playingControls: some View {
+        HStack(spacing: 6) {
+            Button {
+                engine.adjustTimer(by: -1.0)
+            } label: {
+                Image(systemName: "minus")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundColor(.white.opacity(0.6))
+                    .frame(width: 30, height: 30)
+                    .background(Color.white.opacity(0.09))
+                    .clipShape(Circle())
+                    .overlay(Circle().stroke(Color.white.opacity(0.14), lineWidth: 1))
+            }
+
+            Text(String(format: "%.0fs", engine.timerSeconds))
+                .font(.system(size: 13, weight: .bold, design: .monospaced))
+                .foregroundColor(.white.opacity(0.7))
+                .frame(minWidth: 28)
+
+            Button {
+                engine.adjustTimer(by: 1.0)
+            } label: {
+                Image(systemName: "plus")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundColor(.white.opacity(0.6))
+                    .frame(width: 30, height: 30)
+                    .background(Color.white.opacity(0.09))
+                    .clipShape(Circle())
+                    .overlay(Circle().stroke(Color.white.opacity(0.14), lineWidth: 1))
+            }
+
+            Button {
+                if engine.isPaused { engine.resume() } else { engine.pause() }
+            } label: {
+                Image(systemName: engine.isPaused ? "play.fill" : "pause.fill")
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundColor(engine.isPaused ? GameColors.gold : .white.opacity(0.6))
+                    .frame(width: 34, height: 34)
+                    .background(engine.isPaused ? GameColors.gold.opacity(0.15) : Color.white.opacity(0.09))
+                    .clipShape(Circle())
+                    .overlay(Circle().stroke(
+                        engine.isPaused ? GameColors.gold.opacity(0.4) : Color.white.opacity(0.14),
+                        lineWidth: 1
+                    ))
+            }
+        }
     }
 
     private var reviewControls: some View {

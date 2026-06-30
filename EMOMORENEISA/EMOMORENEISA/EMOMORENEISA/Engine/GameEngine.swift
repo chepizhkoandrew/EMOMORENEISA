@@ -23,6 +23,7 @@ final class GameEngine: ObservableObject {
     @Published private(set) var liveTranscript: String = ""
     @Published private(set) var lastResult: LastResult? = nil
     @Published private(set) var reviewActiveCellIndex: Int? = nil
+    @Published private(set) var isPaused: Bool = false
     @Published var hideCorrect: Bool = false
 
     struct LastResult {
@@ -32,7 +33,7 @@ final class GameEngine: ObservableObject {
         let correct: Bool
     }
 
-    var timerSeconds: Double = 4.0
+    @Published var timerSeconds: Double = 4.0
     var selectedTense: Tense = .present
 
     private var cellTimer: AnyCancellable?
@@ -337,6 +338,7 @@ final class GameEngine: ObservableObject {
         cellTimer?.cancel()
         retryTimer?.cancel()
         stopListening()
+        isPaused = false
         isPostProcessing = false
         lastResult = nil
         reviewActiveCellIndex = nil
@@ -357,11 +359,42 @@ final class GameEngine: ObservableObject {
         startCellTimer()
     }
 
+    func pause() {
+        guard phase == .playing, !isPaused else { return }
+        isPaused = true
+        cellTimer?.cancel()
+        cellTimer = nil
+        stopListening()
+        glog("⚙️ ENGINE", "⏸ Paused — timeRemaining: \(String(format: "%.2f", timeRemaining))s")
+    }
+
+    func resume() {
+        guard phase == .playing, isPaused else { return }
+        isPaused = false
+        glog("⚙️ ENGINE", "▶︎ Resumed — timeRemaining: \(String(format: "%.2f", timeRemaining))s")
+        startListening()
+        cellTimer = Timer.publish(every: 0.05, on: .main, in: .common)
+            .autoconnect()
+            .sink { [weak self] _ in
+                guard let self else { return }
+                self.timeRemaining -= 0.05
+                if self.timeRemaining <= 0 {
+                    self.cellTimedOut()
+                }
+            }
+    }
+
+    func adjustTimer(by delta: Double) {
+        timerSeconds = max(2.0, min(12.0, timerSeconds + delta))
+        glog("⚙️ ENGINE", "⏱ Timer adjusted to \(String(format: "%.1f", timerSeconds))s")
+    }
+
     func newRound() {
         cellTimer?.cancel()
         countdownTimer?.cancel()
         retryTimer?.cancel()
         stopListening()
+        isPaused = false
         isPostProcessing = false
         lastResult = nil
         reviewActiveCellIndex = nil
