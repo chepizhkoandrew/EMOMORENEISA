@@ -18,24 +18,21 @@ struct MessageBubbleView: View {
                             annotateButton(action: annotate)
                         }
                     }
+                    .contextMenu {
+                        if message.isAssistant {
+                            Button {
+                                onReplyInThread()
+                            } label: {
+                                Label("Reply in Thread", systemImage: "bubble.left.and.bubble.right")
+                            }
+                        }
+                    }
                 if message.isAssistant {
                     footer
                 }
             }
 
             if message.isAssistant { Spacer(minLength: 56) }
-        }
-        .contextMenu {
-            if message.isAssistant {
-                Button(action: onPlayFromHere) {
-                    Label("Play from Here", systemImage: "play.circle")
-                }
-                Button {
-                    onReplyInThread()
-                } label: {
-                    Label("Reply in Thread", systemImage: "bubble.left.and.bubble.right")
-                }
-            }
         }
     }
 
@@ -166,11 +163,10 @@ struct MessageBubbleView: View {
                             .foregroundColor(.yellow)
                             .contentTransition(.symbolEffect(.replace))
                     } else {
-                        Image("seagull_speaker_icon")
+                        Image("icon_beak")
                             .resizable()
                             .scaledToFill()
                             .frame(width: actionButtonSize, height: actionButtonSize)
-                            .clipShape(Circle())
                     }
                 }
                 .foregroundColor(isPlaying || isLoadingThis ? .yellow : AppColors.textTertiary)
@@ -187,12 +183,10 @@ struct MessageBubbleView: View {
     private var parrotButton: some View {
         if message.isAssistant, let text = message.textContent, !text.isEmpty {
             Button(action: onParrot) {
-                Image("seagull_chat_icon")
+                Image("icon_brain")
                     .resizable()
-                    .scaledToFit()
-                    .padding(8)
+                    .scaledToFill()
                     .frame(width: actionButtonSize, height: actionButtonSize)
-                    .background(Color.white.opacity(0.07))
                     .clipShape(Circle())
                     .overlay(Circle().stroke(Color.white.opacity(0.12), lineWidth: 1))
             }
@@ -201,15 +195,14 @@ struct MessageBubbleView: View {
 
     private func annotateButton(action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Image("seagull_vision_icon")
+            Image("icon_eye")
                 .resizable()
                 .scaledToFill()
-                .frame(width: 32, height: 32)
+                .frame(width: actionButtonSize, height: actionButtonSize)
                 .clipShape(Circle())
-                .overlay(Circle().stroke(Color.yellow.opacity(0.6), lineWidth: 2))
-                .shadow(color: Color.yellow.opacity(0.4), radius: 5)
+                .overlay(Circle().stroke(Color.white.opacity(0.12), lineWidth: 1))
         }
-        .offset(x: 10, y: -10)
+        .offset(x: 12, y: -12)
     }
 
     @ViewBuilder
