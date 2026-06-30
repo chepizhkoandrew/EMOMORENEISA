@@ -162,6 +162,14 @@ final class GameEngine: ObservableObject {
             glog("⚙️ ENGINE", "Normalized transcript: '\(transcribed)' → '\(normalized)'")
         }
 
+        let normalizedExpected = normalizeTranscript(cell.expectedConjugation)
+        if normalized == normalizedExpected && !normalized.isEmpty {
+            glog("⚙️ ENGINE", "✅ Exact match '\(normalized)' == '\(normalizedExpected)' — skipping server")
+            markActiveCell(correct: true, cellIndex: cellIndex, transcript: transcribed)
+            advanceCell()
+            return
+        }
+
         Task {
             glog("🤖 SERVER", "→ verb-check | expected: \"\(cell.expectedConjugation)\" | got: \"\(normalized)\"")
             let t0 = Date()
@@ -293,7 +301,14 @@ final class GameEngine: ObservableObject {
     private func submitRetryAnswer(_ transcribed: String, cellIndex: Int) {
         guard let cell = round?.cells[safe: cellIndex] else { return }
         let normalized = normalizeTranscript(transcribed)
+        let normalizedExpected = normalizeTranscript(cell.expectedConjugation)
         glog("⚙️ ENGINE", "🔄 Retry STT: expected \"\(cell.expectedConjugation)\" | got '\(normalized)'")
+
+        if normalized == normalizedExpected && !normalized.isEmpty {
+            glog("⚙️ ENGINE", "✅ Retry exact match — skipping server")
+            markActiveCell(correct: true, cellIndex: cellIndex, transcript: transcribed)
+            return
+        }
 
         Task {
             let correct: Bool
