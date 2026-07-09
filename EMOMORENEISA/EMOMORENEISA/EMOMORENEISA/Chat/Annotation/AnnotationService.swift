@@ -16,11 +16,17 @@ final class AnnotationService {
     func load(
         assistantMessage: LocalChatMessage,
         userMessage: LocalChatMessage,
-        existing: StreetAnnotation?,
         modelContext: ModelContext
     ) async {
-        if let existing, !existing.annotations.isEmpty {
-            await MainActor.run { state = .ready(existing.annotations) }
+        let mid = assistantMessage.id
+        let cached: StreetAnnotation? = await MainActor.run {
+            let descriptor = FetchDescriptor<StreetAnnotation>(
+                predicate: #Predicate { $0.assistantMessageId == mid }
+            )
+            return (try? modelContext.fetch(descriptor))?.first
+        }
+        if let cached, !cached.annotations.isEmpty {
+            await MainActor.run { state = .ready(cached.annotations) }
             return
         }
 

@@ -13,9 +13,11 @@ final class AuthService {
             credentials: .init(provider: .apple, idToken: idToken, nonce: nonce)
         )
         await AuthState.shared.restoreSession()
-        if AuthState.shared.profile == nil {
+        let isNew = AuthState.shared.profile == nil
+        if isNew {
             try await createProfile(for: session.user, displayName: displayName)
         }
+        AnalyticsService.shared.track(isNew ? .signUp(provider: "apple") : .signIn(provider: "apple"))
     }
 
     @MainActor
@@ -32,9 +34,22 @@ final class AuthService {
 
         await AuthState.shared.restoreSession()
 
-        if AuthState.shared.profile == nil {
+        let isNew = AuthState.shared.profile == nil
+        if isNew {
             try await createProfile(for: session.user, displayName: nil)
         }
+        AnalyticsService.shared.track(isNew ? .signUp(provider: "google") : .signIn(provider: "google"))
+    }
+
+    @MainActor
+    func signInWithEmail(email: String, password: String) async throws {
+        let session = try await supabase.auth.signIn(email: email, password: password)
+        await AuthState.shared.restoreSession()
+        let isNew = AuthState.shared.profile == nil
+        if isNew {
+            try await createProfile(for: session.user, displayName: nil)
+        }
+        AnalyticsService.shared.track(isNew ? .signUp(provider: "email") : .signIn(provider: "email"))
     }
 
     private func createProfile(for user: User, displayName: String?) async throws {
@@ -46,7 +61,7 @@ final class AuthService {
             id: user.id,
             displayName: name,
             level: "beginner",
-            nativeLanguage: "English",
+            nativeLanguage: LocalizationManager.shared.tutorNativeLanguage,
             focusTopics: [],
             currentStudyTopic: nil,
             learningNotes: "",

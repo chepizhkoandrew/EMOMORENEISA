@@ -81,7 +81,7 @@ final class LoopingParrotPlayer: NSObject {
         player = nil
         isPlaying = false
         teardownRemoteCommands()
-        try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+        restoreAmbientSession()
     }
 
     func togglePlayPause() {
@@ -120,13 +120,18 @@ final class LoopingParrotPlayer: NSObject {
                 isPlaying = false
                 isDone = true
                 teardownRemoteCommands()
-                try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+                restoreAmbientSession()
                 return
             }
         }
         isDone = false
         bufferPolls = 0
         playCurrentSegment()
+    }
+
+    private func restoreAmbientSession() {
+        try? AVAudioSession.sharedInstance().setCategory(.ambient, mode: .default, options: [.mixWithOthers])
+        try? AVAudioSession.sharedInstance().setActive(true)
     }
 
     private func setupAudioSession() {
@@ -196,7 +201,7 @@ final class LoopingParrotPlayer: NSObject {
             isPlaying = false
             isDone = true
             teardownRemoteCommands()
-            try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+            restoreAmbientSession()
         }
     }
 

@@ -16,6 +16,8 @@ struct SRSPlayerView: View {
     @AppStorage("loro.autoAdvance") private var autoAdvance: Bool = true
 
     @State private var player = LoopingParrotPlayer()
+    @State private var illustrationService = ParrotService()
+    @State private var sessionQueue: [MemoryCard] = []
     @State private var index: Int = 0
     @State private var finished: Bool = false
     @State private var visitsCompleted: Int = 0
@@ -26,8 +28,8 @@ struct SRSPlayerView: View {
     private var service: MemoryCardService { MemoryCardService(context: modelContext) }
 
     private var currentCard: MemoryCard? {
-        guard index < queue.count else { return nil }
-        return queue[index]
+        guard index < sessionQueue.count else { return nil }
+        return sessionQueue[index]
     }
 
     var body: some View {
@@ -58,10 +60,26 @@ struct SRSPlayerView: View {
                 .transition(.opacity)
             }
         }
-        .task { startCurrent() }
+        .task {
+            sessionQueue = queue
+            AnalyticsService.shared.track(.srsSessionStarted(cardCount: queue.count))
+            startCurrent()
+        }
+        .task(id: index) {
+            if let card = currentCard {
+                await illustrationService.ensureIllustration(for: card)
+            }
+        }
         .onChange(of: player.isDone) { _, done in
             guard done else { return }
             handleVisitComplete()
+        }
+        .onChange(of: finished) { _, done in
+            guard done else { return }
+            AnalyticsService.shared.track(.srsSessionCompleted(
+                cardCount: visitsCompleted,
+                archived: archivedThisSession.count
+            ))
         }
         .onDisappear { player.stop() }
     }
@@ -139,21 +157,13 @@ struct SRSPlayerView: View {
 
     private var header: some View {
         HStack {
-            Button {
+            BackButton {
                 player.stop()
                 dismiss()
-            } label: {
-                HStack(spacing: 6) {
-                    Image(systemName: "chevron.left")
-                        .font(.system(size: 14, weight: .semibold))
-                    Text("Done")
-                        .font(.system(size: 16, weight: .medium, design: .rounded))
-                }
-                .foregroundColor(.yellow)
             }
             Spacer()
             if !finished {
-                Text("Word \(min(index + 1, queue.count)) of \(queue.count)")
+                Text(L("Word %d of %d", min(index + 1, sessionQueue.count), sessionQueue.count))
                     .font(.system(size: 14, weight: .semibold, design: .rounded))
                     .foregroundColor(AppColors.textSecondary)
             }
@@ -165,7 +175,7 @@ struct SRSPlayerView: View {
 
     private func nowPlaying(card: MemoryCard) -> some View {
         VStack(spacing: 20) {
-            LoroImage(asset: .listening, size: 160)
+            LoroIllustrationView(url: card.illustrationURL, fallback: .listening, size: 320)
                 .shadow(color: Color.yellow.opacity(0.4), radius: 20)
 
             VStack(spacing: 8) {
@@ -187,7 +197,7 @@ struct SRSPlayerView: View {
                 base: card.repetitionsPerPhaseBase
             )
             VStack(spacing: 6) {
-                Text("Repetition \(min(player.currentLoop + 1, loops)) of \(loops)")
+                Text(L("Repetition %d of %d", min(player.currentLoop + 1, loops), loops))
                     .font(.system(size: 15, weight: .semibold, design: .rounded))
                     .foregroundColor(.yellow)
                 HStack(spacing: 4) {
@@ -216,7 +226,7 @@ struct SRSPlayerView: View {
             "Sentence 1", "Sentence 2"
         ]
         let idx = player.currentSegment
-        let label = idx < labels.count ? labels[idx] : ""
+        let label = idx < labels.count ? L(labels[idx]) : ""
         return Text(label)
             .font(.system(size: 13, design: .rounded))
             .foregroundColor(AppColors.textTertiary)
@@ -231,7 +241,7 @@ struct SRSPlayerView: View {
                 advance()
             } label: {
                 HStack(spacing: 8) {
-                    Text("Next word")
+                    Text(L("Next word"))
                     Image(systemName: "forward.end.fill")
                 }
                 .font(.system(size: 18, weight: .semibold, design: .rounded))
@@ -277,12 +287,17 @@ struct SRSPlayerView: View {
         VStack(spacing: 20) {
             LoroImage(asset: archivedThisSession.isEmpty ? .happy : .excited, size: 200)
 
-            Text(visitsCompleted == 0 ? "Nothing due right now" : "Session complete!")
+            Text(visitsCompleted == 0 ? L("Nothing due right now") : L("Session complete!"))
                 .font(.system(size: 24, weight: .bold, design: .rounded))
                 .foregroundColor(AppColors.textPrimary)
 
             if visitsCompleted > 0 {
-                Text("You refreshed \(visitsCompleted) word\(visitsCompleted == 1 ? "" : "s") with Seagull Steven.")
+                Text(LPlural(visitsCompleted,
+                             en: "You refreshed %d word with Seagull Steven.",
+                             "You refreshed %d words with Seagull Steven.",
+                             uk: "Ви повторили %d слово з Чайкою Стівеном.",
+                             "Ви повторили %d слова з Чайкою Стівеном.",
+                             "Ви повторили %d слів з Чайкою Стівеном."))
                     .font(.system(size: 16, design: .rounded))
                     .foregroundColor(AppColors.textSecondary)
                     .multilineTextAlignment(.center)
@@ -290,7 +305,12 @@ struct SRSPlayerView: View {
             }
 
             if !archivedThisSession.isEmpty {
-                Text("🧠 \(archivedThisSession.count) word\(archivedThisSession.count == 1 ? "" : "s") etched in a microchip — Loro won't forget them for years!")
+                Text(LPlural(archivedThisSession.count,
+                             en: "🧠 %d word etched in a microchip — Loro won't forget them for years!",
+                             "🧠 %d words etched in a microchip — Loro won't forget them for years!",
+                             uk: "🧠 %d слово закарбовано в мікрочипі — Loro не забуде його роками!",
+                             "🧠 %d слова закарбовано в мікрочипі — Loro не забуде їх роками!",
+                             "🧠 %d слів закарбовано в мікрочипі — Loro не забуде їх роками!"))
                     .font(.system(size: 15, weight: .semibold, design: .rounded))
                     .foregroundColor(.yellow)
                     .multilineTextAlignment(.center)
@@ -300,7 +320,7 @@ struct SRSPlayerView: View {
             Button {
                 dismiss()
             } label: {
-                Text("Back to Seagull Steven")
+                Text(L("Back to Seagull Steven"))
                     .font(.system(size: 18, weight: .semibold, design: .rounded))
                     .foregroundColor(.black)
                     .padding(.horizontal, 32)

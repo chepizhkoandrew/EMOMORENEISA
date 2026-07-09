@@ -88,7 +88,7 @@ struct SpinningWheelView: View {
                 }
 
                 if isJoker {
-                    Text("JOKER")
+                    Text(L("JOKER"))
                         .font(.system(size: 9, weight: .black, design: .monospaced))
                         .foregroundColor(.black)
                         .padding(.horizontal, 6)

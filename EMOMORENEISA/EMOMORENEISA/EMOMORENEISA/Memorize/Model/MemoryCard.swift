@@ -7,6 +7,9 @@ final class MemoryCard {
     var content: String
     var translation: String
     var audioSegmentPaths: [String]
+    /// Relative path to the memorization illustration (mirrors ParrotPhrase). nil
+    /// when the source phrase had no illustration.
+    var illustrationPath: String?
     var sourceWordId: UUID?
     var sourceParrotId: UUID?
 
@@ -26,6 +29,7 @@ final class MemoryCard {
         content: String,
         translation: String,
         audioSegmentPaths: [String] = [],
+        illustrationPath: String? = nil,
         sourceWordId: UUID? = nil,
         sourceParrotId: UUID? = nil,
         exposureCount: Int = 1,
@@ -41,6 +45,7 @@ final class MemoryCard {
         self.content = content
         self.translation = translation
         self.audioSegmentPaths = audioSegmentPaths
+        self.illustrationPath = illustrationPath
         self.sourceWordId = sourceWordId
         self.sourceParrotId = sourceParrotId
         self.exposureCount = exposureCount
@@ -60,6 +65,7 @@ final class MemoryCard {
             content: phrase.spanishPhrase,
             translation: phrase.englishTranslation,
             audioSegmentPaths: phrase.segmentPaths,
+            illustrationPath: phrase.illustrationPath,
             sourceParrotId: phrase.id,
             exposureCount: 1,
             repetitionsPerPhaseBase: max(1, loops)
@@ -82,6 +88,14 @@ final class MemoryCard {
                 return docs.appendingPathComponent(path)
             }
         }
+    }
+
+    /// On-disk URL of the memorization illustration, or nil when none was saved.
+    var illustrationURL: URL? {
+        guard let path = illustrationPath else { return nil }
+        if path.hasPrefix("/") { return URL(fileURLWithPath: path) }
+        let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        return docs.appendingPathComponent(path)
     }
 
     /// The single user-visible material/horizon stage for this card.

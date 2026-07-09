@@ -11,6 +11,14 @@ final class AuthState {
     var isSignedIn: Bool { session != nil }
     var userId: UUID? { session?.user.id }
 
+    /// True when the user is signed in but has not yet completed the voice
+    /// onboarding quiz. Drives the full-screen gate from `ModeSelectorView`.
+    var needsOnboarding: Bool {
+        guard isSignedIn else { return false }
+        guard let p = profile else { return false }
+        return p.onboardingProfile == nil
+    }
+
     static let shared = AuthState()
 
     private init() {}
@@ -46,6 +54,16 @@ final class AuthState {
 
     @MainActor
     func signOut() async {
+        AnalyticsService.shared.track(.signOut)
+        try? await supabase.auth.signOut()
+        session = nil
+        profile = nil
+    }
+
+    @MainActor
+    func deleteAccount() async throws {
+        AnalyticsService.shared.track(.accountDeleted)
+        try await ProxyClient.shared.deleteAccount()
         try? await supabase.auth.signOut()
         session = nil
         profile = nil

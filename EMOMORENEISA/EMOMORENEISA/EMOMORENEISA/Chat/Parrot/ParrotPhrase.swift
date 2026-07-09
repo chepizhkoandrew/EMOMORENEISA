@@ -11,6 +11,9 @@ final class ParrotPhrase {
     var englishTranslation: String
     var createdAt: Date
     var segmentPaths: [String]
+    /// Relative path to the memorization illustration saved on-device (nil until
+    /// the server-generated image is downloaded, or if generation failed).
+    var illustrationPath: String?
 
     init(messageId: UUID, sessionId: UUID, selectedWords: [String], spanishPhrase: String, englishTranslation: String) {
         self.id = UUID()
@@ -21,6 +24,7 @@ final class ParrotPhrase {
         self.englishTranslation = englishTranslation
         self.createdAt = Date()
         self.segmentPaths = []
+        self.illustrationPath = nil
     }
 
     var hasAudio: Bool { segmentPaths.count == 7 }
@@ -34,6 +38,14 @@ final class ParrotPhrase {
                 return docs.appendingPathComponent(path)
             }
         }
+    }
+
+    /// On-disk URL of the memorization illustration, or nil when none was saved.
+    var illustrationURL: URL? {
+        guard let path = illustrationPath else { return nil }
+        if path.hasPrefix("/") { return URL(fileURLWithPath: path) }
+        let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        return docs.appendingPathComponent(path)
     }
 
     static func parrotDir(for id: UUID) -> URL {

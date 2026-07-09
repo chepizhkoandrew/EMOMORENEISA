@@ -1,32 +1,32 @@
 Meet Professor Madrid — the first Spanish learning app that doesn't just simulate a tutor. It is one.
 
-Forget flashcards and streak gamification. Professor Madrid uses the same frontier AI models that power the world's most advanced language research — packed into a personal Spanish tutor that's available 24/7, adapts to you in real time, and actually teaches you to speak.
+Learn Spanish fast with dog training and NLP techniques. Not flashcards. Not streaks. The methods that actually work.
+
+*** STREET VIEW — LEARN ANYWHERE ***
+This isn't a gimmick. It's the exact methodology proven to work in child language acquisition: learn words by seeing the real thing. Photograph up to 4 objects around you — your kitchen, your office, your street — and Professor Madrid builds a full vocabulary lesson from your actual environment.
+
+This is how children do — they remember what they see. The same contextual binding that helps children absorb thousands of words before age five, now available in your pocket.
 
 *** CHAT TUTOR ***
 Have a real conversation in Spanish. Text, voice, or both. Ask anything — grammar, vocabulary, pronunciation, culture. The Professor remembers what you've learned, how you learn, and what you're still getting wrong.
 
 Every message is a real voice recording. Tap any bubble to replay it. The Professor's voice is your model — listen, repeat, and nail the pronunciation.
 
-*** VISUAL MODE (STREET VIEW) ***
-This isn't a gimmick. It's the exact methodology proven to work in child language acquisition: learn words by seeing the real thing. Photograph up to 4 objects around you — your kitchen, your office, your street — and Professor Madrid builds a full vocabulary lesson from your actual environment.
+*** EL LORO ***
+Language stays in your brain through repetition. El Loro, the Professor's loyal companion, loops any phrase up to 20 times with karaoke-style word highlighting — creating involuntary auditory memory whether you're actively studying or not.
 
-The same contextual binding that helps children absorb thousands of words before age five, now available in your pocket.
-
-*** SEAGULL STEVEN ***
-Language stays in your brain through repetition. Seagull Steven, the Professor's loyal companion, loops any phrase up to 20 times with karaoke-style word highlighting — creating involuntary auditory memory whether you're actively studying or not.
-
-It's not just listening. It's neuroscience-backed repetition that makes phrases stick even when you're not trying.
+This is how dogs learn. Your Spanish is way easier, you can do it.
 
 *** VERB GAME ***
-Spanish conjugation is the wall every learner hits. The Verb Game spins three random verbs from the full -ar/-er/-ir spectrum, presents a 3x6 conjugation matrix, and takes your answers by voice. Green. Red. Try again. No mercy, no hints — just the mechanical drilling that builds true grammar fluency.
+Verbs and times is 80% of Spanish. The Verb Game spins three random verbs from the full -ar/-er/-ir spectrum, presents a 3x6 conjugation matrix, and takes your answers by voice. Green. Red. Try again. No mercy, no hints — train reaction, not the knowledge.
 
 *** WHY IT WORKS ***
 - State-of-the-art voice recognition tuned for Spanish learner pronunciation — including errors, hesitations, and mixed-language input
 - Advanced vision models that replicate child language acquisition through real visual context
 - Frontier conversation AI that maintains full session memory and adapts your lesson in real time
-- Seagull Steven neuro-repetition engine for involuntary auditory memory formation
+- El Loro neuro-repetition engine for involuntary auditory memory formation
 
-The benchmark isn't Duolingo. It's a 50/hour native Spanish tutor. Professor Madrid wins.
+The benchmark isn't Duolingo. It's a €50/hour native Spanish tutor. Professor Madrid wins.
 
 *** WHAT YOU NEED ***
 An internet connection and a willingness to speak out loud. That's it.

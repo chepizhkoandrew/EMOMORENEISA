@@ -6,6 +6,13 @@ final class AudioRecorder {
     var isRecording = false
     var audioLevel: Float = 0.0
 
+    // Per-call STT overrides. When set, replace the default Spanish/English
+    // biased prompt used by the verb game. Onboarding sets these to the
+    // quiz-language (uk/en) so Ukrainian answers are recognised correctly by
+    // OpenAI gpt-4o-transcribe.
+    var sttLanguageOverride: String? = nil
+    var sttPromptOverride: String? = nil
+
     private var recorder: AVAudioRecorder?
     private var levelTimer: Timer?
     private var audioFileURL: URL?
@@ -120,11 +127,15 @@ final class AudioRecorder {
             return ""
         }
         print("[STT] Audio file size: \(audioData.count) bytes — sending to proxy…")
+        let promptHint = sttPromptOverride
+            ?? "Spanish/English speech. Preserve exact word endings and Spanish accents (á, é, í, ó, ú, ñ)."
+        let languageHint = sttLanguageOverride
         do {
             let transcript = try await ProxyClient.shared.transcribe(
                 audioData: audioData,
                 mime: "audio/mp4",
-                prompt: "Spanish/English speech. Preserve exact word endings and Spanish accents (á, é, í, ó, ú, ñ)."
+                language: languageHint,
+                prompt: promptHint
             )
             if transcript.isEmpty {
                 print("[STT] Proxy returned empty/no speech")

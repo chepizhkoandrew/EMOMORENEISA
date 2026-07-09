@@ -55,3 +55,16 @@ Write spec + plan (this file).
 
 ### [x] Step 9: iOS — EMOMORENEISAApp
 - Add `StreetAnnotation.self` to the SwiftData schema array
+
+### [x] Step 10: HomeScreen & NewSessionView redesign
+- ModeSelectorView: bigger dog (460pt), new card style matching NewSessionView, renamed cards: Explore / Memorise words / Verbs & times with subtitles and illustration images
+- NewSessionView: matching dog size (460pt), card order Street view → Choose topic → Your chats, "Your chats" opens SessionListView
+- Explore in ModeSelectorView now opens NewSessionView directly; session creation flows to ChatView
+
+### [x] Step 11: Dog bubble voice narration + ChatView back button
+- Generated 15 MP3 files via Google Cloud TTS (Achird/es-ES, 0.9× speed) for all dog bubble phrases on both home screens
+- Saved as `dog_bubble_0.mp3`–`dog_bubble_9.mp3` and `explore_bubble_0.mp3`–`explore_bubble_4.mp3` in Resources/
+- ModeSelectorView: plays corresponding MP3 when each typewriter phrase begins
+- NewSessionView: same; plays `explore_bubble_N.mp3` per phrase
+- ChatView: added Back button (chevron.left + "Back") in navigationBarLeading toolbar
+- Build 22 uploaded to TestFlight

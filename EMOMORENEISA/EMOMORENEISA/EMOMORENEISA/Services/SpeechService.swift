@@ -20,7 +20,7 @@ final class SpeechService: NSObject {
     private var lastTranscript: String = ""
     private var listenStartTime: Date?
 
-    private let silenceTimeout: TimeInterval = 1.0
+    private let silenceTimeout: TimeInterval = 1.8
     private var watchdogTimer: Timer?
     private var firstBufferReceived = false
 
@@ -56,10 +56,10 @@ final class SpeechService: NSObject {
 
         let req = SFSpeechAudioBufferRecognitionRequest()
         req.shouldReportPartialResults = true
-        req.taskHint = .dictation
+        req.taskHint = .search
         req.addsPunctuation = false
         req.requiresOnDeviceRecognition = false
-        glog("🎙  STT  ", "Using server-based recognition for best accuracy")
+        glog("🎙  STT  ", "Using server-based recognition (search hint) for best accuracy")
         if !contextualStrings.isEmpty {
             req.contextualStrings = contextualStrings
             glog("🎙  STT  ", "Contextual hints: \(contextualStrings.joined(separator: ", "))")
@@ -186,6 +186,6 @@ final class SpeechService: NSObject {
             audioEngine.stop()
             audioEngine.inputNode.removeTap(onBus: 0)
         }
-        try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+        try? AVAudioSession.sharedInstance().setCategory(.ambient, mode: .default, options: [.mixWithOthers])
     }
 }

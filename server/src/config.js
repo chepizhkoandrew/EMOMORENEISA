@@ -16,6 +16,21 @@ function str(name, fallback) {
   return v === undefined || v === "" ? fallback : v;
 }
 
+// Google Cloud service-account JSON, shared by Cloud TTS and Vertex AI image
+// generation. Provided raw via GOOGLE_TTS_CREDENTIALS or base64 via
+// GOOGLE_TTS_CREDENTIALS_B64. Parsed once so both consumers use the same creds.
+const cloudTtsCredentials = (() => {
+  const rawB64 = process.env.GOOGLE_TTS_CREDENTIALS_B64;
+  const raw = process.env.GOOGLE_TTS_CREDENTIALS;
+  try {
+    if (rawB64) return JSON.parse(Buffer.from(rawB64, "base64").toString("utf8"));
+    if (raw) return JSON.parse(raw);
+  } catch (e) {
+    console.warn("[config] GOOGLE_TTS_CREDENTIALS parse failed:", e.message);
+  }
+  return null;
+})();
+
 export const config = {
   port: num("PORT", 8080),
   env: str("NODE_ENV", "production"),
@@ -48,7 +63,11 @@ export const config = {
     ttsOpenAI: str("MODEL_TTS_OPENAI", "gpt-4o-mini-tts"),
     // OpenAI speech-to-text. gpt-4o-transcribe is the most accurate for catching
     // Spanish word endings (the part that matters most for the verb game).
-    transcribe: str("MODEL_TRANSCRIBE", "gpt-4o-transcribe")
+    transcribe: str("MODEL_TRANSCRIBE", "gpt-4o-transcribe"),
+    // Onboarding reasoning models — Gemini text via generativelanguage API.
+    // Probes run mid-quiz (must be quick); synthesis runs once at the end.
+    onboardingProbe: str("MODEL_ONBOARDING_PROBE", "gemini-2.5-flash"),
+    onboardingSynthesis: str("MODEL_ONBOARDING_SYNTHESIS", "gemini-2.5-pro")
   },
 
   // Voice synthesis behaviour. Spanish audio must stay on Gemini; the OpenAI
@@ -74,15 +93,7 @@ export const config = {
   // base64 via GOOGLE_TTS_CREDENTIALS_B64. When credentials are present this
   // becomes the PRIMARY voice engine (Gemini/OpenAI remain as fallbacks).
   cloudTts: (() => {
-    let credentials = null;
-    const rawB64 = process.env.GOOGLE_TTS_CREDENTIALS_B64;
-    const raw = process.env.GOOGLE_TTS_CREDENTIALS;
-    try {
-      if (rawB64) credentials = JSON.parse(Buffer.from(rawB64, "base64").toString("utf8"));
-      else if (raw) credentials = JSON.parse(raw);
-    } catch (e) {
-      console.warn("[config] GOOGLE_TTS_CREDENTIALS parse failed:", e.message);
-    }
+    const credentials = cloudTtsCredentials;
     return {
       credentials,
       enabled: bool("CLOUD_TTS_ENABLED", !!credentials),
@@ -105,6 +116,35 @@ export const config = {
     aacBitrate: str("AAC_BITRATE", "40k")
   },
 
+  // Vertex AI image generation (Gemini 2.5 Flash Image, aka "nano banana").
+  // Runs on Google Cloud with the SAME service account as Cloud TTS (Vertex AI
+  // must be enabled on it) — NOT the generativelanguage API key — so the
+  // memorization-illustration generator does not share the rate-limited preview
+  // endpoint. Project id is read from the service-account JSON unless overridden.
+  vertexImage: (() => {
+    const credentials = cloudTtsCredentials;
+    const projectId = str("VERTEX_PROJECT_ID", credentials?.project_id || "");
+    return {
+      credentials,
+      projectId,
+      // "global" uses aiplatform.googleapis.com; a region uses {loc}-aiplatform.
+      location: str("VERTEX_LOCATION", "global"),
+      model: str("VERTEX_IMAGE_MODEL", "gemini-2.5-flash-image"),
+      enabled: bool("VERTEX_IMAGE_ENABLED", !!credentials && !!projectId)
+    };
+  })(),
+
+  // Shared, deduplicated illustration cache (mirrors the voice cache). Generated
+  // images are transcoded to small JPEGs and stored in Supabase Storage keyed by
+  // hash(model+style-version+prompt) so a phrase is only ever illustrated once
+  // across ALL users. Cache hits skip Vertex entirely.
+  image: {
+    cacheEnabled: bool("IMAGE_CACHE_ENABLED", true),
+    bucket: str("IMAGE_CACHE_BUCKET", "image-cache"),
+    jpegQuality: num("IMAGE_JPEG_QUALITY", 82),
+    maxSize: num("IMAGE_MAX_SIZE", 512)
+  },
+
   enforceWallet: bool("ENFORCE_WALLET", false),
 
   // Apple / StoreKit
@@ -119,10 +159,9 @@ export const config = {
       try { return JSON.parse(raw); } catch (_) { /* fall through to default */ }
     }
     return {
-      treats_599:  { usd: 5.99,  baseTreats: 599,  bonusPct: 0,  totalTreats: 599 },
-      treats_1199: { usd: 11.99, baseTreats: 1199, bonusPct: 15, totalTreats: 1379 },
-      treats_2499: { usd: 24.99, baseTreats: 2499, bonusPct: 25, totalTreats: 3124 },
-      treats_4999: { usd: 49.99, baseTreats: 4999, bonusPct: 48, totalTreats: 7399 }
+      treats_starter_599:  { usd: 5.99,  baseTreats: 599,  bonusPct: 0,  totalTreats: 599 },
+      treats_plus_1199:    { usd: 11.99, baseTreats: 1199, bonusPct: 15, totalTreats: 1379 },
+      treats_pro_2499:     { usd: 24.99, baseTreats: 2499, bonusPct: 25, totalTreats: 3124 }
     };
   })(),
 
@@ -144,6 +183,8 @@ export const config = {
     usdPerMTokOutAnalyst: num("USD_PER_MTOK_OUT_ANALYST", 0.6),
     usdPerMinTtsGemini: num("USD_PER_MIN_TTS_GEMINI", 0.0048),
     usdPerMinTtsOpenAI: num("USD_PER_MIN_TTS_OPENAI", 0.015),
+    // Vertex Gemini 2.5 Flash Image bills ~1290 output tokens/image (~$0.039).
+    usdPerImage: num("USD_PER_IMAGE", 0.039),
     infraOverhead: num("INFRA_OVERHEAD", 0.15),
     targetMargin: num("TARGET_MARGIN", 5.0),
     appleFee: num("APPLE_FEE", 0.15),

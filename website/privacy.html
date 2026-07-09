@@ -63,56 +63,93 @@
     <a class="back" href="/">← Professor Madrid</a>
 
     <h1>Privacy Policy</h1>
-    <p class="updated">Last updated: 21 June 2026</p>
+    <p class="updated">Last updated: 3 July 2026</p>
 
     <p class="lead">This Privacy Policy explains what data Professor Madrid ("we", "us")
     collects, why, and what choices you have. It applies to the Professor Madrid mobile app
     and this website.</p>
 
     <h2>1. Data we collect</h2>
-    <ul>
-      <li><strong>Account data</strong> — when you sign in with Apple or Google, we receive a
-      unique identifier and, where you allow it, your name and email address.</li>
-      <li><strong>Learning content</strong> — your chats with the tutor, words and topics you
-      study, progress, and a learning profile we build to personalise lessons.</li>
-      <li><strong>Usage &amp; billing data</strong> — your treat balance, purchases, and a
-      record of which features you used and when, so the app works and we can monitor costs.</li>
-      <li><strong>Technical data</strong> — basic device and app information and logs needed
-      for security, debugging, and reliability.</li>
-    </ul>
-    <p>We do not sell your personal data.</p>
+    <p>The table below lists every category of data we collect, whether it is linked to your
+    identity, and why we collect it.</p>
+    <table>
+      <tr><th>Data</th><th>Linked to you</th><th>Why</th></tr>
+      <tr>
+        <td><strong>Account identifiers</strong> — a unique user ID assigned at sign-in</td>
+        <td>Yes</td>
+        <td>To identify your account, treat wallet, sessions, and learning history</td>
+      </tr>
+      <tr>
+        <td><strong>Name and email address</strong> — provided by Apple or Google at sign-in, where you allow it</td>
+        <td>Yes</td>
+        <td>To display your profile name and, if needed, to contact you about your account</td>
+      </tr>
+      <tr>
+        <td><strong>Learning content</strong> — your chat messages with the tutor, study topics, progress, and the learning profile we build to personalise lessons</td>
+        <td>Yes</td>
+        <td>To provide and personalise the Service</td>
+      </tr>
+      <tr>
+        <td><strong>Usage &amp; billing data</strong> — your treat balance, purchases, and a record of which features you used and when</td>
+        <td>Yes</td>
+        <td>To operate the treats and billing system and prevent abuse</td>
+      </tr>
+      <tr>
+        <td><strong>Voice recordings</strong> — audio you record when speaking to the tutor or during voice exercises</td>
+        <td>No</td>
+        <td>Transmitted to our server solely for speech-to-text transcription; processed immediately and never stored</td>
+      </tr>
+      <tr>
+        <td><strong>Photos</strong> — images you take using the Street View feature</td>
+        <td>No</td>
+        <td>Transmitted to our server solely for AI scene annotation; processed immediately and never stored</td>
+      </tr>
+      <tr>
+        <td><strong>Technical data</strong> — basic device and app information and logs</td>
+        <td>No</td>
+        <td>Security, debugging, and reliability</td>
+      </tr>
+    </table>
+    <p>We do not sell your personal data. We do not share any data with advertising networks,
+    data brokers, or third-party marketing services. Your data is used exclusively to operate
+    the Service as described above.</p>
 
     <h2>2. How we use your data</h2>
     <ul>
-      <li>To provide and personalise the Service (generate lessons, voice, drills).</li>
+      <li>To provide and personalise the Service (generate lessons, voice replies, drills).</li>
       <li>To operate the treats and billing system and prevent abuse.</li>
       <li>To maintain security, fix problems, and improve the Service.</li>
       <li>To communicate with you about support or important changes.</li>
     </ul>
 
     <h2>3. Service providers we share data with</h2>
-    <p>To run the Service we use trusted processors who handle data on our behalf. We share
-    only what is needed for each to do its job:</p>
+    <p>To run the Service we use trusted processors who handle data on our behalf under strict
+    data-processing agreements. We share only the minimum data each provider needs to do its
+    job. <strong>We do not use any advertising, analytics, or marketing platforms.</strong></p>
     <table>
-      <tr><th>Provider</th><th>Purpose</th></tr>
-      <tr><td>Supabase</td><td>Account, learning data, treat balances and transactions</td></tr>
-      <tr><td>Railway</td><td>Our backend server that routes AI requests securely</td></tr>
-      <tr><td>OpenAI</td><td>Generating chat lessons and some voice</td></tr>
-      <tr><td>Google (Gemini / Maps Street View)</td><td>Generating voice and contextual imagery</td></tr>
-      <tr><td>Apple</td><td>Sign-in and in-app purchase processing</td></tr>
+      <tr><th>Provider</th><th>Data shared</th><th>Purpose</th></tr>
+      <tr><td>Supabase</td><td>Account identifiers, learning content, treat balances</td><td>Database and authentication</td></tr>
+      <tr><td>Railway</td><td>Proxied AI requests (no persistent storage)</td><td>Our backend server that routes requests securely</td></tr>
+      <tr><td>OpenAI</td><td>Chat text, voice recordings (in transit only)</td><td>Generating AI tutor responses and speech</td></tr>
+      <tr><td>Google (Gemini)</td><td>Chat text, photos (in transit only)</td><td>Generating voice and contextual scene descriptions</td></tr>
+      <tr><td>Apple</td><td>Purchase receipts (via StoreKit)</td><td>Sign-in and in-app purchase verification</td></tr>
     </table>
-    <p>Content sent to AI providers is used to produce your results. We do not authorise these
-    providers to use your content to train their models where an opt-out is available to us.</p>
+    <p>Voice recordings and photos sent to AI providers are used solely to produce your
+    in-session results. We do not authorise these providers to use your content to train
+    their models where an opt-out is available to us.</p>
 
     <h2>4. Cookies and the website</h2>
     <p>This website uses only essential cookies/local storage needed to remember that you have
     seen our cookie notice and to load fonts. We do not use advertising or cross-site tracking
-    cookies on this site. The mobile app does not use advertising trackers.</p>
+    cookies on this site. The mobile app does not use advertising trackers or analytics SDKs.</p>
 
     <h2>5. Data retention</h2>
-    <p>We keep your data while your account is active and as needed to provide the Service,
-    comply with legal obligations, resolve disputes, and enforce our agreements. You can ask
-    us to delete your account and associated data (see Section 7).</p>
+    <p>We keep your account data while your account is active and as needed to provide the
+    Service, comply with legal obligations, resolve disputes, and enforce our agreements.
+    Voice recordings and photos are never stored — they are discarded immediately after
+    processing. You can delete your account and all associated data at any time directly
+    from the app (Profile → Delete My Account) or by emailing
+    <a href="mailto:privacy@professormadrid.com">privacy@professormadrid.com</a>.</p>
 
     <h2>6. Security</h2>
     <p>API keys and AI requests are handled by our server, not stored in the app, and traffic

@@ -71,6 +71,7 @@ struct ParrotPlayerView: View {
             if phrase.hasAudio {
                 await MainActor.run { service.state = .ready }
                 player.start(phrase: phrase, loops: loops)
+                await service.ensureIllustration(for: phrase)
             } else {
                 // Stream: start looping playback the moment segment 1 lands; the
                 // player buffers on later segments while they are still arriving.
@@ -89,17 +90,9 @@ struct ParrotPlayerView: View {
 
     private var header: some View {
         HStack {
-            Button {
+            BackButton {
                 player.stop()
                 dismiss()
-            } label: {
-                HStack(spacing: 6) {
-                    Image(systemName: "chevron.left")
-                        .font(.system(size: 14, weight: .semibold))
-                    Text("Back to Chat")
-                        .font(.system(size: 16, weight: .medium, design: .rounded))
-                }
-                .foregroundColor(.yellow)
             }
             Spacer()
         }
@@ -112,7 +105,7 @@ struct ParrotPlayerView: View {
     private var mainContent: some View {
         switch service.state {
         case .idle:
-            generatingView(progress: 0, label: "Preparing…")
+            generatingView(progress: 0, label: L("Preparing…"))
 
         case .generating(let progress, let label):
             generatingView(progress: progress, label: label)
@@ -122,7 +115,7 @@ struct ParrotPlayerView: View {
                 Image(systemName: "exclamationmark.triangle.fill")
                     .font(.system(size: 44))
                     .foregroundColor(.orange)
-                Text("Generation failed")
+                Text(L("Generation failed"))
                     .font(.system(size: 22, weight: .bold, design: .rounded))
                     .foregroundColor(AppColors.textPrimary)
                 Text(msg)
@@ -130,7 +123,7 @@ struct ParrotPlayerView: View {
                     .foregroundColor(AppColors.textSecondary)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 32)
-                Button("Try Again") {
+                Button(L("Try Again")) {
                     Task { await service.generate(phrase: phrase, level: "Beginner") }
                 }
                 .font(.system(size: 18, weight: .semibold, design: .rounded))
@@ -152,7 +145,7 @@ struct ParrotPlayerView: View {
                 .scaleEffect(1 + 0.06 * sin(progress * .pi * 6))
                 .animation(.easeInOut(duration: 0.8).repeatForever(autoreverses: true), value: progress)
 
-            Text("Seagull Steven is warming up…")
+            Text(L("Seagull Steven is warming up…"))
                 .font(.system(size: 22, weight: .bold, design: .rounded))
                 .foregroundColor(AppColors.textPrimary)
 
@@ -180,7 +173,7 @@ struct ParrotPlayerView: View {
 
     private var playerInfo: some View {
         VStack(spacing: 20) {
-            LoroImage(asset: .teaching, size: 120)
+            LoroIllustrationView(url: phrase.illustrationURL, fallback: .teaching, size: 120)
                 .shadow(color: Color.yellow.opacity(0.4), radius: 20)
 
             VStack(spacing: 8) {
@@ -200,7 +193,7 @@ struct ParrotPlayerView: View {
 
             if !player.isDone {
                 VStack(spacing: 6) {
-                    Text("Loop \(min(player.currentLoop + 1, player.totalLoops)) of \(player.totalLoops)")
+                    Text(L("Loop %d of %d", min(player.currentLoop + 1, player.totalLoops), player.totalLoops))
                         .font(.system(size: 15, weight: .semibold, design: .rounded))
                         .foregroundColor(.yellow)
 
@@ -215,7 +208,7 @@ struct ParrotPlayerView: View {
                     .padding(.horizontal, 32)
                 }
             } else {
-                Text("Done!")
+                Text(L("Done!"))
                     .font(.system(size: 20, weight: .bold, design: .rounded))
                     .foregroundColor(.yellow)
             }
@@ -231,7 +224,7 @@ struct ParrotPlayerView: View {
 
     private func originalMessageView(text: String) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("From message")
+            Text(L("From message"))
                 .font(.system(size: 12, weight: .semibold, design: .rounded))
                 .foregroundColor(AppColors.textTertiary)
 
@@ -269,7 +262,7 @@ struct ParrotPlayerView: View {
             HStack(spacing: 10) {
                 Text("🧠")
                     .font(.system(size: 22))
-                Text("This phrase went to Loro's memory")
+                Text(L("This phrase went to Loro's memory"))
                     .font(.system(size: 15, weight: .semibold, design: .rounded))
                     .foregroundColor(.black)
             }
@@ -305,7 +298,7 @@ struct ParrotPlayerView: View {
                         .foregroundColor(.yellow)
                         .shadow(color: Color.yellow.opacity(0.55), radius: 18)
 
-                    Text("Round complete")
+                    Text(L("Round complete"))
                         .font(.system(size: 17, design: .rounded))
                         .foregroundColor(AppColors.textSecondary)
                 }
@@ -316,13 +309,13 @@ struct ParrotPlayerView: View {
 
     private var segmentLabel: some View {
         let labels = [
-            "Spanish phrase",
-            "English translation",
-            "Spanish × 1",
-            "Spanish × 2",
-            "Spanish × 3",
-            "Sentence 1",
-            "Sentence 2"
+            L("Spanish phrase"),
+            L("English translation"),
+            L("Spanish × 1"),
+            L("Spanish × 2"),
+            L("Spanish × 3"),
+            L("Sentence 1"),
+            L("Sentence 2")
         ]
         let idx = player.currentSegment
         let label = idx < labels.count ? labels[idx] : ""
@@ -387,7 +380,7 @@ struct ParrotPlayerView: View {
             .padding(.horizontal, 24)
 
             HStack {
-                Text("Loops:")
+                Text(L("Loops:"))
                     .font(.system(size: 15, design: .rounded))
                     .foregroundColor(AppColors.textSecondary)
                 HStack(spacing: 0) {

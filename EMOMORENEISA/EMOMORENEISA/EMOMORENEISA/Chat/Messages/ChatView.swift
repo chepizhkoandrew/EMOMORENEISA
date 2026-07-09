@@ -63,7 +63,7 @@ struct ChatView: View {
                 BackButton { dismiss() }
             }
             ToolbarItem(placement: .principal) {
-                Text(session.title ?? session.topic ?? session.modeEnum.displayLabel)
+                Text(session.title ?? session.topic ?? L(session.modeEnum.displayLabel))
                     .font(.system(size: 16, weight: .semibold, design: .rounded))
                     .foregroundColor(Color(red: 1.0, green: 0.93, blue: 0.62))
                     .multilineTextAlignment(.center)
@@ -107,7 +107,7 @@ struct ChatView: View {
             ParrotWordGridView(
                 message: msg,
                 sessionId: session.id,
-                level: authState.profile?.levelEnum.displayLabel ?? "Beginner"
+                level: authState.profile?.levelEnum.displayLabel ?? L("Beginner")
             )
         }
         .fullScreenCover(item: $annotationTarget) { target in
@@ -265,7 +265,7 @@ struct ChatView: View {
                     HStack(spacing: 8) {
                         Image(systemName: "camera.fill")
                             .font(.system(size: 20, weight: .semibold))
-                        Text("Camera")
+                        Text(L("Camera"))
                             .font(.system(size: 18, weight: .semibold, design: .rounded))
                     }
                     .foregroundColor(isGenerating ? AppColors.textTertiary : .white)
@@ -284,7 +284,7 @@ struct ChatView: View {
                     HStack(spacing: 8) {
                         Image(systemName: "photo.on.rectangle.angled")
                             .font(.system(size: 20, weight: .semibold))
-                        Text("Photos")
+                        Text(L("Photos"))
                             .font(.system(size: 18, weight: .semibold, design: .rounded))
                     }
                     .foregroundColor(isGenerating ? AppColors.textTertiary : .white)
@@ -334,17 +334,17 @@ struct ChatView: View {
             HStack(spacing: 8) {
                 if isVoiceSending {
                     ProgressView().tint(.white).scaleEffect(0.75)
-                    Text("Sending…")
+                    Text(L("Sending…"))
                         .font(.system(size: 18, weight: .semibold, design: .rounded))
                 } else if isRec {
                     Image(systemName: "stop.fill")
                         .font(.system(size: 20, weight: .semibold))
-                    Text("Stop")
+                    Text(L("Stop"))
                         .font(.system(size: 18, weight: .semibold, design: .rounded))
                 } else {
                     Image(systemName: "mic.fill")
                         .font(.system(size: 20, weight: .semibold))
-                    Text("Record")
+                    Text(L("Record"))
                         .font(.system(size: 18, weight: .semibold, design: .rounded))
                 }
             }
@@ -368,7 +368,7 @@ struct ChatView: View {
                 .font(.system(size: 14, design: .rounded))
                 .foregroundColor(.red.opacity(0.9))
             Spacer()
-            Button("Dismiss") { errorMessage = nil }
+            Button(L("Dismiss")) { errorMessage = nil }
                 .font(.system(size: 14, design: .rounded))
                 .foregroundColor(AppColors.textSecondary)
         }
@@ -384,7 +384,7 @@ struct ChatView: View {
                 .font(.system(size: 22, weight: .semibold))
                 .foregroundColor(.yellow.opacity(0.8))
 
-            Text(session.sessionGoal ?? session.topic ?? "Free conversation")
+            Text(session.sessionGoal ?? session.topic ?? L("Free conversation"))
                 .font(.system(size: 22, weight: .medium, design: .rounded))
                 .foregroundColor(AppColors.textSecondary)
                 .lineLimit(1)
@@ -669,12 +669,12 @@ struct GoalEditorSheet: View {
 
                 ScrollView {
                     VStack(alignment: .leading, spacing: 20) {
-                        Text("What are we focusing on in this session?")
+                        Text(L("What are we focusing on in this session?"))
                             .font(.system(size: 18, weight: .semibold, design: .rounded))
                             .foregroundColor(.white)
 
                         HStack(alignment: .top, spacing: 12) {
-                            TextField("e.g. past tense, ser vs estar, travel vocabulary…", text: $text, axis: .vertical)
+                            TextField(L("e.g. past tense, ser vs estar, travel vocabulary…"), text: $text, axis: .vertical)
                                 .font(.system(size: 20, weight: .regular, design: .rounded))
                                 .foregroundColor(AppColors.textPrimary)
                                 .lineLimit(3...7)
@@ -690,20 +690,20 @@ struct GoalEditorSheet: View {
                         if isTranscribing {
                             HStack(spacing: 8) {
                                 ProgressView().tint(.yellow).scaleEffect(0.85)
-                                Text("Transcribing…")
+                                Text(L("Transcribing…"))
                                     .font(.system(size: 15, design: .rounded))
                                     .foregroundColor(.yellow.opacity(0.8))
                             }
                         } else if isRecording {
                             HStack(spacing: 8) {
                                 Circle().fill(Color.red).frame(width: 9, height: 9)
-                                Text("Listening… tap mic to stop")
+                                Text(L("Listening… tap mic to stop"))
                                     .font(.system(size: 15, design: .rounded))
                                     .foregroundColor(.red.opacity(0.8))
                             }
                         }
 
-                        Text("Speak your focus or type it. Professor Madrid will jump straight into teaching it from the very first message.")
+                        Text(L("Speak your focus or type it. Professor Madrid will jump straight into teaching it from the very first message."))
                             .font(.system(size: 15, design: .rounded))
                             .foregroundColor(.white.opacity(0.55))
                             .lineSpacing(4)
@@ -711,7 +711,7 @@ struct GoalEditorSheet: View {
                     .padding(24)
                 }
             }
-            .navigationTitle("Session Focus")
+            .navigationTitle(L("Session Focus"))
             .navigationBarTitleDisplayMode(.large)
             .toolbarColorScheme(.dark, for: .navigationBar)
             .toolbarBackground(AppColors.backgroundTop, for: .navigationBar)
@@ -721,7 +721,7 @@ struct GoalEditorSheet: View {
                     BackButton { dismiss() }
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Save") {
+                    Button(L("Save")) {
                         let trimmed = text.trimmingCharacters(in: .whitespaces)
                         if !trimmed.isEmpty { onSave(trimmed) }
                         dismiss()

@@ -43,5 +43,6 @@ final class WalletManager {
     func handleInsufficientTreats(balance: Int) {
         balanceTreats = balance
         showPaywall = true
+        AnalyticsService.shared.track(.paywallShown(balance: balance))
     }
 }

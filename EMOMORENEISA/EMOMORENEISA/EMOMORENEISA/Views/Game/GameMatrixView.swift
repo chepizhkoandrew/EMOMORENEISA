@@ -39,7 +39,7 @@ struct GameMatrixView: View {
                 HStack(spacing: 6) {
                     Image(systemName: "xmark")
                         .font(.system(size: 12, weight: .bold))
-                    Text(isReview ? "NEW ROUND" : "STOP")
+                    Text(isReview ? L("NEW ROUND") : L("STOP"))
                         .font(.system(size: 13, weight: .bold, design: .monospaced))
                 }
                 .foregroundColor(.white.opacity(0.6))
@@ -52,7 +52,7 @@ struct GameMatrixView: View {
 
             if isReview {
                 HStack(spacing: 6) {
-                    Text("REVIEW")
+                    Text(L("REVIEW"))
                         .font(.system(size: 11, weight: .black, design: .monospaced))
                         .foregroundColor(.black)
                         .tracking(2)
@@ -88,7 +88,7 @@ struct GameMatrixView: View {
                     .overlay(Circle().stroke(Color.white.opacity(0.14), lineWidth: 1))
             }
 
-            Text(String(format: "%.0fs", engine.timerSeconds))
+            Text(L("%.0fs", engine.timerSeconds))
                 .font(.system(size: 13, weight: .bold, design: .monospaced))
                 .foregroundColor(.white.opacity(0.7))
                 .frame(minWidth: 28)
@@ -130,7 +130,7 @@ struct GameMatrixView: View {
                 HStack(spacing: 5) {
                     Image(systemName: engine.hideCorrect ? "eye.slash" : "eye")
                         .font(.system(size: 11, weight: .bold))
-                    Text(engine.hideCorrect ? "SHOW ALL" : "HIDE ✓")
+                    Text(engine.hideCorrect ? L("SHOW ALL") : L("HIDE ✓"))
                         .font(.system(size: 11, weight: .bold, design: .monospaced))
                 }
                 .foregroundColor(engine.hideCorrect ? GameColors.gold : .white.opacity(0.5))
@@ -150,7 +150,7 @@ struct GameMatrixView: View {
                 HStack(spacing: 5) {
                     Image(systemName: "arrow.counterclockwise")
                         .font(.system(size: 11, weight: .bold))
-                    Text("REPEAT")
+                    Text(L("REPEAT"))
                         .font(.system(size: 11, weight: .bold, design: .monospaced))
                 }
                 .foregroundColor(GameColors.gold)
@@ -164,7 +164,7 @@ struct GameMatrixView: View {
             Button {
                 engine.enterResults()
             } label: {
-                Text("SUMMARY")
+                Text(L("SUMMARY"))
                     .font(.system(size: 11, weight: .bold, design: .monospaced))
                     .foregroundColor(.white.opacity(0.55))
                     .padding(.horizontal, 10)
@@ -270,7 +270,7 @@ struct GameMatrixView: View {
                 }
 
                 if !result.userTranscript.isEmpty && !result.correct {
-                    Text("you said: \"\(result.userTranscript)\"")
+                    Text(L("you said: \"%@\"", result.userTranscript))
                         .font(.system(size: 12, weight: .regular, design: .monospaced))
                         .foregroundColor(GameColors.rojo.opacity(0.60))
                         .lineLimit(1)
@@ -279,7 +279,7 @@ struct GameMatrixView: View {
                     HStack(spacing: 4) {
                         Image(systemName: "checkmark.circle.fill")
                             .font(.system(size: 12, weight: .bold))
-                        Text("CORRECT")
+                        Text(L("CORRECT"))
                             .font(.system(size: 12, weight: .bold, design: .monospaced))
                     }
                     .foregroundColor(GameColors.verde.opacity(0.80))
@@ -305,13 +305,13 @@ struct GameMatrixView: View {
                 )
 
             VStack(spacing: 4) {
-                Text(missedCount == 0 ? "ALL CORRECT" : "TAP A RED CELL TO RETRY")
+                Text(missedCount == 0 ? L("ALL CORRECT") : L("TAP A RED CELL TO RETRY"))
                     .font(.system(size: 16, weight: .bold, design: .monospaced))
                     .foregroundColor(missedCount == 0 ? GameColors.verde : .white.opacity(0.60))
                     .shadow(color: missedCount == 0 ? GameColors.verde.opacity(0.6) : .clear, radius: 8)
 
                 if missedCount > 0 {
-                    Text("\(missedCount) MISSED")
+                    Text(L("%d MISSED", missedCount))
                         .font(.system(size: 12, weight: .regular, design: .monospaced))
                         .foregroundColor(GameColors.rojo.opacity(0.65))
                         .tracking(1)
@@ -425,7 +425,7 @@ struct GameMatrixView: View {
                     .foregroundColor(isProcessing ? GameColors.gold : GameColors.rojo)
                     .shadow(color: (isProcessing ? GameColors.gold : GameColors.rojo).opacity(0.8), radius: 6)
 
-                Text(isProcessing ? "PROCESSING…" : "LISTENING…")
+                Text(isProcessing ? L("PROCESSING…") : L("LISTENING…"))
                     .font(.system(size: 15, weight: .bold, design: .monospaced))
                     .foregroundColor(.white.opacity(0.85))
                     .tracking(2)
@@ -485,7 +485,7 @@ private struct VerbChip: View {
                 .shadow(color: .white.opacity(0.15), radius: 2)
 
             if verb.joker {
-                Text(verb.jokerKind == .fullyIrregular ? "IRREG" : "STEM")
+                Text(verb.jokerKind == .fullyIrregular ? L("IRREG") : L("STEM"))
                     .font(.system(size: 9, weight: .black, design: .monospaced))
                     .foregroundColor(.black.opacity(0.65))
                     .tracking(1)

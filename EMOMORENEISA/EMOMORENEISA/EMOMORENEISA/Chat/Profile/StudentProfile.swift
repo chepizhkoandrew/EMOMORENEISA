@@ -27,6 +27,11 @@ struct ESPProfile: Codable, Identifiable {
     var targetLevel: String?
     var exerciseHistory: [String]
 
+    // Onboarding v3: pronoun + persona payload from the voice quiz.
+    // Optional to keep legacy profiles decoding fine.
+    var userPronoun: String?              // "he" | "she" | "they"
+    var onboardingProfile: OnboardingProfile?
+
     enum CodingKeys: String, CodingKey {
         case id
         case displayName        = "display_name"
@@ -50,6 +55,8 @@ struct ESPProfile: Codable, Identifiable {
         case practiceStyle      = "practice_style"
         case targetLevel        = "target_level"
         case exerciseHistory    = "exercise_history"
+        case userPronoun        = "user_pronoun"
+        case onboardingProfile  = "onboarding_profile"
     }
 
     init(
@@ -74,7 +81,9 @@ struct ESPProfile: Codable, Identifiable {
         whyLearning: String? = nil,
         practiceStyle: String? = nil,
         targetLevel: String? = nil,
-        exerciseHistory: [String] = []
+        exerciseHistory: [String] = [],
+        userPronoun: String? = nil,
+        onboardingProfile: OnboardingProfile? = nil
     ) {
         self.id = id
         self.displayName = displayName
@@ -98,6 +107,8 @@ struct ESPProfile: Codable, Identifiable {
         self.practiceStyle = practiceStyle
         self.targetLevel = targetLevel
         self.exerciseHistory = exerciseHistory
+        self.userPronoun = userPronoun
+        self.onboardingProfile = onboardingProfile
     }
 
     init(from decoder: Decoder) throws {
@@ -124,6 +135,8 @@ struct ESPProfile: Codable, Identifiable {
         practiceStyle     = try? c.decodeIfPresent(String.self, forKey: .practiceStyle)
         targetLevel       = try? c.decodeIfPresent(String.self, forKey: .targetLevel)
         exerciseHistory   = (try? c.decode([String].self, forKey: .exerciseHistory)) ?? []
+        userPronoun       = try? c.decodeIfPresent(String.self, forKey: .userPronoun)
+        onboardingProfile = try? c.decodeIfPresent(OnboardingProfile.self, forKey: .onboardingProfile)
     }
 
     var levelEnum: StudentLevel {
@@ -144,6 +157,35 @@ struct ESPProfile: Codable, Identifiable {
         if !lifeNotes.isEmpty { parts.append("Contexto personal: \(lifeNotes.prefix(120))") }
         if !exerciseHistory.isEmpty {
             parts.append("Últimos ejercicios: \(exerciseHistory.suffix(4).joined(separator: ", "))")
+        }
+        if let p = userPronoun, !p.isEmpty {
+            parts.append("User pronoun: \(p). Address the user with the matching Ukrainian/Spanish endings; never mix genders mid-message.")
+        }
+        if let ob = onboardingProfile {
+            if !ob.tutorCheatSheet.isEmpty {
+                parts.append("=== Ficha del alumno (usa estos datos con naturalidad) ===\n\(ob.tutorCheatSheet)")
+            }
+            if !ob.cityFlavor.isEmpty {
+                parts.append("City flavor: \(ob.cityFlavor)")
+            }
+            let narrative = ob.narrativeSummary.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !narrative.isEmpty {
+                let short = narrative.split(separator: "\n").prefix(2).joined(separator: " ")
+                parts.append("Sobre \(displayName ?? "el alumno"): \(short)")
+            }
+            if let lb = ob.levelBreakdown {
+                var lines: [String] = ["=== Nivel del alumno (multi-eje, observado) ==="]
+                if !lb.currentState.isEmpty { lines.append("Current: \(lb.currentState)") }
+                lines.append("Overall: \(lb.overallBand) | Listening: \(lb.listening.band) | Speaking: \(lb.speaking.band) | Grammar: \(lb.grammar.band)")
+                if !lb.listening.note.isEmpty { lines.append("Listening note: \(lb.listening.note)") }
+                if !lb.speaking.note.isEmpty  { lines.append("Speaking note: \(lb.speaking.note)") }
+                if !lb.grammar.note.isEmpty   { lines.append("Grammar note: \(lb.grammar.note)") }
+                if !lb.goals.isEmpty {
+                    lines.append("Goals:")
+                    lines.append(contentsOf: lb.goals.prefix(5))
+                }
+                parts.append(lines.joined(separator: "\n"))
+            }
         }
         return parts.joined(separator: "\n")
     }
@@ -193,6 +235,8 @@ final class LocalStudentProfile {
     var practiceStyle: String?
     var targetLevel: String?
     var exerciseHistory: [String]
+    var userPronoun: String? = nil
+    var onboardingProfileJSON: Data = Data()
 
     private static let encoder = JSONEncoder()
     private static let decoder = JSONDecoder()
@@ -219,6 +263,8 @@ final class LocalStudentProfile {
         self.practiceStyle = remote.practiceStyle
         self.targetLevel = remote.targetLevel
         self.exerciseHistory = remote.exerciseHistory
+        self.userPronoun = remote.userPronoun
+        self.onboardingProfileJSON = (try? Self.encoder.encode(remote.onboardingProfile)) ?? Data()
     }
 
     func update(from remote: ESPProfile) {
@@ -242,6 +288,8 @@ final class LocalStudentProfile {
         practiceStyle = remote.practiceStyle
         targetLevel = remote.targetLevel
         exerciseHistory = remote.exerciseHistory
+        userPronoun = remote.userPronoun
+        onboardingProfileJSON = (try? Self.encoder.encode(remote.onboardingProfile)) ?? Data()
     }
 
     var wordBank: [WordEntry] {

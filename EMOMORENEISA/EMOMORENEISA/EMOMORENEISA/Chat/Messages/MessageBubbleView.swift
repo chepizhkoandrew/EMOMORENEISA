@@ -18,12 +18,17 @@ struct MessageBubbleView: View {
                             annotateButton(action: annotate)
                         }
                     }
+                    .onTapGesture(count: 2) {
+                        if message.isAssistant {
+                            onParrot()
+                        }
+                    }
                     .contextMenu {
                         if message.isAssistant {
                             Button {
                                 onReplyInThread()
                             } label: {
-                                Label("Reply in Thread", systemImage: "bubble.left.and.bubble.right")
+                                Label(L("Reply in Thread"), systemImage: "bubble.left.and.bubble.right")
                             }
                         }
                     }
@@ -163,10 +168,9 @@ struct MessageBubbleView: View {
                             .foregroundColor(.yellow)
                             .contentTransition(.symbolEffect(.replace))
                     } else {
-                        Image("icon_beak")
-                            .resizable()
-                            .scaledToFill()
-                            .frame(width: actionButtonSize, height: actionButtonSize)
+                        Image(systemName: "play.fill")
+                            .font(.system(size: 18))
+                            .foregroundColor(AppColors.textTertiary)
                     }
                 }
                 .foregroundColor(isPlaying || isLoadingThis ? .yellow : AppColors.textTertiary)
@@ -212,7 +216,9 @@ struct MessageBubbleView: View {
                 HStack(spacing: 6) {
                     Image(systemName: "bubble.left.and.bubble.right")
                         .font(.system(size: 19))
-                    Text("\(message.threadReplyCount) \(message.threadReplyCount == 1 ? "reply" : "replies")")
+                    Text(LPlural(message.threadReplyCount,
+                                 en: "%d reply", "%d replies",
+                                 uk: "%d відповідь", "%d відповіді", "%d відповідей"))
                         .font(.system(size: 20, weight: .medium))
                 }
                 .foregroundColor(.yellow.opacity(0.8))

@@ -26,7 +26,6 @@ struct AnnotationCanvasView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(AuthState.self) private var authState
 
-    @Query private var existingAnnotations: [StreetAnnotation]
     @Query private var sessionMessages: [LocalChatMessage]
 
     @State private var service = AnnotationService()
@@ -64,11 +63,7 @@ struct AnnotationCanvasView: View {
         self.assistantMessage = assistantMessage
         self.userMessage = userMessage
         self.sessionId = sessionId
-        let mid = assistantMessage.id
         let sid = sessionId
-        _existingAnnotations = Query(
-            filter: #Predicate<StreetAnnotation> { $0.assistantMessageId == mid }
-        )
         _sessionMessages = Query(
             filter: #Predicate<LocalChatMessage> { $0.sessionId == sid },
             sort: \LocalChatMessage.createdAt
@@ -104,7 +99,6 @@ struct AnnotationCanvasView: View {
             await service.load(
                 assistantMessage: assistantMessage,
                 userMessage: userMessage,
-                existing: existingAnnotations.first,
                 modelContext: modelContext
             )
         }
@@ -264,11 +258,17 @@ struct AnnotationCanvasView: View {
     }
 
     private func addToMemoryQueue(_ item: AnnotationItem) {
+        let normalised = item.label.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        let existing = (try? modelContext.fetch(FetchDescriptor<MemoryCard>())) ?? []
+        if existing.contains(where: { $0.content.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() == normalised }) { return }
+
         let card = MemoryCard(
             content: item.label,
             translation: item.translation.isEmpty ? item.label : item.translation,
             audioSegmentPaths: [],
-            exposureCount: 1
+            exposureCount: 1,
+            nextDueAt: MemorizeScheduler.nextDueAt(exposureCount: 1),
+            isPaused: UserDefaults.standard.bool(forKey: "loro.vacationMode")
         )
         modelContext.insert(card)
         try? modelContext.save()
@@ -279,21 +279,7 @@ struct AnnotationCanvasView: View {
     private var overlay: some View {
         VStack(spacing: 0) {
             HStack {
-                Button {
-                    dismiss()
-                } label: {
-                    HStack(spacing: 6) {
-                        Image(systemName: "chevron.left")
-                            .font(.system(size: 14, weight: .semibold))
-                        Text("Back")
-                            .font(.system(size: 16, weight: .medium, design: .rounded))
-                    }
-                    .foregroundColor(.yellow)
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 8)
-                    .background(Color.black.opacity(0.6))
-                    .clipShape(Capsule())
-                }
+                BackButton { dismiss() }
                 Spacer()
             }
             .padding(.horizontal, 20)
@@ -325,7 +311,7 @@ struct AnnotationCanvasView: View {
                         HStack(spacing: 8) {
                             Image(systemName: "brain.head.profile")
                                 .font(.system(size: 14, weight: .semibold))
-                            Text("Go to memory queue (\(memoryAddedCount))")
+                            Text(L("Go to memory queue (%d)", memoryAddedCount))
                                 .font(.system(size: 14, weight: .semibold, design: .rounded))
                         }
                         .foregroundColor(.black)
@@ -374,7 +360,7 @@ struct AnnotationCanvasView: View {
                 } else {
                     Button {
                         if let r = lastVoiceReply {
-                            TTSService.shared.speak(text: r, messageId: UUID())
+                            TTSService.shared.speak(text: r, messageId: UUID(), context: "sentence")
                         }
                     } label: {
                         Image(systemName: "arrow.counterclockwise.circle.fill")
@@ -383,7 +369,7 @@ struct AnnotationCanvasView: View {
                     }
                 }
             } else {
-                Text("Tap mic to chat about what you see")
+                Text(L("Tap mic to chat about what you see"))
                     .font(.system(size: 12, design: .rounded))
                     .foregroundColor(.white.opacity(0.35))
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -470,7 +456,7 @@ struct AnnotationCanvasView: View {
                     lastVoiceReply = reply
                     voiceState = .speaking
                 }
-                TTSService.shared.speak(text: reply, messageId: assistantMsg.id)
+                TTSService.shared.speak(text: reply, messageId: assistantMsg.id, context: "scene")
                 try? await Task.sleep(nanoseconds: 4_000_000_000)
                 await MainActor.run {
                     if voiceState == .speaking { voiceState = .idle }
@@ -499,10 +485,10 @@ struct AnnotationCanvasView: View {
                     .font(.system(size: 28, weight: .semibold))
                     .foregroundColor(.yellow)
             }
-            Text("Mapping the scene…")
+            Text(L("Mapping the scene…"))
                 .font(.system(size: 20, weight: .semibold, design: .rounded))
                 .foregroundColor(.white.opacity(0.85))
-            Text("Professor Madrid is pinpointing each object")
+            Text(L("Professor Madrid is pinpointing each object"))
                 .font(.system(size: 14, design: .rounded))
                 .foregroundColor(.white.opacity(0.45))
                 .multilineTextAlignment(.center)
@@ -515,7 +501,7 @@ struct AnnotationCanvasView: View {
             Image(systemName: "exclamationmark.triangle.fill")
                 .font(.system(size: 44))
                 .foregroundColor(.orange)
-            Text("Could not map the scene")
+            Text(L("Could not map the scene"))
                 .font(.system(size: 20, weight: .bold, design: .rounded))
                 .foregroundColor(.white)
             Text(message)
@@ -523,12 +509,11 @@ struct AnnotationCanvasView: View {
                 .foregroundColor(.white.opacity(0.55))
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 40)
-            Button("Try Again") {
+            Button(L("Try Again")) {
                 Task {
                     await service.load(
                         assistantMessage: assistantMessage,
                         userMessage: userMessage,
-                        existing: nil,
                         modelContext: modelContext
                     )
                 }
@@ -665,11 +650,6 @@ struct AnnotationCanvasView: View {
     // MARK: - TTS
 
     private func speakLabel(_ text: String) {
-        let utterance = AVSpeechUtterance(string: text)
-        utterance.voice = AVSpeechSynthesisVoice(language: "es-ES")
-        utterance.rate = 0.38
-        utterance.volume = 1.0
-        annotationSynth.stopSpeaking(at: .immediate)
-        annotationSynth.speak(utterance)
+        TTSService.shared.speak(text: text, messageId: UUID(), context: "label")
     }
 }

@@ -246,3 +246,95 @@ private struct ConfettiParticle {
     let lifetime: Double
     let startTime: TimeInterval
 }
+
+// MARK: - Back Button (shared across all screens)
+
+struct BackButton: View {
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            ZStack {
+                Circle()
+                    .fill(.ultraThinMaterial)
+                    .frame(width: 36, height: 36)
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(.white)
+            }
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+// MARK: - Home Layout (shared sizing for Home + New Session mode pickers)
+
+enum HomeLayout {
+    static let cardHeight: CGFloat = 96
+    static let illustrationHeight: CGFloat = 78
+    static let cardSpacing: CGFloat = 14
+    static let hPadding: CGFloat = 20
+
+    static func dogHeight(_ screenHeight: CGFloat) -> CGFloat {
+        min(screenHeight * 0.40, 320)
+    }
+}
+
+// MARK: - Home Mode Card (single cohesive dark style across all home screens)
+
+struct HomeModeCard<Illustration: View>: View {
+    let title: String
+    let subtitle: String
+    var badge: Int = 0
+    var pressed: Bool = false
+    @ViewBuilder var illustration: () -> Illustration
+
+    var body: some View {
+        ZStack(alignment: .trailing) {
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            Color(red: 0.17, green: 0.18, blue: 0.34),
+                            Color(red: 0.10, green: 0.11, blue: 0.22)
+                        ],
+                        startPoint: .topLeading, endPoint: .bottomTrailing
+                    )
+                )
+
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .stroke(Color.white.opacity(0.12), lineWidth: 1)
+
+            HStack(spacing: 12) {
+                VStack(alignment: .leading, spacing: 5) {
+                    HStack(spacing: 8) {
+                        Text(title)
+                            .font(.system(size: 21, weight: .heavy, design: .rounded))
+                            .foregroundColor(.white)
+                        if badge > 0 {
+                            Text("\(badge)")
+                                .font(.system(size: 12, weight: .black, design: .rounded))
+                                .foregroundColor(.black)
+                                .padding(.horizontal, 7).padding(.vertical, 2)
+                                .background(Color.yellow)
+                                .clipShape(Capsule())
+                        }
+                    }
+                    Text(subtitle)
+                        .font(.system(size: 13, weight: .medium, design: .rounded))
+                        .foregroundColor(.white.opacity(0.60))
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+                illustration()
+            }
+            .padding(.leading, 20)
+            .padding(.trailing, 16)
+        }
+        .frame(height: HomeLayout.cardHeight)
+        .scaleEffect(pressed ? 0.97 : 1.0)
+        .animation(.spring(response: 0.25, dampingFraction: 0.6), value: pressed)
+        .shadow(color: .black.opacity(0.35), radius: 14, y: 6)
+    }
+}

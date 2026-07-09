@@ -4,8 +4,14 @@ struct PromptBuilder {
 
     static func topicSystemPrompt(profile: ESPProfile?, topic: String?) -> String {
         let name = profile?.displayName ?? "Student"
-        let level = profile?.levelEnum.displayLabel ?? "Beginner"
-        let native = profile?.nativeLanguage ?? "English"
+        let obLevel = profile?.onboardingProfile?.levelBreakdown
+        let level: String = {
+            if let lb = obLevel, lb.overallBand != "unknown", !lb.overallBand.isEmpty {
+                return "CEFR \(lb.overallBand) (speaking \(lb.speaking.band), listening \(lb.listening.band), grammar \(lb.grammar.band))"
+            }
+            return profile?.levelEnum.displayLabel ?? "Beginner"
+        }()
+        let native = LocalizationManager.shared.tutorNativeLanguage
         let focus = topic ?? profile?.currentStudyTopic ?? "general Spanish"
         let notes = profile?.learningNotes.isEmpty == false
             ? profile!.learningNotes
@@ -17,11 +23,21 @@ struct PromptBuilder {
             ? "\n\nVariá los tipos de ejercicio: alterna entre explicación+ejemplo, rellena huecos, traducción inversa, corrección de errores y conversación libre."
             : "\n\nÚltimos tipos de ejercicio usados: \(lastExercises). Elige un tipo DIFERENTE a los anteriores en este turno. Rota entre: conjugación, rellena huecos, traducción inversa, corrección de errores y conversación libre."
 
+        let observedBand = profile?.onboardingProfile?.levelBreakdown?.speaking.band
+            ?? profile?.onboardingProfile?.levelBreakdown?.overallBand
         let levelCeiling: String
-        switch profile?.levelEnum ?? .beginner {
-        case .beginner:     levelCeiling = "4–5 frases como máximo"
-        case .intermediate: levelCeiling = "5–8 frases como referencia"
-        case .advanced:     levelCeiling = "lo que el tema exija"
+        switch observedBand {
+        case "A1":              levelCeiling = "3–4 frases muy cortas, vocabulario básico"
+        case "A2":              levelCeiling = "4–5 frases sencillas"
+        case "B1":              levelCeiling = "5–7 frases como referencia"
+        case "B2":              levelCeiling = "6–9 frases como referencia"
+        case "C1", "C2":        levelCeiling = "lo que el tema exija"
+        default:
+            switch profile?.levelEnum ?? .beginner {
+            case .beginner:     levelCeiling = "4–5 frases como máximo"
+            case .intermediate: levelCeiling = "5–8 frases como referencia"
+            case .advanced:     levelCeiling = "lo que el tema exija"
+            }
         }
         let lengthGuidance = """
         Lee la señal del alumno y calibra la longitud de tu respuesta:
@@ -76,7 +92,7 @@ struct PromptBuilder {
     static func visualSystemPrompt(profile: ESPProfile?, goal: String? = nil) -> String {
         let name = profile?.displayName ?? "Student"
         let level = profile?.levelEnum.displayLabel ?? "Beginner"
-        let native = profile?.nativeLanguage ?? "English"
+        let native = LocalizationManager.shared.tutorNativeLanguage
         let focusLine: String = {
             guard let g = goal, !g.isEmpty else { return "" }
             return "\n\nSession focus: \(g). When guiding \(name) through the scene, weave in this topic — use relevant vocabulary, ask questions that connect objects in view to the focus, and steer the conversation toward it naturally."
@@ -133,13 +149,14 @@ struct PromptBuilder {
     }
 
     static func parrotScriptPrompt(phrase: String, level: String) -> String {
+        let native = LocalizationManager.shared.tutorNativeLanguage
         return """
         You are a Spanish language expert. The student (level: \(level)) has selected this phrase to memorize: "\(phrase)"
 
         Your task: produce a JSON object with exactly these keys:
         {
           "spanish": "<the phrase in Spanish — fix spelling/accents if needed>",
-          "english": "<natural English translation>",
+          "english": "<natural translation of the phrase into \(native)>",
           "sentence1": "<a short beginner-friendly Spanish sentence using the phrase or its core word(s)>",
           "sentence2": "<a second short beginner-friendly Spanish sentence, different from sentence1>"
         }
@@ -147,6 +164,7 @@ struct PromptBuilder {
         Rules:
         - Keep sentences simple (A1/A2 level), max 10 words each.
         - sentences must be in Spanish only.
+        - The "english" field must be written in \(native), even though the key is named "english".
         - Return ONLY the JSON object. No markdown, no explanation.
         """
     }

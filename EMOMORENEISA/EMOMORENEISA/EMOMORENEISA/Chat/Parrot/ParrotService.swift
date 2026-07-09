@@ -46,6 +46,16 @@ final class ParrotService {
             }
 
             phrase.segmentPaths = paths
+
+            if let illo = result.illustration {
+                let ext = illustrationExt(for: illo.mime)
+                let fileURL = dir.appendingPathComponent("illustration.\(ext)")
+                if (try? illo.data.write(to: fileURL, options: .atomic)) != nil {
+                    let relPath = "esp-parrot/\(phrase.id.uuidString)/illustration.\(ext)"
+                    await MainActor.run { phrase.illustrationPath = relPath }
+                }
+            }
+
             await MainActor.run { state = .ready }
         } catch let e as ProxyError {
             await MainActor.run {
@@ -65,12 +75,13 @@ final class ParrotService {
     // billing is identical to generate() — one flat "loro" action server-side.
     // `onFirstSegment` fires once the first playable segment (index 0) is on disk.
     func generateStreaming(phrase: ParrotPhrase, level: String, onFirstSegment: @escaping () -> Void) async {
+        AnalyticsService.shared.track(.parrotSessionStarted)
         await MainActor.run { state = .generating(progress: 0.05, label: "Asking Seagull Steven...") }
 
         let dir = ParrotPhrase.parrotDir(for: phrase.id)
         // Start clean so stale segments from a previous attempt can't be played.
         if let existing = try? FileManager.default.contentsOfDirectory(at: dir, includingPropertiesForKeys: nil) {
-            for f in existing where ["wav", "aac", "m4a"].contains(f.pathExtension) {
+            for f in existing where ["wav", "aac", "m4a", "jpg", "jpeg", "png"].contains(f.pathExtension) {
                 try? FileManager.default.removeItem(at: f)
             }
         }
@@ -114,6 +125,14 @@ final class ParrotService {
                         }
                     }
 
+                case let .illustration(data, mime):
+                    let ext = illustrationExt(for: mime)
+                    let fileURL = dir.appendingPathComponent("illustration.\(ext)")
+                    if (try? data.write(to: fileURL, options: .atomic)) != nil {
+                        let relPath = "esp-parrot/\(phrase.id.uuidString)/illustration.\(ext)"
+                        await MainActor.run { phrase.illustrationPath = relPath }
+                    }
+
                 case .done:
                     let paths = (0..<expected).map { "esp-parrot/\(phrase.id.uuidString)/\($0 + 1).\(segExt)" }
                     await MainActor.run {
@@ -135,6 +154,46 @@ final class ParrotService {
         }
     }
 
+    // Retroactively fetches and saves the illustration for memory cards that were
+    // created before the illustration system was deployed. The image is stored in
+    // the source parrot phrase's directory so it shares the same on-disk location.
+    // No-ops when already set. Best-effort: never throws, never changes state.
+    func ensureIllustration(for card: MemoryCard) async {
+        guard card.illustrationPath == nil else { return }
+        guard !card.content.isEmpty else { return }
+        guard let illo = await ProxyClient.shared.fetchIllustration(
+            spanish: card.content,
+            english: card.translation
+        ) else { return }
+        let ext = illustrationExt(for: illo.mime)
+        let dirId = card.sourceParrotId ?? card.id
+        let dir = ParrotPhrase.parrotDir(for: dirId)
+        let fileURL = dir.appendingPathComponent("illustration.\(ext)")
+        if (try? illo.data.write(to: fileURL, options: .atomic)) != nil {
+            let relPath = "esp-parrot/\(dirId.uuidString)/illustration.\(ext)"
+            await MainActor.run { card.illustrationPath = relPath }
+        }
+    }
+
+    // Retroactively fetches and saves the illustration for phrases that were
+    // generated before the illustration system was deployed (illustrationPath == nil).
+    // No-ops when already set. Best-effort: never throws, never changes state.
+    func ensureIllustration(for phrase: ParrotPhrase) async {
+        guard phrase.illustrationPath == nil else { return }
+        guard !phrase.spanishPhrase.isEmpty else { return }
+        guard let illo = await ProxyClient.shared.fetchIllustration(
+            spanish: phrase.spanishPhrase,
+            english: phrase.englishTranslation
+        ) else { return }
+        let ext = illustrationExt(for: illo.mime)
+        let dir = ParrotPhrase.parrotDir(for: phrase.id)
+        let fileURL = dir.appendingPathComponent("illustration.\(ext)")
+        if (try? illo.data.write(to: fileURL, options: .atomic)) != nil {
+            let relPath = "esp-parrot/\(phrase.id.uuidString)/illustration.\(ext)"
+            await MainActor.run { phrase.illustrationPath = relPath }
+        }
+    }
+
     // MARK: - Decode
 
     // Maps a server audio buffer to (playable bytes, file extension). AAC is
@@ -146,6 +205,14 @@ final class ParrotService {
         if m.hasPrefix("audio/mp4") || m.hasPrefix("audio/m4a") || m.hasPrefix("audio/x-m4a") { return (rawData, "m4a") }
         if m.hasPrefix("audio/wav") || m.hasPrefix("audio/wave") { return (rawData, "wav") }
         return (audioDataToWAV(rawData, mimeType: mimeType), "wav")
+    }
+
+    // Maps an illustration MIME type to a file extension. Defaults to jpg since
+    // the server transcodes to JPEG; png is preserved for the transcode-fallback.
+    private func illustrationExt(for mime: String) -> String {
+        let m = mime.lowercased()
+        if m.contains("png") { return "png" }
+        return "jpg"
     }
 
     // MARK: - PCM → WAV

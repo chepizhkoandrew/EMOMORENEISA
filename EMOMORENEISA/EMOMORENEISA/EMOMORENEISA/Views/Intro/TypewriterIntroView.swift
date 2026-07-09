@@ -31,13 +31,22 @@ struct TypewriterIntroView: View {
               let data = try? Data(contentsOf: url),
               let decoded = try? JSONDecoder().decode([TypewriterPhrase].self, from: data) else {
             return [TypewriterPhrase(
-                base: "You decided to learn Spanish. This could change everything, and you might ",
-                lightEnding: "become fluent by summer.",
-                darkEnding: "still be on lesson three by Christmas.",
+                base: L("You decided to learn Spanish. This could change everything, and you might "),
+                lightEnding: L("become fluent by summer."),
+                darkEnding: L("still be on lesson three by Christmas."),
                 vocabulary: []
             )]
         }
-        return decoded
+        // The motivational intro copy (base/light/dark endings) is UI chrome and
+        // is localized via L(); the vocabulary stays Spanish learning content.
+        return decoded.map { phrase in
+            TypewriterPhrase(
+                base: L(phrase.base),
+                lightEnding: L(phrase.lightEnding),
+                darkEnding: L(phrase.darkEnding),
+                vocabulary: phrase.vocabulary
+            )
+        }
     }
 
     @Environment(\.verticalSizeClass) private var verticalSizeClass
@@ -83,10 +92,10 @@ struct TypewriterIntroView: View {
 
     private func dogAndQuoteSection(geo: GeometryProxy) -> some View {
         let cardHeight: CGFloat = isLandscape
-            ? min(geo.size.height * 0.50, 180.0)
-            : min(geo.size.height * 0.36, 240.0)
-        let dogHeight: CGFloat = isLandscape ? 220 : 300
-        let dogVisibleAbove: CGFloat = isLandscape ? 130 : 180
+            ? min(geo.size.height * 0.60, 220.0)
+            : min(geo.size.height * 0.48, 300.0)
+        let dogHeight: CGFloat = isLandscape ? 330 : 450
+        let dogVisibleAbove: CGFloat = isLandscape ? 170 : 230
 
         return ZStack(alignment: .topLeading) {
             Image("professor_dog")
@@ -268,11 +277,11 @@ struct SettingsSheetView: View {
                 VStack(spacing: 24) {
                     settingCard {
                         VStack(alignment: .leading, spacing: 14) {
-                            Label("Tense", systemImage: "book.closed.fill")
+                            Label(L("Tense"), systemImage: "book.closed.fill")
                                 .font(.system(size: 15, weight: .bold, design: .monospaced))
                                 .foregroundColor(AppColors.textSecondary)
 
-                            Picker("Tense", selection: tenseBinding) {
+                            Picker(L("Tense"), selection: tenseBinding) {
                                 ForEach(Tense.allCases) { tense in
                                     Text(tense.displayLabel).tag(tense)
                                 }
@@ -285,11 +294,11 @@ struct SettingsSheetView: View {
                     settingCard {
                         VStack(alignment: .leading, spacing: 14) {
                             HStack {
-                                Label("Timer per word", systemImage: "timer")
+                                Label(L("Timer per word"), systemImage: "timer")
                                     .font(.system(size: 15, weight: .bold, design: .monospaced))
                                     .foregroundColor(AppColors.textSecondary)
                                 Spacer()
-                                Text(String(format: "%.1fs", timerSeconds))
+                                Text(L("%.1fs", timerSeconds))
                                     .font(.system(size: 22, weight: .black, design: .monospaced))
                                     .foregroundColor(AppColors.accent)
                                     .shadow(color: AppColors.accent.opacity(0.5), radius: 6)
@@ -301,7 +310,7 @@ struct SettingsSheetView: View {
 
                     settingCard {
                         HStack {
-                            Label("Show answer hint", systemImage: "eye.fill")
+                            Label(L("Show answer hint"), systemImage: "eye.fill")
                                 .font(.system(size: 15, weight: .bold, design: .monospaced))
                                 .foregroundColor(AppColors.textSecondary)
                             Spacer()
@@ -316,14 +325,14 @@ struct SettingsSheetView: View {
                 }
                 .padding(20)
             }
-            .navigationTitle("Settings")
+            .navigationTitle(L("Settings"))
             .navigationBarTitleDisplayMode(.large)
             .toolbarColorScheme(.dark, for: .navigationBar)
             .toolbarBackground(AppColors.backgroundTop, for: .navigationBar)
             .toolbarBackground(.visible, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Done") { dismiss() }
+                    Button(L("Done")) { dismiss() }
                         .font(.system(size: 16, weight: .bold))
                         .foregroundColor(.yellow)
                 }

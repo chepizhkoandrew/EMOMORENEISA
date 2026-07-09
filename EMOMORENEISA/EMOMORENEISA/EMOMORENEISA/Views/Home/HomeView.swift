@@ -58,8 +58,10 @@ struct HomeView: View {
     @Environment(AuthState.self) private var authState
     @AppStorage("timerSeconds") private var timerSeconds: Double = 4.0
     @AppStorage("selectedTenseName") private var selectedTenseName: String = Tense.present.rawValue
+    @AppStorage("onboardingCompleted") private var onboardingCompleted: Bool = false
     @State private var speechPermissionGranted = false
     @State private var showModeSelector: Bool = false
+    @State private var showOnboarding: Bool = false
 
     private var selectedTense: Tense { Tense(rawValue: selectedTenseName) ?? .present }
 
@@ -89,11 +91,20 @@ struct HomeView: View {
                             .environment(authState)
                             .transition(.opacity)
                     }
+                } else if showOnboarding {
+                    OnboardingCarouselView(
+                        onFinish: {
+                            withAnimation(.easeInOut(duration: 0.4)) {
+                                showModeSelector = true
+                            }
+                        }
+                    )
+                    .transition(.opacity)
                 } else {
                     TypewriterIntroView(
                         onContinue: {
                             withAnimation(.easeInOut(duration: 0.3)) {
-                                showModeSelector = true
+                                showOnboarding = true
                             }
                         }
                     )
@@ -126,6 +137,19 @@ struct HomeView: View {
         .onAppear {
             SpeechService().requestPermission { granted in
                 speechPermissionGranted = granted
+            }
+            BackgroundMusicPlayer.shared.play()
+        }
+        .onChange(of: engine.phase) { _, newPhase in
+            switch newPhase {
+            case .idle:
+                BackgroundMusicPlayer.shared.play()
+            case .spinning, .readyToStart:
+                BackgroundMusicPlayer.shared.fadeOut(duration: 0.8)
+                TTSService.shared.stop()
+                OnboardAudioManager.shared.stop()
+            case .countdown, .playing, .review, .results:
+                BackgroundMusicPlayer.shared.fadeOut(duration: 1.5)
             }
         }
     }

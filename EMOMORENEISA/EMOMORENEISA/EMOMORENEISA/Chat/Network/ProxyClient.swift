@@ -77,6 +77,7 @@ final class ProxyClient {
         let sentence1: String
         let sentence2: String
         let segments: [(data: Data, mime: String)]
+        let illustration: (data: Data, mime: String)?
     }
 
     func loro(prompt: String) async throws -> LoroResult {
@@ -85,12 +86,17 @@ final class ProxyClient {
             guard let b64 = seg["audioBase64"] as? String, let d = Data(base64Encoded: b64) else { return nil }
             return (d, (seg["mime"] as? String) ?? "audio/pcm;rate=24000")
         }
+        var illustration: (data: Data, mime: String)? = nil
+        if let b64 = json["illustrationBase64"] as? String, let d = Data(base64Encoded: b64) {
+            illustration = (d, (json["illustrationMime"] as? String) ?? "image/jpeg")
+        }
         return LoroResult(
             spanish: json["spanish"] as? String ?? "",
             english: json["english"] as? String ?? "",
             sentence1: json["sentence1"] as? String ?? "",
             sentence2: json["sentence2"] as? String ?? "",
-            segments: segs
+            segments: segs,
+            illustration: illustration
         )
     }
 
@@ -99,6 +105,7 @@ final class ProxyClient {
     enum LoroEvent {
         case meta(spanish: String, english: String, sentence1: String, sentence2: String, totalSegments: Int)
         case segment(index: Int, data: Data, mime: String)
+        case illustration(data: Data, mime: String)
         case done(totalSeconds: Int)
     }
 
@@ -150,6 +157,10 @@ final class ProxyClient {
                                let b64 = obj["audioBase64"] as? String,
                                let d = Data(base64Encoded: b64) {
                                 continuation.yield(.segment(index: idx, data: d, mime: (obj["mime"] as? String) ?? "audio/pcm;rate=24000"))
+                            }
+                        case "illustration":
+                            if let b64 = obj["base64"] as? String, let d = Data(base64Encoded: b64) {
+                                continuation.yield(.illustration(data: d, mime: (obj["mime"] as? String) ?? "image/jpeg"))
                             }
                         case "done":
                             continuation.yield(.done(totalSeconds: (obj["totalSeconds"] as? NSNumber)?.intValue ?? 0))
@@ -235,12 +246,120 @@ final class ProxyClient {
         let creditedTreats: Int
     }
 
+    func deleteAccount() async throws {
+        _ = try await postJSON(path: "/v1/delete-account", body: [:])
+    }
+
+    func fetchIllustration(spanish: String, english: String) async -> (data: Data, mime: String)? {
+        guard let json = try? await postJSON(
+            path: "/v1/illustration",
+            body: ["spanish": spanish, "english": english],
+            timeout: 30
+        ),
+        let b64 = json["base64"] as? String,
+        let data = Data(base64Encoded: b64) else { return nil }
+        return (data, (json["mime"] as? String) ?? "image/jpeg")
+    }
+
     // Redeems a coupon code. Throws ProxyError.http on invalid/expired/already-used codes.
     func redeemCoupon(code: String) async throws -> CouponResult {
         let json = try await postJSON(path: "/v1/coupon/redeem", body: ["code": code])
         let state = walletState(from: json)
         let credited = (json["creditedTreats"] as? NSNumber)?.intValue ?? 0
         return CouponResult(walletState: state, creditedTreats: credited)
+    }
+
+    // MARK: - Onboarding (utility class, not billed)
+
+    struct OnboardingProbeResult {
+        let nextQuestionText: String
+        let targetSlot: String
+        let reasoning: String
+    }
+
+    func onboardingProbe(
+        pass: Int,
+        pronoun: String,
+        quizLanguage: String,
+        transcripts: [String: String],
+        previousProbe: [String: String]? = nil
+    ) async throws -> OnboardingProbeResult {
+        var body: [String: Any] = [
+            "pass": pass,
+            "pronoun": pronoun,
+            "quizLanguage": quizLanguage,
+            "transcripts": transcripts
+        ]
+        if let previousProbe { body["previousProbe"] = previousProbe }
+        let json = try await postJSON(path: "/v1/onboarding/probe", body: body, timeout: 45)
+        return OnboardingProbeResult(
+            nextQuestionText: (json["nextQuestionText"] as? String) ?? "",
+            targetSlot: (json["targetSlot"] as? String) ?? "",
+            reasoning: (json["reasoning"] as? String) ?? ""
+        )
+    }
+
+    struct OnboardingSynthesisResult {
+        let tutorCheatSheet: String
+        let narrativeSummary: String
+        let aboutMeUserFacing: String
+        let cityFlavor: String
+        let extractedSlotsJSON: Data
+        let version: Int
+        let voiceTag: String
+        let levelBreakdown: StudentLevelBreakdown?
+    }
+
+    func onboardingSynthesize(
+        pronoun: String,
+        quizLanguage: String,
+        transcripts: [String: String],
+        probes: [String: Any]?
+    ) async throws -> OnboardingSynthesisResult {
+        var body: [String: Any] = [
+            "pronoun": pronoun,
+            "quizLanguage": quizLanguage,
+            "transcripts": transcripts
+        ]
+        if let probes { body["probes"] = probes }
+        let json = try await postJSON(path: "/v1/onboarding/synthesize", body: body, timeout: 45)
+        let slots = (json["extractedSlots"] as? [String: Any]) ?? [:]
+        let slotsData = (try? JSONSerialization.data(withJSONObject: slots)) ?? Data("{}".utf8)
+
+        var breakdown: StudentLevelBreakdown? = nil
+        if let lb = json["levelBreakdown"] as? [String: Any] {
+            func skill(_ key: String) -> SkillBand {
+                let s = (lb[key] as? [String: Any]) ?? [:]
+                return SkillBand(band: (s["band"] as? String) ?? "unknown",
+                                 note: (s["note"] as? String) ?? "")
+            }
+            let goalsAny = (lb["goals"] as? [Any]) ?? []
+            let goals = goalsAny.compactMap { $0 as? String }.filter { !$0.isEmpty }
+            breakdown = StudentLevelBreakdown(
+                overallBand: (lb["overallBand"] as? String) ?? "unknown",
+                currentState: (lb["currentState"] as? String) ?? "",
+                listening: skill("listening"),
+                speaking: skill("speaking"),
+                grammar: skill("grammar"),
+                goals: goals
+            )
+        }
+
+        return OnboardingSynthesisResult(
+            tutorCheatSheet: (json["tutorCheatSheet"] as? String) ?? "",
+            narrativeSummary: (json["narrativeSummary"] as? String) ?? "",
+            aboutMeUserFacing: (json["aboutMeUserFacing"] as? String) ?? "",
+            cityFlavor: (json["cityFlavor"] as? String) ?? "",
+            extractedSlotsJSON: slotsData,
+            version: (json["version"] as? NSNumber)?.intValue ?? 0,
+            voiceTag: (json["voiceTag"] as? String) ?? "",
+            levelBreakdown: breakdown
+        )
+    }
+
+    func currentVoiceTag() async throws -> String {
+        let json = try await getJSON(path: "/v1/voice/current")
+        return (json["voiceTag"] as? String) ?? ""
     }
 
     private func walletState(from json: [String: Any]) -> WalletState {

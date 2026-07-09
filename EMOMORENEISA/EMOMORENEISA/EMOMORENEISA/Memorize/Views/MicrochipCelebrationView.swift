@@ -37,13 +37,18 @@ struct MicrochipCelebrationView: View {
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 24)
 
-                Text("¡Eso es! Loro won't forget this for years. That's word #\(knownCount).")
+                Text("¡Eso es! " + L("Loro won't forget this for years. That's word #%d.", knownCount))
                     .font(.system(size: 16, weight: .medium, design: .rounded))
                     .foregroundColor(.yellow)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 28)
 
-                Text("Seagull Steven knows \(knownCount) word\(knownCount == 1 ? "" : "s")")
+                Text(LPlural(knownCount,
+                             en: "Seagull Steven knows %d word",
+                             "Seagull Steven knows %d words",
+                             uk: "Чайка Стівен знає %d слово",
+                             "Чайка Стівен знає %d слова",
+                             "Чайка Стівен знає %d слів"))
                     .font(.system(size: 14, weight: .semibold, design: .rounded))
                     .foregroundColor(AppColors.textSecondary)
 

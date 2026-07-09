@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 import { supabase } from "./supabase.js";
 import { config } from "./config.js";
-import { synthesizeVoice } from "./providers.js";
+import { synthesizeVoice, textToSsml } from "./providers.js";
 import { pcmToAac } from "./audio.js";
 
 const AAC_MIME = "audio/aac";
@@ -23,10 +23,23 @@ async function ensureBucket() {
 // One audio artifact per distinct (model, voice, bitrate, text). Different voices
 // or a model/bitrate change produce a different key, so the cache never serves
 // stale audio after a config change.
-function cacheKey(text) {
+// Signature of the active PRIMARY voice engine. Switching engines/voices (e.g.
+// Gemini -> Google Cloud Chirp 3 HD) changes this tag, so the cache never serves
+// audio rendered by a different voice.
+export function activeVoiceTag() {
+  if (config.cloudTts.enabled) {
+    return `gcloud|${config.cloudTts.languageCode}|${config.cloudTts.voiceName}|${config.cloudTts.speakingRate}`;
+  }
+  return `${config.models.ttsGemini}|${config.tts.voiceName}`;
+}
+
+// Cache key is derived from the rendered SSML (not raw text) so the same text
+// with different contexts (e.g. "label" vs "sentence") gets separate cache entries.
+function cacheKey(text, context = "default") {
+  const ssmlOrText = config.cloudTts.enabled ? textToSsml(text, context) : text;
   return crypto
     .createHash("sha256")
-    .update(`${config.models.ttsGemini}|${config.tts.voiceName}|${config.audio.aacBitrate}|${text}`)
+    .update(`${activeVoiceTag()}|${config.audio.aacBitrate}|${ssmlOrText}`)
     .digest("hex");
 }
 
@@ -72,32 +85,35 @@ async function cachePut(key, buf) {
 //           newer builds benefit. Old clients wrap PCM into WAV on-device.
 //
 // Returns { provider, audioBase64, mime, cached } or null when synthesis fails.
-export async function getVoice(text, { format = "pcm" } = {}) {
+export async function getVoice(text, { format = "pcm", context = "default" } = {}) {
+  const key = cacheKey(text, context);
+
   if (format === "aac" && config.audio.cacheEnabled) {
-    const hit = await cacheGet(cacheKey(text));
+    const hit = await cacheGet(key);
     if (hit) {
       return { provider: "cache", audioBase64: hit.toString("base64"), mime: AAC_MIME, cached: true };
     }
   }
 
-  const pcm = await synthesizeVoice(text);
+  const pcm = await synthesizeVoice(text, { allowOpenAIFallback: true, context });
   if (!pcm) return null;
+
+  // OpenAI fallback audio is live-only — must not pollute the shared cache.
+  const cacheable = pcm.provider !== "openai";
 
   if (format === "aac") {
     try {
       const aac = await pcmToAac(Buffer.from(pcm.audioBase64, "base64"));
-      await cachePut(cacheKey(text), aac);
+      if (cacheable) await cachePut(key, aac);
       return { provider: pcm.provider, audioBase64: aac.toString("base64"), mime: AAC_MIME, cached: false };
     } catch (_) {
-      // Transcode failed — still serve the user raw PCM so playback works.
       return { provider: pcm.provider, audioBase64: pcm.audioBase64, mime: pcm.mime, cached: false };
     }
   }
 
-  // Legacy PCM response; warm the AAC cache out-of-band for future aac requests.
-  if (config.audio.cacheEnabled) {
+  if (config.audio.cacheEnabled && cacheable) {
     pcmToAac(Buffer.from(pcm.audioBase64, "base64"))
-      .then((aac) => cachePut(cacheKey(text), aac))
+      .then((aac) => cachePut(key, aac))
       .catch(() => {});
   }
   return { provider: pcm.provider, audioBase64: pcm.audioBase64, mime: pcm.mime, cached: false };

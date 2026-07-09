@@ -22,6 +22,10 @@ export function ttsCostUsd(provider, seconds) {
   return (seconds / 60) * perMin;
 }
 
+export function imageCostUsd(count) {
+  return Math.max(0, count) * config.pricing.usdPerImage;
+}
+
 export function loadedCostUsd(rawCostUsd) {
   return rawCostUsd * (1 + config.pricing.infraOverhead);
 }

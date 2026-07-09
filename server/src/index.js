@@ -1,9 +1,11 @@
 import express from "express";
 import { config, featureFlags } from "./config.js";
 import { requireUser } from "./auth.js";
-import { openaiChat, openaiTranscribe } from "./providers.js";
-import { getVoice } from "./voicecache.js";
-import { chatCostUsd, ttsCostUsd, analystCostUsd } from "./pricing.js";
+import { openaiChat, openaiTranscribe, geminiText } from "./providers.js";
+import { getVoice, activeVoiceTag } from "./voicecache.js";
+import { probePass1Prompt, probePass2Prompt, synthesisPrompt, ONBOARDING_QUIZ_VERSION } from "./onboardingPrompts.js";
+import { getIllustration } from "./imagecache.js";
+import { chatCostUsd, ttsCostUsd, analystCostUsd, imageCostUsd } from "./pricing.js";
 import { getWallet, debit, credit, grantTrialIfNeeded, recordTopup } from "./wallet.js";
 import { supabase } from "./supabase.js";
 import { record } from "./meter.js";
@@ -231,6 +233,11 @@ app.post("/v1/loro", requireUser, async (req, res) => {
   const segmentTexts = loroSegmentTexts(script);
   const format = req.body?.format === "aac" ? "aac" : "pcm";
 
+  // Kick off the memorization illustration CONCURRENTLY with audio. It is a
+  // best-effort extra (getIllustration never throws / returns null on failure),
+  // so audio never waits on it and an image failure never refunds or fails.
+  const illustrationPromise = getIllustration(script.spanish, script.english).catch(() => null);
+
   // The 7 positions reference only a handful of UNIQUE strings (the Spanish word
   // alone repeats 4x). Gemini's preview TTS model is rate-limited per minute, so
   // we synthesize each DISTINCT text exactly once and fan the buffers back out to
@@ -266,12 +273,17 @@ app.post("/v1/loro", requireUser, async (req, res) => {
   }, 0);
   const totalSeconds = segmentTexts.reduce((s, t) => s + Math.max(1, Math.round(t.length / 14)), 0);
 
+  // Audio is done; fold in the illustration (already generating). Only bill raw
+  // image cost for a fresh (non-cached) generation.
+  const illustration = await illustrationPromise;
+  const imageRawCost = illustration && !illustration.cached ? imageCostUsd(1) : 0;
+
   await record({
     userId: req.user.id,
     kind: "loro",
     provider,
     seconds: totalSeconds,
-    rawCostUsd: ttsCostUsd(provider, billedSeconds),
+    rawCostUsd: ttsCostUsd(provider, billedSeconds) + imageRawCost,
     treatsCharged: cost
   });
 
@@ -281,6 +293,7 @@ app.post("/v1/loro", requireUser, async (req, res) => {
     sentence1: script.sentence1,
     sentence2: script.sentence2,
     segments,
+    ...(illustration ? { illustrationBase64: illustration.base64, illustrationMime: illustration.mime } : {}),
     treatsCharged: cost
   });
 });
@@ -317,6 +330,10 @@ app.post("/v1/loro/stream", requireUser, async (req, res) => {
   const segmentTexts = loroSegmentTexts(script);
   const format = req.body?.format === "aac" ? "aac" : "pcm";
   const provider = "gemini";
+
+  // Best-effort illustration, generated CONCURRENTLY with the audio segments.
+  // Never blocks playback; emitted as its own NDJSON event whenever it lands.
+  const illustrationPromise = getIllustration(script.spanish, script.english).catch(() => null);
 
   res.status(200);
   res.setHeader("Content-Type", "application/x-ndjson");
@@ -368,18 +385,46 @@ app.post("/v1/loro/stream", requireUser, async (req, res) => {
     return res.end();
   }
 
+  // Emit the illustration once it resolves (audio already streamed). Best-effort:
+  // a null result simply emits nothing and the client keeps the seagull pose.
+  const illustration = await illustrationPromise;
+  if (illustration) {
+    write({ type: "illustration", base64: illustration.base64, mime: illustration.mime });
+  }
+  const imageRawCost = illustration && !illustration.cached ? imageCostUsd(1) : 0;
+
   const totalSeconds = segmentTexts.reduce((s, t) => s + Math.max(1, Math.round(t.length / 14)), 0);
   await record({
     userId: req.user.id,
     kind: "loro",
     provider,
     seconds: totalSeconds,
-    rawCostUsd: ttsCostUsd(provider, billedSeconds),
+    rawCostUsd: ttsCostUsd(provider, billedSeconds) + imageRawCost,
     treatsCharged: cost
   });
 
   write({ type: "done", totalSeconds });
   res.end();
+});
+
+// On-demand illustration fetch/cache for an existing phrase. Free to call
+// (no treat charge) because it wraps the same Supabase-cached Vertex path used
+// inside /v1/loro/stream — a cache hit is instant and free; a miss generates
+// one image and caches it for future calls. Returns { base64, mime } or 404
+// when image generation is unavailable.
+app.post("/v1/illustration", requireUser, async (req, res) => {
+  const { spanish, english } = req.body || {};
+  if (!spanish || typeof spanish !== "string") {
+    return res.status(400).json({ error: "missing_spanish" });
+  }
+  const illustration = await getIllustration(
+    spanish,
+    typeof english === "string" ? english : ""
+  ).catch(() => null);
+  if (!illustration) {
+    return res.status(404).json({ error: "illustration_unavailable" });
+  }
+  res.json({ base64: illustration.base64, mime: illustration.mime });
 });
 
 // Street Vision annotation: given an image and the Spanish object list already
@@ -600,6 +645,183 @@ app.post("/v1/coupon/redeem", requireUser, async (req, res) => {
     ...walletPayload(req.user.id, wallet),
     creditedTreats: Number(data.treats_credited)
   });
+});
+
+// Permanently delete the authenticated user's account and all associated data.
+// Anonymises topups for financial audit trail, deletes everything else.
+app.post("/v1/delete-account", requireUser, async (req, res) => {
+  const sb = supabase();
+  if (!sb) return res.status(503).json({ error: "wallet_not_configured" });
+
+  const userId = req.user.id;
+
+  const tables = ["messages", "sessions", "memory_cards", "analyst_events", "usage_meter", "wallets"];
+  for (const table of tables) {
+    await sb.from(table).delete().eq("user_id", userId);
+  }
+
+  await sb.from("topups").update({ user_id: null }).eq("user_id", userId);
+  await sb.from("profiles").delete().eq("id", userId);
+
+  const { error: authErr } = await sb.auth.admin.deleteUser(userId);
+  if (authErr) {
+    return res.status(502).json({ error: "auth_delete_failed", detail: authErr.message });
+  }
+
+  res.json({ deleted: true });
+});
+
+// ---------------------------------------------------------------------------
+// Voice onboarding quiz — utility class, JWT-gated, not billed.
+// The client walks the 11-question flow locally, hitting the two probe passes
+// (Q8, Q9) mid-quiz and the synthesis pass at the end.
+// ---------------------------------------------------------------------------
+
+const ONBOARDING_LANGS = new Set(["en", "uk"]);
+const ONBOARDING_PRONOUNS = new Set(["he", "she", "they"]);
+const PROBE_SLOTS = new Set([
+  "pet_name", "kid_name_or_age", "partner_name", "best_friend_name",
+  "city_ritual", "hobby_detail", "daily_moment"
+]);
+
+function pickTranscripts(body) {
+  const out = {};
+  const src = body?.transcripts || {};
+  for (const k of ["q1","q2","q3","q4","q5","q6","q7","q8","q9","q10","q11"]) {
+    if (typeof src[k] === "string") out[k] = src[k].slice(0, 2000);
+  }
+  return out;
+}
+
+async function callProbe(prompt, res) {
+  let raw;
+  try {
+    raw = await geminiText({
+      prompt,
+      model: config.models.onboardingProbe,
+      temperature: 0.55,
+      maxOutputTokens: 512
+    });
+  } catch (e) {
+    return res.status(e.status || 502).json({ error: "probe_upstream", detail: e.message });
+  }
+  let parsed;
+  try {
+    parsed = JSON.parse(raw.text);
+  } catch (_) {
+    // One retry with lower temperature.
+    try {
+      const retry = await geminiText({
+        prompt,
+        model: config.models.onboardingProbe,
+        temperature: 0.2,
+        maxOutputTokens: 512
+      });
+      parsed = JSON.parse(retry.text);
+    } catch (e) {
+      return res.status(502).json({ error: "probe_invalid_json" });
+    }
+  }
+  if (typeof parsed?.next_question_text !== "string" || !parsed.next_question_text.trim()) {
+    return res.status(502).json({ error: "probe_missing_question" });
+  }
+  const slot = PROBE_SLOTS.has(parsed.target_slot) ? parsed.target_slot : "daily_moment";
+  return res.json({
+    nextQuestionText: parsed.next_question_text.trim(),
+    targetSlot: slot,
+    reasoning: typeof parsed.reasoning === "string" ? parsed.reasoning : ""
+  });
+}
+
+app.post("/v1/onboarding/probe", requireUser, async (req, res) => {
+  const { pass, pronoun, quizLanguage, previousProbe } = req.body || {};
+  if (!ONBOARDING_PRONOUNS.has(pronoun)) return res.status(400).json({ error: "bad_pronoun" });
+  if (!ONBOARDING_LANGS.has(quizLanguage)) return res.status(400).json({ error: "bad_language" });
+  const transcripts = pickTranscripts(req.body);
+
+  let prompt;
+  if (pass === 1) {
+    prompt = probePass1Prompt({ pronoun, quizLanguage, transcripts });
+  } else if (pass === 2) {
+    prompt = probePass2Prompt({
+      pronoun, quizLanguage, transcripts,
+      previousProbe: previousProbe && typeof previousProbe === "object" ? previousProbe : null
+    });
+  } else {
+    return res.status(400).json({ error: "bad_pass" });
+  }
+  return callProbe(prompt, res);
+});
+
+app.post("/v1/onboarding/synthesize", requireUser, async (req, res) => {
+  const { pronoun, quizLanguage, probes } = req.body || {};
+  if (!ONBOARDING_PRONOUNS.has(pronoun)) return res.status(400).json({ error: "bad_pronoun" });
+  if (!ONBOARDING_LANGS.has(quizLanguage)) return res.status(400).json({ error: "bad_language" });
+  const transcripts = pickTranscripts(req.body);
+
+  const prompt = synthesisPrompt({
+    pronoun,
+    quizLanguage,
+    transcripts,
+    probes: probes && typeof probes === "object" ? probes : null
+  });
+
+  let raw;
+  try {
+    raw = await geminiText({
+      prompt,
+      model: config.models.onboardingSynthesis,
+      temperature: 0.35,
+      maxOutputTokens: 2048
+    });
+  } catch (e) {
+    return res.status(e.status || 502).json({ error: "synthesis_upstream", detail: e.message });
+  }
+
+  let parsed;
+  try { parsed = JSON.parse(raw.text); }
+  catch (_) { return res.status(502).json({ error: "synthesis_invalid_json" }); }
+
+  const required = ["tutor_cheat_sheet", "narrative_summary", "about_me_user_facing", "city_flavor", "extracted_slots"];
+  for (const k of required) {
+    if (!(k in parsed)) return res.status(502).json({ error: `synthesis_missing_${k}` });
+  }
+
+  // level_breakdown is a v5 addition — normalise to a stable camelCase shape
+  // so the client always gets the same schema even when Gemini omits it.
+  const rawLB = (parsed.level_breakdown && typeof parsed.level_breakdown === "object")
+    ? parsed.level_breakdown : {};
+  const skill = (k) => {
+    const s = rawLB[k] && typeof rawLB[k] === "object" ? rawLB[k] : {};
+    return {
+      band: String(s.band || "unknown"),
+      note: String(s.note || "")
+    };
+  };
+  const rawGoals = Array.isArray(rawLB.goals) ? rawLB.goals : [];
+  const levelBreakdown = {
+    overallBand: String(rawLB.overall_band || "unknown"),
+    currentState: String(rawLB.current_state || ""),
+    listening: skill("listening"),
+    speaking: skill("speaking"),
+    grammar: skill("grammar"),
+    goals: rawGoals.map((g) => String(g || "")).filter(Boolean).slice(0, 6)
+  };
+
+  res.json({
+    tutorCheatSheet: String(parsed.tutor_cheat_sheet || ""),
+    narrativeSummary: String(parsed.narrative_summary || ""),
+    aboutMeUserFacing: String(parsed.about_me_user_facing || ""),
+    cityFlavor: String(parsed.city_flavor || ""),
+    extractedSlots: parsed.extracted_slots || {},
+    levelBreakdown,
+    version: ONBOARDING_QUIZ_VERSION,
+    voiceTag: activeVoiceTag()
+  });
+});
+
+app.get("/v1/voice/current", requireUser, (req, res) => {
+  res.json({ voiceTag: activeVoiceTag() });
 });
 
 app.use((req, res) => res.status(404).json({ error: "not_found" }));

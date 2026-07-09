@@ -47,7 +47,7 @@ struct LoroVocabularyView: View {
         ZStack {
             AppBackground()
             VStack(spacing: 14) {
-                Text("Seagull Steven's Vocabulary")
+                Text(L("Seagull Steven's Vocabulary"))
                     .font(.system(size: 22, weight: .bold, design: .rounded))
                     .foregroundColor(AppColors.textPrimary)
                     .padding(.top, 50)
@@ -59,11 +59,11 @@ struct LoroVocabularyView: View {
                     Spacer()
                     VStack(spacing: 10) {
                         LoroImage(asset: .sleeping, size: 150)
-                        Text(cards.isEmpty ? "No words yet" : "No matches")
+                        Text(cards.isEmpty ? L("No words yet") : L("No matches"))
                             .font(.system(size: 16, weight: .semibold, design: .rounded))
                             .foregroundColor(AppColors.textSecondary)
                         if cards.isEmpty {
-                            Text("Finish a parrot loop in Chat to teach Seagull Steven his first word.")
+                            Text(L("Finish a parrot loop in Chat to teach Seagull Steven his first word."))
                                 .font(.system(size: 13, design: .rounded))
                                 .foregroundColor(AppColors.textTertiary)
                                 .multilineTextAlignment(.center)
@@ -97,7 +97,7 @@ struct LoroVocabularyView: View {
         HStack(spacing: 8) {
             Image(systemName: "magnifyingglass")
                 .foregroundColor(AppColors.textTertiary)
-            TextField("Search words", text: $search)
+            TextField(L("Search words"), text: $search)
                 .foregroundColor(AppColors.textPrimary)
                 .autocorrectionDisabled()
         }
@@ -114,7 +114,7 @@ struct LoroVocabularyView: View {
                 Button {
                     filter = f
                 } label: {
-                    Text(f.label)
+                    Text(L(f.label))
                         .font(.system(size: 14, weight: .semibold, design: .rounded))
                         .foregroundColor(filter == f ? .black : AppColors.textSecondary)
                         .padding(.horizontal, 14).padding(.vertical, 7)
@@ -161,13 +161,36 @@ struct VocabularyReplayView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
     @State private var player = LoopingParrotPlayer()
+    @State private var illustrationService = ParrotService()
     @State private var usingTTS: Bool = false
+    @State private var showDeleteConfirmation = false
+
+    private var service: MemoryCardService { MemoryCardService(context: modelContext) }
 
     var body: some View {
         ZStack {
             AppBackground()
             VStack(spacing: 20) {
-                LoroImage(asset: .listening, size: 160)
+                HStack {
+                    BackButton {
+                        player.stop()
+                        if usingTTS { TTSService.shared.stop() }
+                        dismiss()
+                    }
+                    Spacer()
+                    Button {
+                        showDeleteConfirmation = true
+                    } label: {
+                        Image(systemName: "trash")
+                            .font(.system(size: 18, weight: .semibold))
+                            .foregroundColor(.red.opacity(0.8))
+                            .padding(12)
+                    }
+                }
+                .padding(.top, 50)
+                .padding(.horizontal, 12)
+
+                LoroIllustrationView(url: card.illustrationURL, fallback: .listening, size: 160)
                 Text(card.content)
                     .font(.system(size: 26, weight: .bold, design: .rounded))
                     .foregroundColor(AppColors.textPrimary)
@@ -177,22 +200,9 @@ struct VocabularyReplayView: View {
                         .font(.system(size: 18, design: .rounded))
                         .foregroundColor(AppColors.textSecondary)
                 }
-                Text("Replay (doesn't change Loro's schedule)")
+                Text(L("Replay (doesn't change Loro's schedule)"))
                     .font(.system(size: 12, design: .rounded))
                     .foregroundColor(AppColors.textTertiary)
-
-                Button {
-                    player.stop()
-                    if usingTTS { TTSService.shared.stop() }
-                    dismiss()
-                } label: {
-                    Text("Done")
-                        .font(.system(size: 18, weight: .semibold, design: .rounded))
-                        .foregroundColor(.black)
-                        .padding(.horizontal, 32).padding(.vertical, 14)
-                        .background(Color.yellow)
-                        .clipShape(RoundedRectangle(cornerRadius: 14))
-                }
             }
             .padding(.horizontal, 24)
         }
@@ -201,13 +211,34 @@ struct VocabularyReplayView: View {
                 player.start(phrase: phrase, loops: 1)
             } else {
                 usingTTS = true
-                TTSService.shared.speak(text: card.content, messageId: card.id)
+                TTSService.shared.speak(text: card.content, messageId: card.id, context: "loro")
             }
+            await illustrationService.ensureIllustration(for: card)
         }
         .onDisappear {
             player.stop()
             if usingTTS { TTSService.shared.stop() }
         }
+        .alert(L("Remove Word?"), isPresented: $showDeleteConfirmation) {
+            Button(L("Remove"), role: .destructive) {
+                deleteCard()
+            }
+            Button(L("Cancel"), role: .cancel) {}
+        } message: {
+            Text(L("\"%@\" will be removed from Seagull Steven's queue and all its learning progress will be lost.", card.content))
+        }
+    }
+
+    private func deleteCard() {
+        player.stop()
+        if usingTTS { TTSService.shared.stop() }
+        let svc = service
+        svc.delete(card)
+        Task {
+            let remaining = svc.dueCount()
+            await MemoryCardNotificationService.shared.refresh(dueCount: remaining)
+        }
+        dismiss()
     }
 
     private func resolvePhrase() -> ParrotPhrase? {

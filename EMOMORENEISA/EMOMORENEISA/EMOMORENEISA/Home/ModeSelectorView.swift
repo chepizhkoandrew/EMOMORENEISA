@@ -1,27 +1,31 @@
 import SwiftUI
+import SwiftData
+import AVFoundation
 
 struct ModeSelectorView: View {
     let onVerbGame: () -> Void
-    @State private var showChat = false
+    @State private var showExplore = false
     @State private var showMemorize = false
+    @State private var launchedSession: LocalChatSession? = nil
     @State private var appear = false
     @State private var verbCardPressed = false
-    @State private var chatCardPressed = false
+    @State private var exploreCardPressed = false
     @State private var memorizeCardPressed = false
+    @State private var bubblePlayer: AVAudioPlayer? = nil
     @Environment(AuthState.self) private var authState
     @Environment(\.modelContext) private var modelContext
 
-    private let phrases = [
-        "¡Soy Proffesssorrro!",
-        "Vamos a ensenar me",
-        "no puedo esperar mas",
-        "comida buena",
-        "vivo en momento",
-        "Todo es caro",
-        "¿Qué tal, bichito?",
-        "Fu! Deja lo!!!",
-        "Vamos a la playa",
-        "Es un cabrón y narcisista! Como yo."
+    private let phrases: [(es: String, meaning: String)] = [
+        ("¡Soy Proffesssorrro!", "I'm the Proffessorrr!"),
+        ("Vamos a ensenar me", "Let's teach… me!"),
+        ("no puedo esperar mas", "I can't wait any longer"),
+        ("comida buena", "Good food"),
+        ("vivo en momento", "I live in the moment"),
+        ("Todo es caro", "Everything's expensive"),
+        ("Hola bichito", "Hey, creature"),
+        ("Fu! Deja lo!!!", "Ugh! Drop it!!!"),
+        ("Vamos a la playa", "Let's go to the beach"),
+        ("Es un cabrón y narcisista! Como yo.", "He's a jerk and a narcissist! Like me.")
     ]
     @State private var displayedText = ""
     @State private var phraseIndex = 0
@@ -29,8 +33,8 @@ struct ModeSelectorView: View {
     @State private var isDeleting = false
     @State private var cursorVisible = true
     @State private var typeTask: Task<Void, Never>? = nil
-
-    private let tileHeight: CGFloat = 86
+    @State private var showProfile = false
+    @State private var showOnboarding = false
 
     var body: some View {
         ZStack {
@@ -38,29 +42,41 @@ struct ModeSelectorView: View {
 
             DreamParticlesView()
                 .allowsHitTesting(false)
+                .ignoresSafeArea()
 
             GeometryReader { geo in
+                let dogH = HomeLayout.dogHeight(geo.size.height)
+                let illoH = HomeLayout.illustrationHeight
+
                 VStack(spacing: 0) {
-                    Color.clear.frame(height: geo.safeAreaInsets.top + 30)
+                    Spacer(minLength: 0)
 
-                    Spacer(minLength: 6)
+                    VStack(spacing: HomeLayout.cardSpacing) {
+                        ZStack(alignment: .bottom) {
+                            HStack(alignment: .bottom, spacing: 12) {
+                                Image("professor_dog")
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(height: dogH)
 
-                    dogAndChatCardSection(geo: geo)
+                                speechBubbleView
+                                    .padding(.bottom, dogH * 0.50)
+                                    .frame(maxWidth: .infinity)
+                            }
 
-                    Spacer(minLength: 12)
+                            exploreCard(illustrationH: illoH)
+                        }
+                        .frame(height: dogH)
 
-                    verbGameCard
-                        .padding(.horizontal, 20)
+                        memoriseWordsCard(illustrationH: illoH)
 
-                    Spacer(minLength: 8)
+                        verbsTimesCard(illustrationH: illoH)
+                    }
+                    .padding(.horizontal, HomeLayout.hPadding)
 
-                    memorizeCard
-                        .padding(.horizontal, 20)
-
-                    Spacer(minLength: 8)
-
-                    Color.clear.frame(height: geo.safeAreaInsets.bottom + 16)
+                    Spacer(minLength: 0)
                 }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
             .opacity(appear ? 1 : 0)
             .offset(y: appear ? 0 : 40)
@@ -71,40 +87,111 @@ struct ModeSelectorView: View {
             }
             .onDisappear {
                 typeTask?.cancel()
+                bubblePlayer?.stop()
+                bubblePlayer = nil
+            }
+
+            VStack {
+                HStack {
+                    Spacer()
+                    Button {
+                        showProfile = true
+                    } label: {
+                        Image(systemName: "person.circle.fill")
+                            .font(.system(size: 28))
+                            .foregroundColor(.white.opacity(0.6))
+                            .padding(16)
+                    }
+                }
+                Spacer()
             }
         }
-        .ignoresSafeArea()
-        .fullScreenCover(isPresented: $showChat) {
-            chatDestination
+        .fullScreenCover(isPresented: $showOnboarding) {
+            OnboardingContainerView {
+                showOnboarding = false
+            }
+            .environment(authState)
+        }
+        .onChange(of: authState.needsOnboarding) { _, needs in
+            if needs { showOnboarding = true }
+        }
+        .onChange(of: showOnboarding) { _, isShowing in
+            if isShowing {
+                typeTask?.cancel()
+                bubblePlayer?.stop()
+                bubblePlayer = nil
+                OnboardAudioManager.shared.stop()
+                BackgroundMusicPlayer.shared.fadeOut(duration: 0.3)
+            } else {
+                startTypewriter()
+                BackgroundMusicPlayer.shared.play()
+            }
+        }
+        .onAppear {
+            if authState.needsOnboarding { showOnboarding = true }
+        }
+        .fullScreenCover(isPresented: $showProfile) {
+            NavigationStack {
+                ProfileView(onBack: { showProfile = false })
+                    .environment(authState)
+            }
+        }
+        .fullScreenCover(isPresented: $showExplore) {
+            if authState.isSignedIn {
+                NewSessionView(onSessionCreated: { session in
+                    showExplore = false
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                        launchedSession = session
+                    }
+                })
+                .environment(authState)
+            } else {
+                SignInView()
+                    .environment(authState)
+            }
         }
         .fullScreenCover(isPresented: $showMemorize) {
             MemorizeContainerView()
         }
-    }
-
-    // MARK: - Dog + Chat Card ZStack
-
-    private func dogAndChatCardSection(geo: GeometryProxy) -> some View {
-        let dogHeight: CGFloat = 370
-        let dogVisibleAboveCard: CGFloat = 210
-
-        return ZStack(alignment: .topLeading) {
-            HStack(alignment: .bottom, spacing: 14) {
-                Image("professor_dog")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(height: dogHeight)
-
-                speechBubbleView
-                    .padding(.bottom, 215)
+        .onChange(of: showMemorize) { _, isShowing in
+            if isShowing {
+                typeTask?.cancel()
+                bubblePlayer?.stop()
+                bubblePlayer = nil
+                BackgroundMusicPlayer.shared.fadeOut(duration: 0.3)
+            } else {
+                startTypewriter()
+                BackgroundMusicPlayer.shared.play()
             }
-            .padding(.horizontal, 20)
-
-            chatTutorCard
-                .padding(.horizontal, 20)
-                .padding(.top, dogVisibleAboveCard)
         }
-        .frame(height: tileHeight + dogVisibleAboveCard)
+        .onChange(of: showExplore) { _, isShowing in
+            if isShowing {
+                typeTask?.cancel()
+                bubblePlayer?.stop()
+                bubblePlayer = nil
+                BackgroundMusicPlayer.shared.fadeOut(duration: 1.5)
+            } else {
+                startTypewriter()
+                BackgroundMusicPlayer.shared.play()
+            }
+        }
+        .onChange(of: launchedSession) { _, session in
+            if session != nil {
+                typeTask?.cancel()
+                bubblePlayer?.stop()
+                bubblePlayer = nil
+            } else {
+                startTypewriter()
+            }
+        }
+        .fullScreenCover(item: $launchedSession) { session in
+            NavigationStack {
+                ChatView(session: session)
+            }
+            .environment(authState)
+            .onAppear { BackgroundMusicPlayer.shared.fadeOut(duration: 1.5) }
+            .onDisappear { BackgroundMusicPlayer.shared.play() }
+        }
     }
 
     // MARK: - Speech Bubble
@@ -120,20 +207,51 @@ struct ModeSelectorView: View {
                 .frame(width: 11, height: 9)
                 .offset(x: -10, y: 2)
 
-            Text(displayedText + (cursorVisible ? "|" : " "))
-                .font(.system(size: 17, weight: .bold, design: .rounded))
-                .foregroundColor(.black)
-                .lineLimit(3)
-                .multilineTextAlignment(.leading)
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-                .padding(.horizontal, 12)
-                .padding(.top, 9)
-                .padding(.bottom, 9)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(displayedText + (cursorVisible ? "|" : " "))
+                    .font(.system(size: 17, weight: .bold, design: .rounded))
+                    .foregroundColor(.black)
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.7)
+                    .multilineTextAlignment(.leading)
+
+                Text(L(phrases[phraseIndex].meaning))
+                    .font(.system(size: 12, weight: .semibold, design: .rounded))
+                    .foregroundColor(.black.opacity(0.55))
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.7)
+                    .multilineTextAlignment(.leading)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            .padding(.horizontal, 12)
+            .padding(.top, 9)
+            .padding(.bottom, 9)
         }
         .frame(maxWidth: .infinity, minHeight: 86, maxHeight: 86)
     }
 
     // MARK: - Typewriter
+
+    private func playBubbleSound(index: Int) {
+        // Localized clip voices the sequence Spanish → native meaning → Spanish.
+        // Falls back to the Spanish-only clip if the localized file is missing.
+        let langSuffix: String
+        switch LocalizationManager.shared.language {
+        case .ukrainian: langSuffix = "uk"
+        case .english:   langSuffix = "en"
+        }
+        let localizedName = "dog_bubble_\(index)_\(langSuffix)"
+        let url = Bundle.main.url(forResource: localizedName, withExtension: "mp3")
+            ?? Bundle.main.url(forResource: "dog_bubble_\(index)", withExtension: "mp3")
+        guard let url else { return }
+        do {
+            try AVAudioSession.sharedInstance().setCategory(.ambient, mode: .default, options: [.mixWithOthers])
+            try AVAudioSession.sharedInstance().setActive(true)
+            bubblePlayer = try AVAudioPlayer(contentsOf: url)
+            bubblePlayer?.volume = 0.7
+            bubblePlayer?.play()
+        } catch {}
+    }
 
     private func startTypewriter() {
         typeTask?.cancel()
@@ -150,127 +268,112 @@ struct ModeSelectorView: View {
                 }
             }
 
+            // One phrase at a time: each bubble is spoken (Spanish → meaning →
+            // Spanish) and the visible text is held for the whole clip, so the
+            // audio is the source of truth and cycles never overlap.
             while !Task.isCancelled {
-                let phrase = phrases[phraseIndex]
+                let phrase = phrases[phraseIndex].es
 
-                if !isDeleting {
-                    if charIndex < phrase.count {
-                        await MainActor.run {
-                            charIndex += 1
-                            displayedText = String(phrase.prefix(charIndex))
-                        }
-                        try? await Task.sleep(nanoseconds: 70_000_000)
-                    } else {
-                        try? await Task.sleep(nanoseconds: 2_200_000_000)
-                        await MainActor.run { isDeleting = true }
-                    }
-                } else {
-                    if charIndex > 0 {
-                        await MainActor.run {
-                            charIndex -= 1
-                            displayedText = String(phrase.prefix(charIndex))
-                        }
-                        try? await Task.sleep(nanoseconds: 32_000_000)
-                    } else {
-                        await MainActor.run {
-                            isDeleting = false
-                            phraseIndex = (phraseIndex + 1) % phrases.count
-                        }
-                        try? await Task.sleep(nanoseconds: 380_000_000)
-                    }
+                // Start this phrase's clip and learn how long it runs.
+                let duration = await MainActor.run { () -> TimeInterval in
+                    playBubbleSound(index: phraseIndex)
+                    return bubblePlayer?.duration ?? 0
                 }
+
+                // Type the Spanish in.
+                await MainActor.run { charIndex = 0; displayedText = "" }
+                while charIndex < phrase.count && !Task.isCancelled {
+                    await MainActor.run {
+                        charIndex += 1
+                        displayedText = String(phrase.prefix(charIndex))
+                    }
+                    try? await Task.sleep(nanoseconds: 70_000_000)
+                }
+
+                // Hold the fully-typed phrase until its clip finishes playing.
+                let start = Date()
+                let minHold: TimeInterval = 2.2
+                let cap = max(duration, minHold) + 0.5
+                while !Task.isCancelled {
+                    let playing = await MainActor.run { bubblePlayer?.isPlaying ?? false }
+                    let elapsed = Date().timeIntervalSince(start)
+                    if elapsed >= cap { break }
+                    if !playing && elapsed >= minHold { break }
+                    try? await Task.sleep(nanoseconds: 120_000_000)
+                }
+
+                // Delete before moving to the next phrase.
+                while charIndex > 0 && !Task.isCancelled {
+                    await MainActor.run {
+                        charIndex -= 1
+                        displayedText = String(phrase.prefix(charIndex))
+                    }
+                    try? await Task.sleep(nanoseconds: 32_000_000)
+                }
+
+                await MainActor.run { phraseIndex = (phraseIndex + 1) % phrases.count }
+                try? await Task.sleep(nanoseconds: 300_000_000)
             }
         }
     }
 
     // MARK: - Cards
 
-    private var chatTutorCard: some View {
-        Button(action: { showChat = true }) {
-            ZStack {
-                RoundedRectangle(cornerRadius: 20)
-                    .fill(
-                        LinearGradient(
-                            colors: [
-                                Color(red: 0.12, green: 0.58, blue: 1.0),
-                                Color(red: 0.06, green: 0.38, blue: 0.90),
-                                Color(red: 0.04, green: 0.22, blue: 0.72)
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-
-                RoundedRectangle(cornerRadius: 20)
-                    .stroke(Color.white.opacity(0.22), lineWidth: 1.5)
-
-                HStack(spacing: 14) {
-                    Image(systemName: "bubble.left.and.bubble.right.fill")
-                        .font(.system(size: 28, weight: .bold))
-                        .foregroundColor(.white.opacity(0.65))
-                        .shadow(color: .cyan.opacity(0.6), radius: 8)
-
-                    Text("CHAT TUTOR")
-                        .font(.system(size: 20, weight: .black, design: .monospaced))
-                        .foregroundColor(.white)
-                        .tracking(1)
-
-                    Spacer()
-                }
-                .padding(.horizontal, 20)
+    private func exploreCard(illustrationH: CGFloat) -> some View {
+        Button(action: { showExplore = true }) {
+            HomeModeCard(
+                title: L("Explore"),
+                subtitle: L("learn visually, speak about what you see around"),
+                pressed: exploreCardPressed
+            ) {
+                Image("street_view")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(height: illustrationH)
             }
-            .frame(maxWidth: .infinity)
-            .frame(height: tileHeight)
-            .scaleEffect(chatCardPressed ? 0.96 : 1.0)
-            .animation(.spring(response: 0.25, dampingFraction: 0.6), value: chatCardPressed)
-            .shadow(color: Color.blue.opacity(0.45), radius: 20, y: 8)
         }
         .buttonStyle(.plain)
         .simultaneousGesture(
             DragGesture(minimumDistance: 0)
-                .onChanged { _ in chatCardPressed = true }
-                .onEnded { _ in chatCardPressed = false }
+                .onChanged { _ in exploreCardPressed = true }
+                .onEnded { _ in exploreCardPressed = false }
         )
     }
 
-    private var verbGameCard: some View {
-        Button(action: onVerbGame) {
-            ZStack {
-                RoundedRectangle(cornerRadius: 20)
-                    .fill(
-                        LinearGradient(
-                            colors: [
-                                Color(red: 1.0, green: 0.82, blue: 0.08),
-                                Color(red: 0.88, green: 0.60, blue: 0.02),
-                                Color(red: 0.72, green: 0.42, blue: 0.01)
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-
-                RoundedRectangle(cornerRadius: 20)
-                    .stroke(Color.white.opacity(0.30), lineWidth: 1.5)
-
-                HStack(spacing: 14) {
-                    Image(systemName: "dice.fill")
-                        .font(.system(size: 28, weight: .bold))
-                        .foregroundColor(.black.opacity(0.55))
-
-                    Text("VERB GAME")
-                        .font(.system(size: 20, weight: .black, design: .monospaced))
-                        .foregroundColor(.black.opacity(0.80))
-                        .tracking(1)
-
-                    Spacer()
-                }
-                .padding(.horizontal, 20)
+    private func memoriseWordsCard(illustrationH: CGFloat) -> some View {
+        Button(action: { showMemorize = true }) {
+            HomeModeCard(
+                title: L("Memorise words"),
+                subtitle: L("everyday queue for new words"),
+                badge: memorizeDueCount,
+                pressed: memorizeCardPressed
+            ) {
+                Image("progress_screen")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(height: illustrationH)
             }
-            .frame(maxWidth: .infinity)
-            .frame(height: tileHeight)
-            .scaleEffect(verbCardPressed ? 0.96 : 1.0)
-            .animation(.spring(response: 0.25, dampingFraction: 0.6), value: verbCardPressed)
-            .shadow(color: Color.yellow.opacity(0.45), radius: 20, y: 8)
+        }
+        .buttonStyle(.plain)
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 0)
+                .onChanged { _ in memorizeCardPressed = true }
+                .onEnded { _ in memorizeCardPressed = false }
+        )
+    }
+
+    private func verbsTimesCard(illustrationH: CGFloat) -> some View {
+        Button(action: onVerbGame) {
+            HomeModeCard(
+                title: L("Verbs & times"),
+                subtitle: L("game to learn verbs & tenses fast"),
+                pressed: verbCardPressed
+            ) {
+                Image("verb_game")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(height: illustrationH)
+            }
         }
         .buttonStyle(.plain)
         .simultaneousGesture(
@@ -282,76 +385,6 @@ struct ModeSelectorView: View {
 
     private var memorizeDueCount: Int {
         MemoryCardService(context: modelContext).dueCount()
-    }
-
-    private var memorizeCard: some View {
-        Button(action: { showMemorize = true }) {
-            ZStack {
-                RoundedRectangle(cornerRadius: 20)
-                    .fill(
-                        LinearGradient(
-                            colors: [
-                                Color(red: 0.22, green: 0.78, blue: 0.52),
-                                Color(red: 0.10, green: 0.58, blue: 0.40),
-                                Color(red: 0.04, green: 0.40, blue: 0.30)
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-
-                RoundedRectangle(cornerRadius: 20)
-                    .stroke(Color.white.opacity(0.22), lineWidth: 1.5)
-
-                HStack(spacing: 14) {
-                    Image(systemName: "brain.head.profile")
-                        .font(.system(size: 28, weight: .bold))
-                        .foregroundColor(.white.opacity(0.75))
-                        .shadow(color: .green.opacity(0.6), radius: 8)
-
-                    Text("LORO MEMORIZE")
-                        .font(.system(size: 20, weight: .black, design: .monospaced))
-                        .foregroundColor(.white)
-                        .tracking(1)
-
-                    Spacer()
-
-                    if memorizeDueCount > 0 {
-                        Text("\(memorizeDueCount)")
-                            .font(.system(size: 14, weight: .black, design: .rounded))
-                            .foregroundColor(.black)
-                            .padding(.horizontal, 10).padding(.vertical, 4)
-                            .background(Color.yellow)
-                            .clipShape(Capsule())
-                    }
-                }
-                .padding(.horizontal, 20)
-            }
-            .frame(maxWidth: .infinity)
-            .frame(height: tileHeight)
-            .scaleEffect(memorizeCardPressed ? 0.96 : 1.0)
-            .animation(.spring(response: 0.25, dampingFraction: 0.6), value: memorizeCardPressed)
-            .shadow(color: Color.green.opacity(0.40), radius: 20, y: 8)
-        }
-        .buttonStyle(.plain)
-        .simultaneousGesture(
-            DragGesture(minimumDistance: 0)
-                .onChanged { _ in memorizeCardPressed = true }
-                .onEnded { _ in memorizeCardPressed = false }
-        )
-    }
-
-    // MARK: - Chat Destination
-
-    @ViewBuilder
-    private var chatDestination: some View {
-        if authState.isSignedIn {
-            SessionListView()
-                .environment(authState)
-        } else {
-            SignInView()
-                .environment(authState)
-        }
     }
 }
 
@@ -365,15 +398,12 @@ struct DreamParticle: Identifiable {
     let maxDistance: CGFloat
     let curvature: CGFloat
     let totalRotationDeg: Double
-    let duration: Double          // total cycle length (active travel + invisible rest)
-    let activeFraction: Double    // fraction of duration that's the visible travel phase
+    let duration: Double
+    let activeFraction: Double
     let delay: Double
 }
 
 struct DreamParticlesView: View {
-    // Each particle has a 32-second total cycle; it travels/is-visible for the first
-    // activeFraction (≈30%) of that cycle, then rests invisible.
-    // With 13 particles and delays spread 2.5 s apart, at most ≈4 are visible at once.
     private let particles: [DreamParticle] = [
         DreamParticle(id:  0, imageName: "dream_hotdog",          size: 108, angleDeg:  -55, maxDistance: 240, curvature:  20, totalRotationDeg:  130, duration: 32.0, activeFraction: 0.30, delay:  0.0),
         DreamParticle(id:  1, imageName: "dream_pasta",           size: 122, angleDeg:  -28, maxDistance: 355, curvature:  22, totalRotationDeg:  -98, duration: 32.0, activeFraction: 0.30, delay:  2.5),

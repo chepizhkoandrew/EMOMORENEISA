@@ -1,6 +1,7 @@
 import SwiftUI
 import SwiftData
 import PhotosUI
+import AVFoundation
 
 struct NewSessionView: View {
     let onSessionCreated: (LocalChatSession) -> Void
@@ -15,6 +16,26 @@ struct NewSessionView: View {
     @State private var isTranscribingTopic = false
     @State private var topicCardPressed = false
     @State private var streetCardPressed = false
+    @State private var yourChatsCardPressed = false
+    @State private var showSessionList = false
+
+    @State private var appear = false
+    @State private var nsvDisplayedText = ""
+    @State private var nsvPhraseIndex = 0
+    @State private var nsvCharIndex = 0
+    @State private var nsvCursorVisible = true
+    @State private var nsvTypeTask: Task<Void, Never>? = nil
+    @State private var nsvBubblePlayer: AVAudioPlayer? = nil
+
+    // Same approach as the home mode selector: each bubble is Spanish first with
+    // its meaning underneath, and the clip voices Spanish → native meaning once.
+    private let explorePhrases: [(es: String, meaning: String)] = [
+        ("¿Qué exploramos hoy?", "What are we exploring today?"),
+        ("¿Cómo quieres aprender?", "How do you want to learn?"),
+        ("¡Elige tu aventura!", "Pick your adventure!"),
+        ("¡Tú decides!", "You decide!"),
+        ("El mundo es tu aula.", "The world is your classroom.")
+    ]
 
     @State private var streetImages: [UIImage] = []
     @State private var selectedStreetItems: [PhotosPickerItem] = []
@@ -32,58 +53,45 @@ struct NewSessionView: View {
     ]
 
     var body: some View {
-        NavigationStack {
-            ZStack {
-                AppBackground()
-
-                Group {
-                    switch step {
-                    case .modeSelection:
-                        modeSelectorContent
-                            .transition(.asymmetric(
-                                insertion: .move(edge: .leading).combined(with: .opacity),
-                                removal: .move(edge: .leading).combined(with: .opacity)
-                            ))
-                    case .topicInput:
-                        topicInputContent
-                            .transition(.asymmetric(
-                                insertion: .move(edge: .trailing).combined(with: .opacity),
-                                removal: .move(edge: .trailing).combined(with: .opacity)
-                            ))
-                    case .streetViewPhotos:
-                        streetViewPhotosContent
-                            .transition(.asymmetric(
-                                insertion: .move(edge: .trailing).combined(with: .opacity),
-                                removal: .move(edge: .trailing).combined(with: .opacity)
-                            ))
+        Group {
+            if step == .modeSelection {
+                modeSelectionFullScreen
+            } else {
+                NavigationStack {
+                    ZStack {
+                        AppBackground()
+                        Group {
+                            switch step {
+                            case .topicInput:
+                                topicInputContent
+                                    .transition(.asymmetric(
+                                        insertion: .move(edge: .trailing).combined(with: .opacity),
+                                        removal: .move(edge: .trailing).combined(with: .opacity)
+                                    ))
+                            case .streetViewPhotos:
+                                streetViewPhotosContent
+                                    .transition(.asymmetric(
+                                        insertion: .move(edge: .trailing).combined(with: .opacity),
+                                        removal: .move(edge: .trailing).combined(with: .opacity)
+                                    ))
+                            default:
+                                EmptyView()
+                            }
+                        }
+                        .animation(.spring(response: 0.40, dampingFraction: 0.85), value: step)
                     }
-                }
-                .animation(.spring(response: 0.40, dampingFraction: 0.85), value: step)
-            }
-            .navigationTitle(navTitle)
-            .navigationBarTitleDisplayMode(step == .modeSelection ? .inline : .large)
-            .toolbarColorScheme(.dark, for: .navigationBar)
-            .toolbarBackground(AppColors.backgroundTop, for: .navigationBar)
-            .toolbarBackground(.visible, for: .navigationBar)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    if step == .modeSelection {
-                        Button("Cancel") { dismiss() }
-                            .foregroundColor(.white)
-                            .font(.system(size: 17, design: .rounded))
-                    } else {
-                        Button {
-                            withAnimation(.spring(response: 0.40, dampingFraction: 0.85)) {
-                                step = .modeSelection
+                    .navigationTitle(navTitle)
+                    .navigationBarTitleDisplayMode(.large)
+                    .toolbarColorScheme(.dark, for: .navigationBar)
+                    .toolbarBackground(AppColors.backgroundTop, for: .navigationBar)
+                    .toolbarBackground(.visible, for: .navigationBar)
+                    .toolbar {
+                        ToolbarItem(placement: .navigationBarLeading) {
+                            BackButton {
+                                withAnimation(.spring(response: 0.40, dampingFraction: 0.85)) {
+                                    step = .modeSelection
+                                }
                             }
-                        } label: {
-                            HStack(spacing: 5) {
-                                Image(systemName: "chevron.left")
-                                    .font(.system(size: 14, weight: .semibold))
-                                Text("Back")
-                                    .font(.system(size: 17, design: .rounded))
-                            }
-                            .foregroundColor(.white)
                         }
                     }
                 }
@@ -115,57 +123,91 @@ struct NewSessionView: View {
             }
             .ignoresSafeArea()
         }
-    }
-
-    private var navTitle: String {
-        switch step {
-        case .modeSelection:     return ""
-        case .topicInput:        return "Choose a Topic"
-        case .streetViewPhotos:  return "Street View"
+        .fullScreenCover(isPresented: $showSessionList) {
+            if authState.isSignedIn {
+                SessionListView()
+                    .environment(authState)
+            } else {
+                SignInView()
+                    .environment(authState)
+            }
         }
-    }
-
-    // MARK: - Step 1: Mode Selection
-
-    private var modeSelectorContent: some View {
-        GeometryReader { geo in
-            let illustrationH = min(geo.size.height * 0.21, 170.0)
-            let cardH = illustrationH + 32
-            let dogH: CGFloat = min(geo.size.height * 0.33, 260.0)
-            let dogOverlap: CGFloat = 180.0
-
-            ScrollView(showsIndicators: false) {
-                VStack(spacing: 0) {
-                    ZStack(alignment: .topLeading) {
-                        HStack(alignment: .bottom, spacing: 12) {
-                            Image("professor_dog")
-                                .resizable()
-                                .scaledToFit()
-                                .frame(height: dogH)
-
-                            staticSpeechBubble
-                                .padding(.bottom, 110)
-                        }
-                        .padding(.horizontal, 20)
-
-                        topicModeCard(cardH: cardH, illustrationH: illustrationH)
-                            .padding(.horizontal, 20)
-                            .padding(.top, dogOverlap)
-                    }
-                    .frame(height: cardH + dogOverlap)
-
-                    streetViewCard(cardH: cardH, illustrationH: illustrationH)
-                        .padding(.horizontal, 20)
-                        .padding(.top, 14)
-
-                    Spacer(minLength: geo.safeAreaInsets.bottom + 24)
-                }
-                .frame(minHeight: geo.size.height)
+        .onChange(of: showSessionList) { _, isShowing in
+            if isShowing {
+                nsvTypeTask?.cancel()
+                nsvBubblePlayer?.stop()
+                nsvBubblePlayer = nil
+            } else {
+                startTypewriter()
             }
         }
     }
 
-    private var staticSpeechBubble: some View {
+    // MARK: - Full-screen mode selection (GameBackground + animation)
+
+    private var modeSelectionFullScreen: some View {
+        ZStack {
+            GameBackground()
+            DreamParticlesView()
+                .allowsHitTesting(false)
+                .ignoresSafeArea()
+
+            GeometryReader { geo in
+                let dogH = HomeLayout.dogHeight(geo.size.height)
+                let illoH = HomeLayout.illustrationHeight
+
+                VStack(spacing: 0) {
+                    Spacer(minLength: 0)
+
+                    VStack(spacing: HomeLayout.cardSpacing) {
+                        ZStack(alignment: .bottom) {
+                            HStack(alignment: .bottom, spacing: 12) {
+                                Image("professor_dog")
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(height: dogH)
+
+                                animatedSpeechBubble
+                                    .padding(.bottom, dogH * 0.50)
+                                    .frame(maxWidth: .infinity)
+                            }
+
+                            streetViewCard(illustrationH: illoH)
+                        }
+                        .frame(height: dogH)
+
+                        topicModeCard(illustrationH: illoH)
+
+                        yourChatsCard(illustrationH: illoH)
+                    }
+                    .padding(.horizontal, HomeLayout.hPadding)
+
+                    Spacer(minLength: 0)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+            .overlay(alignment: .topLeading) {
+                BackButton { dismiss() }
+                    .padding(.leading, HomeLayout.hPadding)
+                    .padding(.top, 56)
+            }
+        }
+        .opacity(appear ? 1 : 0)
+        .offset(y: appear ? 0 : 40)
+        .animation(.spring(response: 0.55, dampingFraction: 0.75).delay(0.08), value: appear)
+        .onAppear {
+            appear = true
+            startTypewriter()
+        }
+        .onDisappear {
+            nsvTypeTask?.cancel()
+            nsvBubblePlayer?.stop()
+            nsvBubblePlayer = nil
+            appear = false
+        }
+    }
+
+    private var animatedSpeechBubble: some View {
         ZStack(alignment: .leading) {
             RoundedRectangle(cornerRadius: 14)
                 .fill(Color.yellow)
@@ -176,68 +218,140 @@ struct NewSessionView: View {
                 .frame(width: 11, height: 9)
                 .offset(x: -10, y: 2)
 
-            Text("How do you\nwant to learn?")
-                .font(.system(size: 16, weight: .bold, design: .rounded))
-                .foregroundColor(.black)
-                .lineSpacing(2)
-                .multilineTextAlignment(.leading)
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 10)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(nsvDisplayedText + (nsvCursorVisible ? "|" : " "))
+                    .font(.system(size: 17, weight: .bold, design: .rounded))
+                    .foregroundColor(.black)
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.7)
+                    .multilineTextAlignment(.leading)
+
+                Text(L(explorePhrases[nsvPhraseIndex % explorePhrases.count].meaning))
+                    .font(.system(size: 12, weight: .semibold, design: .rounded))
+                    .foregroundColor(.black.opacity(0.55))
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.7)
+                    .multilineTextAlignment(.leading)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            .padding(.horizontal, 12)
+            .padding(.top, 9)
+            .padding(.bottom, 9)
         }
-        .frame(maxWidth: .infinity, minHeight: 72, maxHeight: 72)
+        .frame(maxWidth: .infinity, minHeight: 86, maxHeight: 86)
     }
 
-    private func topicModeCard(cardH: CGFloat, illustrationH: CGFloat) -> some View {
-        let overflow: CGFloat = 10
-        return Button(action: {
+    private func playExploreSound(index: Int) {
+        // Localized clip voices the sequence Spanish → native meaning.
+        // Falls back to the Spanish-only clip if the localized file is missing.
+        let langSuffix: String
+        switch LocalizationManager.shared.language {
+        case .ukrainian: langSuffix = "uk"
+        case .english:   langSuffix = "en"
+        }
+        let i = index % explorePhrases.count
+        let localizedName = "explore_bubble_\(i)_\(langSuffix)"
+        let url = Bundle.main.url(forResource: localizedName, withExtension: "mp3")
+            ?? Bundle.main.url(forResource: "explore_bubble_\(i)", withExtension: "mp3")
+        guard let url else { return }
+        do {
+            try AVAudioSession.sharedInstance().setCategory(.ambient, mode: .default, options: [.mixWithOthers])
+            try AVAudioSession.sharedInstance().setActive(true)
+            nsvBubblePlayer = try AVAudioPlayer(contentsOf: url)
+            nsvBubblePlayer?.volume = 0.7
+            nsvBubblePlayer?.play()
+        } catch {}
+    }
+
+    private func startTypewriter() {
+        nsvTypeTask?.cancel()
+        nsvDisplayedText = ""
+        nsvPhraseIndex = 0
+        nsvCharIndex = 0
+
+        nsvTypeTask = Task {
+            Task {
+                while !Task.isCancelled {
+                    try? await Task.sleep(nanoseconds: 500_000_000)
+                    await MainActor.run { nsvCursorVisible.toggle() }
+                }
+            }
+
+            // One phrase at a time: each bubble is spoken (Spanish → meaning) and
+            // the visible text is held for the whole clip, so the audio is the
+            // source of truth and cycles never overlap.
+            while !Task.isCancelled {
+                let phrase = explorePhrases[nsvPhraseIndex % explorePhrases.count].es
+
+                // Start this phrase's clip and learn how long it runs.
+                let duration = await MainActor.run { () -> TimeInterval in
+                    playExploreSound(index: nsvPhraseIndex)
+                    return nsvBubblePlayer?.duration ?? 0
+                }
+
+                // Type the Spanish in.
+                await MainActor.run { nsvCharIndex = 0; nsvDisplayedText = "" }
+                while nsvCharIndex < phrase.count && !Task.isCancelled {
+                    await MainActor.run {
+                        nsvCharIndex += 1
+                        nsvDisplayedText = String(phrase.prefix(nsvCharIndex))
+                    }
+                    try? await Task.sleep(nanoseconds: 48_000_000)
+                }
+
+                // Hold the fully-typed phrase until its clip finishes playing.
+                let start = Date()
+                let minHold: TimeInterval = 2.2
+                let cap = max(duration, minHold) + 0.5
+                while !Task.isCancelled {
+                    let playing = await MainActor.run { nsvBubblePlayer?.isPlaying ?? false }
+                    let elapsed = Date().timeIntervalSince(start)
+                    if elapsed >= cap { break }
+                    if !playing && elapsed >= minHold { break }
+                    try? await Task.sleep(nanoseconds: 120_000_000)
+                }
+
+                // Delete before moving to the next phrase.
+                while nsvCharIndex > 0 && !Task.isCancelled {
+                    await MainActor.run {
+                        nsvCharIndex -= 1
+                        nsvDisplayedText = String(phrase.prefix(nsvCharIndex))
+                    }
+                    try? await Task.sleep(nanoseconds: 28_000_000)
+                }
+
+                await MainActor.run { nsvPhraseIndex = (nsvPhraseIndex + 1) % explorePhrases.count }
+                try? await Task.sleep(nanoseconds: 200_000_000)
+            }
+        }
+    }
+
+    private var navTitle: String {
+        switch step {
+        case .modeSelection:     return ""
+        case .topicInput:        return L("Choose a Topic")
+        case .streetViewPhotos:  return L("Street View")
+        }
+    }
+
+    // MARK: - Step 2+: Cards (also used by modeSelectionFullScreen)
+
+    private func topicModeCard(illustrationH: CGFloat) -> some View {
+        Button(action: {
             withAnimation(.spring(response: 0.40, dampingFraction: 0.85)) {
                 step = .topicInput
             }
         }) {
-            ZStack(alignment: .trailing) {
-                RoundedRectangle(cornerRadius: 24)
-                    .fill(LinearGradient(
-                        colors: [
-                            Color(red: 1.0, green: 0.82, blue: 0.08),
-                            Color(red: 0.88, green: 0.60, blue: 0.02),
-                            Color(red: 0.72, green: 0.42, blue: 0.01)
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    ))
-                    .frame(height: cardH)
-
-                RoundedRectangle(cornerRadius: 24)
-                    .stroke(Color.white.opacity(0.25), lineWidth: 1.5)
-                    .frame(height: cardH)
-
-                HStack(alignment: .center, spacing: 0) {
-                    VStack(alignment: .leading, spacing: 5) {
-                        Text("Choose a topic")
-                            .font(.system(size: 22, weight: .black, design: .rounded))
-                            .foregroundColor(.black.opacity(0.85))
-                        Text("Talk with tutor via text and voice messages")
-                            .font(.system(size: 13, weight: .medium, design: .rounded))
-                            .foregroundColor(.black.opacity(0.52))
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                    .padding(.leading, 22)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-
-                    Image("topic_conversation")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(height: illustrationH + overflow)
-                        .padding(.trailing, 10)
-                }
-                .frame(maxWidth: .infinity, maxHeight: cardH, alignment: .center)
+            HomeModeCard(
+                title: L("Choose a topic"),
+                subtitle: L("Talk with tutor via text and voice messages"),
+                pressed: topicCardPressed
+            ) {
+                Image("btn_parrot_brain")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(height: illustrationH)
             }
-            .frame(maxWidth: .infinity)
-            .frame(height: cardH)
-            .scaleEffect(topicCardPressed ? 0.96 : 1.0)
-            .animation(.spring(response: 0.25, dampingFraction: 0.6), value: topicCardPressed)
-            .shadow(color: Color.yellow.opacity(0.45), radius: 20, y: 8)
         }
         .buttonStyle(.plain)
         .simultaneousGesture(
@@ -247,63 +361,50 @@ struct NewSessionView: View {
         )
     }
 
-    private func streetViewCard(cardH: CGFloat, illustrationH: CGFloat) -> some View {
-        let overflow: CGFloat = 10
-        return Button(action: {
+    private func streetViewCard(illustrationH: CGFloat) -> some View {
+        Button(action: {
             withAnimation(.spring(response: 0.40, dampingFraction: 0.85)) {
                 step = .streetViewPhotos
             }
             showStreetCamera = true
         }) {
-            ZStack(alignment: .trailing) {
-                RoundedRectangle(cornerRadius: 24)
-                    .fill(LinearGradient(
-                        colors: [
-                            Color(red: 0.12, green: 0.58, blue: 1.0),
-                            Color(red: 0.06, green: 0.38, blue: 0.90),
-                            Color(red: 0.04, green: 0.22, blue: 0.72)
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    ))
-                    .frame(height: cardH)
-
-                RoundedRectangle(cornerRadius: 24)
-                    .stroke(Color.white.opacity(0.22), lineWidth: 1.5)
-                    .frame(height: cardH)
-
-                HStack(alignment: .center, spacing: 0) {
-                    VStack(alignment: .leading, spacing: 5) {
-                        Text("Street view")
-                            .font(.system(size: 22, weight: .black, design: .rounded))
-                            .foregroundColor(.white)
-                        Text("Upload a photo of what is around you")
-                            .font(.system(size: 13, weight: .medium, design: .rounded))
-                            .foregroundColor(.white.opacity(0.72))
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                    .padding(.leading, 22)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-
-                    Image("street_view")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(height: illustrationH + overflow)
-                        .padding(.trailing, 10)
-                }
-                .frame(maxWidth: .infinity, maxHeight: cardH, alignment: .center)
+            HomeModeCard(
+                title: L("Street view"),
+                subtitle: L("Take a picture of what you see around you"),
+                pressed: streetCardPressed
+            ) {
+                Image("btn_eye_see")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(height: illustrationH)
             }
-            .frame(maxWidth: .infinity)
-            .frame(height: cardH)
-            .scaleEffect(streetCardPressed ? 0.96 : 1.0)
-            .animation(.spring(response: 0.25, dampingFraction: 0.6), value: streetCardPressed)
-            .shadow(color: Color.blue.opacity(0.45), radius: 20, y: 8)
         }
         .buttonStyle(.plain)
         .simultaneousGesture(
             DragGesture(minimumDistance: 0)
                 .onChanged { _ in streetCardPressed = true }
                 .onEnded { _ in streetCardPressed = false }
+        )
+    }
+
+    private func yourChatsCard(illustrationH: CGFloat) -> some View {
+        Button(action: { showSessionList = true }) {
+            HomeModeCard(
+                title: L("Your chats"),
+                subtitle: L("Browse your previous conversations"),
+                pressed: yourChatsCardPressed
+            ) {
+                Image("btn_seagull_sound")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(height: illustrationH)
+            }
+        }
+        .buttonStyle(.plain)
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 0)
+                .onChanged { _ in yourChatsCardPressed = true }
+                .onEnded { _ in yourChatsCardPressed = false }
         )
     }
 
@@ -315,7 +416,7 @@ struct NewSessionView: View {
                 VStack(spacing: 20) {
                     Spacer(minLength: 8)
 
-                    Text("What topic do you want to learn about?")
+                    Text(L("What topic do you want to learn about?"))
                         .font(.system(size: 20, weight: .semibold, design: .rounded))
                         .foregroundColor(.white)
                         .multilineTextAlignment(.center)
@@ -336,7 +437,7 @@ struct NewSessionView: View {
         HStack(alignment: .top, spacing: 12) {
             ZStack(alignment: .topLeading) {
                 if topicText.isEmpty {
-                    Text("e.g. \"ser vs estar\", \"travel vocabulary\"…")
+                    Text(L("e.g. \"ser vs estar\", \"travel vocabulary\"…"))
                         .font(.system(size: 18, weight: .regular, design: .rounded))
                         .foregroundColor(.white.opacity(0.45))
                         .padding(.horizontal, 18)
@@ -362,7 +463,7 @@ struct NewSessionView: View {
                     ProgressView()
                         .tint(.yellow)
                         .scaleEffect(0.85)
-                    Text("Transcribing…")
+                    Text(L("Transcribing…"))
                         .font(.system(size: 15, design: .rounded))
                         .foregroundColor(.yellow.opacity(0.8))
                 }
@@ -373,7 +474,7 @@ struct NewSessionView: View {
                     Circle()
                         .fill(Color.red)
                         .frame(width: 9, height: 9)
-                    Text("Listening… tap mic to stop")
+                    Text(L("Listening… tap mic to stop"))
                         .font(.system(size: 15, design: .rounded))
                         .foregroundColor(.red.opacity(0.8))
                 }
@@ -438,7 +539,7 @@ struct NewSessionView: View {
 
     private var predefinedTopicsSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Quick topics")
+            Text(L("Quick topics"))
                 .font(.system(size: 15, weight: .semibold, design: .rounded))
                 .foregroundColor(AppColors.textSecondary)
 
@@ -467,7 +568,7 @@ struct NewSessionView: View {
     private var startConversationBar: some View {
         let disabled = isTranscribingTopic || topicText.trimmingCharacters(in: .whitespaces).isEmpty
         return Button(action: { createSession(mode: .topic) }) {
-            Text("Start Conversation")
+            Text(L("Start Conversation"))
                 .font(.system(size: 19, weight: .bold, design: .rounded))
                 .foregroundColor(.white)
                 .frame(maxWidth: .infinity)
@@ -490,7 +591,7 @@ struct NewSessionView: View {
         VStack(spacing: 0) {
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 24) {
-                    Text("Add up to 4 photos of what is around you.")
+                    Text(L("Add up to 4 photos of what is around you."))
                         .font(.system(size: 17, weight: .semibold, design: .rounded))
                         .foregroundColor(.white)
                         .padding(.top, 8)
@@ -514,7 +615,7 @@ struct NewSessionView: View {
                 .font(.system(size: 64, weight: .thin))
                 .foregroundColor(.white.opacity(0.25))
 
-            Text("Visual learning: remember words 5× faster from photos of your real life.")
+            Text(L("Visual learning: remember words 5× faster from photos of your real life."))
                 .font(.system(size: 17, weight: .medium, design: .rounded))
                 .foregroundColor(.white.opacity(0.55))
                 .multilineTextAlignment(.center)
@@ -607,7 +708,7 @@ struct NewSessionView: View {
                     HStack(spacing: 8) {
                         Image(systemName: "camera.fill")
                             .font(.system(size: 18, weight: .semibold))
-                        Text("Camera")
+                        Text(L("Camera"))
                             .font(.system(size: 17, weight: .semibold, design: .rounded))
                     }
                     .foregroundColor(.white)
@@ -626,7 +727,7 @@ struct NewSessionView: View {
                     HStack(spacing: 8) {
                         Image(systemName: "photo.on.rectangle.angled")
                             .font(.system(size: 18, weight: .semibold))
-                        Text("Photos")
+                        Text(L("Photos"))
                             .font(.system(size: 17, weight: .semibold, design: .rounded))
                     }
                     .foregroundColor(.white)
@@ -641,7 +742,7 @@ struct NewSessionView: View {
             }
 
             Button(action: startStreetViewSession) {
-                Text("Start Conversation")
+                Text(L("Start Conversation"))
                     .font(.system(size: 19, weight: .bold, design: .rounded))
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
@@ -671,6 +772,7 @@ struct NewSessionView: View {
         Task {
             await SupabaseSyncService.shared.upsertSession(session, userId: userId)
         }
+        AnalyticsService.shared.track(.sessionCreated(mode: SessionMode.visual.rawValue))
         onSessionCreated(session)
     }
 
@@ -693,6 +795,7 @@ struct NewSessionView: View {
         Task {
             await SupabaseSyncService.shared.upsertSession(session, userId: userId)
         }
+        AnalyticsService.shared.track(.sessionCreated(mode: mode.rawValue))
         onSessionCreated(session)
     }
 }

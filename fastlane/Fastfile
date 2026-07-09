@@ -39,6 +39,7 @@ platform :ios do
     ipa_path     = "#{export_path}/EMOMORENEISA.ipa"
 
     FileUtils.mkdir_p(File.dirname(archive_path))
+    FileUtils.rm_rf(export_path)
     FileUtils.mkdir_p(export_path)
 
     File.write(export_opts, <<~PLIST)
@@ -84,26 +85,28 @@ platform :ios do
       app_identifier:             BUNDLE_ID,
       apple_id:                   APPLE_ID,
       ipa:                        ipa_path,
-      skip_waiting_for_build_processing: true,
-      changelog:                  "Bug fixes and improvements"
+      skip_waiting_for_build_processing: true
     )
   end
 
   desc "Upload metadata and screenshots to App Store Connect"
   lane :metadata do
+    ENV["FASTLANE_ENABLE_BETA_DELIVER_SYNC_SCREENSHOTS"] = "true"
     deliver(
       api_key:              api_key,
       app_identifier:       BUNDLE_ID,
       skip_binary_upload:   true,
       skip_screenshots:     false,
-      screenshots_path:     "../appstore/screenshots",
-      metadata_path:        "metadata",
+      screenshots_path:     "appstore/screenshots",
+      metadata_path:        "fastlane/metadata",
       submit_for_review:    false,
       force:                true,
       overwrite_screenshots: true,
-      sync_screenshots:     true,
+      sync_screenshots:     false,
       copyright:            "2026 priroda.tech",
       support_url:          { "en-US" => "https://professormadrid.com" },
+      primary_category:     "EDUCATION",
+      app_rating_config_path: "fastlane/metadata/app_rating_config.json",
       precheck_include_in_app_purchases: false,
       app_review_information: {
         first_name:         "Andrii",
@@ -112,21 +115,816 @@ platform :ios do
         email_address:      "andrii.chepizhko@gmail.com",
         demo_user:          "",
         demo_password:      "",
-        notes:              "No login required to test the app. All features are accessible without an account."
+        notes:              "Sign in with Apple (or Google) is required to reach the main app - please use the built-in Sign in with Apple button with any Apple ID. No demo account is needed. Every new account automatically receives free trial credits (\"treats\") that unlock all AI features: chat with the tutor, spoken replies, Street View photos, and pronunciation drills. Additional credits can be purchased via in-app purchase, but the free trial credits are enough to fully test every feature."
       }
     )
+  end
+
+  desc "Declare App Privacy nutrition labels via App Store Connect API"
+  lane :privacy_labels do
+    require "net/http"
+    require "uri"
+    require "json"
+    require "openssl"
+    require "jwt"
+
+    private_key = OpenSSL::PKey::EC.new(File.read(KEY_PATH))
+    now  = Time.now.to_i
+    token = JWT.encode(
+      { iss: ISSUER_ID, iat: now, exp: now + 1200, aud: "appstoreconnect-v1" },
+      private_key, "ES256",
+      { kid: KEY_ID }
+    )
+
+    base    = "https://api.appstoreconnect.apple.com/v1"
+    headers = { "Authorization" => "Bearer #{token}", "Content-Type" => "application/json" }
+
+    # What we collect and why:
+    #
+    #   AUDIO_DATA       Voice recordings sent to server for transcription (OpenAI).
+    #                    Processed server-side and immediately discarded; never stored.
+    #                    → NOT linked to user identity, NOT tracked.
+    #
+    #   PHOTOS_OR_VIDEOS Photos sent to server for Street View AI annotation (OpenAI vision).
+    #                    Processed server-side and immediately discarded; never stored.
+    #                    → NOT linked to user identity, NOT tracked.
+    #
+    #   EMAIL_ADDRESS    Collected at Apple/Google sign-in; stored in Supabase auth + profiles.
+    #                    Used to identify the account.
+    #                    → LINKED to user identity, NOT tracked.
+    #
+    #   NAME             Display name from Apple/Google sign-in; stored in profiles table.
+    #                    Used for the in-app profile display name.
+    #                    → LINKED to user identity, NOT tracked.
+    #
+    #   USER_ID          Supabase UUID assigned at sign-in; stored in all user tables.
+    #                    Drives the treat wallet, session history, and memory cards.
+    #                    → LINKED to user identity, NOT tracked.
+
+    usages = [
+      { dataCategory: "AUDIO_DATA",        linkedToUser: false, dataTracked: false, purposes: ["APP_FUNCTIONALITY"] },
+      { dataCategory: "PHOTOS_OR_VIDEOS",  linkedToUser: false, dataTracked: false, purposes: ["APP_FUNCTIONALITY"] },
+      { dataCategory: "EMAIL_ADDRESS",      linkedToUser: true,  dataTracked: false, purposes: ["APP_FUNCTIONALITY"] },
+      { dataCategory: "NAME",               linkedToUser: true,  dataTracked: false, purposes: ["APP_FUNCTIONALITY"] },
+      { dataCategory: "USER_ID",            linkedToUser: true,  dataTracked: false, purposes: ["APP_FUNCTIONALITY"] },
+    ]
+
+    usages.each do |usage|
+      body = {
+        data: {
+          type: "appDataUsages",
+          attributes: {
+            dataCategory: usage[:dataCategory],
+            dataLinked:   usage[:linkedToUser],
+            dataTracked:  usage[:dataTracked]
+          },
+          relationships: {
+            app: {
+              data: { type: "apps", id: APPLE_ID }
+            },
+            purposes: {
+              data: usage[:purposes].map { |p| { type: "appDataUsagePurposes", id: p } }
+            }
+          }
+        }
+      }
+
+      uri = URI("#{base}/appDataUsages")
+      req = Net::HTTP::Post.new(uri)
+      headers.each { |k, v| req[k] = v }
+      req.body = JSON.generate(body)
+
+      resp = Net::HTTP.start(uri.hostname, uri.port, use_ssl: true) { |http| http.request(req) }
+
+      case resp.code.to_i
+      when 201
+        UI.success("✅  Declared #{usage[:dataCategory]}")
+      when 409
+        UI.message("⚠️   #{usage[:dataCategory]} already declared — skipping")
+      else
+        UI.error("❌  #{usage[:dataCategory]}: HTTP #{resp.code}\n#{resp.body[0..400]}")
+      end
+    end
+  end
+
+  desc "Set IAP metadata (name + description) and pricing (USD base, auto-equalized globally)"
+  lane :iap_setup do
+    require "net/http"
+    require "uri"
+    require "json"
+    require "openssl"
+    require "jwt"
+
+    private_key = OpenSSL::PKey::EC.new(File.read(KEY_PATH))
+    now   = Time.now.to_i
+    token = JWT.encode(
+      { iss: ISSUER_ID, iat: now, exp: now + 1200, aud: "appstoreconnect-v1" },
+      private_key, "ES256",
+      { kid: KEY_ID }
+    )
+
+    base_v1 = "https://api.appstoreconnect.apple.com/v1"
+    base_v2 = "https://api.appstoreconnect.apple.com/v2"
+    headers  = { "Authorization" => "Bearer #{token}", "Content-Type" => "application/json" }
+
+    asc_get = lambda do |url|
+      uri  = URI(url)
+      req  = Net::HTTP::Get.new(uri)
+      headers.each { |k, v| req[k] = v }
+      resp = Net::HTTP.start(uri.hostname, uri.port, use_ssl: true) { |http| http.request(req) }
+      JSON.parse(resp.body)
+    end
+
+    asc_post = lambda do |url, body|
+      uri  = URI(url)
+      req  = Net::HTTP::Post.new(uri)
+      headers.each { |k, v| req[k] = v }
+      req.body = JSON.generate(body)
+      resp   = Net::HTTP.start(uri.hostname, uri.port, use_ssl: true) { |http| http.request(req) }
+      parsed = begin; JSON.parse(resp.body); rescue; {}; end
+      [resp.code.to_i, parsed]
+    end
+
+    asc_patch = lambda do |url, body|
+      uri  = URI(url)
+      req  = Net::HTTP::Patch.new(uri)
+      headers.each { |k, v| req[k] = v }
+      req.body = JSON.generate(body)
+      resp   = Net::HTTP.start(uri.hostname, uri.port, use_ssl: true) { |http| http.request(req) }
+      parsed = begin; JSON.parse(resp.body); rescue; {}; end
+      [resp.code.to_i, parsed]
+    end
+
+    packs = {
+      "treats_starter_599"  => { name: "Starter Pack", description: "599 treats to keep your Spanish lessons going.", usd: "5.99" },
+      "treats_plus_1199"    => { name: "Plus Pack",    description: "1,379 treats — 15% bonus for regular learners.", usd: "11.99" },
+      "treats_pro_2499"     => { name: "Pro Pack",     description: "3,124 treats — 25% bonus. Go deeper.",           usd: "24.99" },
+    }
+
+    UI.message("Fetching IAP list for app #{APPLE_ID}...")
+    iap_resp = asc_get.call("#{base_v1}/apps/#{APPLE_ID}/inAppPurchasesV2?limit=50")
+    iaps = (iap_resp["data"] || [])
+
+    if iaps.empty?
+      UI.error("No IAPs found — check APPLE_ID or API key permissions")
+      next
+    end
+
+    iaps.each do |iap|
+      product_id = iap.dig("attributes", "productId") || iap.dig("attributes", "referenceName") || ""
+      iap_id     = iap["id"]
+      pack       = packs[product_id]
+
+      unless pack
+        UI.message("⚠️  Skipping unrecognised product_id '#{product_id}' (id: #{iap_id})")
+        next
+      end
+
+      UI.message("\n── #{pack[:name]} (#{product_id}) id=#{iap_id}")
+
+      # 1. Check for existing localizations via v2 path
+      locs_url  = "#{base_v2}/inAppPurchases/#{iap_id}/inAppPurchaseLocalizations"
+      locs_resp = asc_get.call(locs_url)
+      locs      = locs_resp["data"] || []
+      existing  = locs.find { |l| l.dig("attributes", "locale") == "en-US" }
+
+      if existing
+        # PATCH the existing localization
+        loc_id   = existing["id"]
+        patch_body = {
+          data: {
+            type: "inAppPurchaseLocalizations",
+            id:   loc_id,
+            attributes: { name: pack[:name], description: pack[:description] }
+          }
+        }
+        code, presp = asc_patch.call("#{base_v2}/inAppPurchaseLocalizations/#{loc_id}", patch_body)
+        case code
+        when 200
+          UI.success("  ✅  Localization updated (id=#{loc_id})")
+        else
+          errs = (presp["errors"] || []).map { |e| "#{e['code']}: #{e['detail']}" }.join("; ")
+          UI.error("  ❌  PATCH localization HTTP #{code}: #{errs}")
+        end
+      else
+        # POST a new localization using v2 endpoint + inAppPurchases type
+        loc_body = {
+          data: {
+            type: "inAppPurchaseLocalizations",
+            attributes: { locale: "en-US", name: pack[:name], description: pack[:description] },
+            relationships: {
+              inAppPurchaseV2: { data: { type: "inAppPurchases", id: iap_id } }
+            }
+          }
+        }
+        code, _resp = asc_post.call("#{base_v2}/inAppPurchaseLocalizations", loc_body)
+        case code
+        when 201
+          loc_id = _resp.dig("data", "id")
+          UI.success("  ✅  Localization created (id=#{loc_id})")
+        when 409
+          errs = (_resp["errors"] || []).map { |e| "#{e['code']}: #{e['detail']}" }.join(" | ")
+          UI.message("  ⚠️   409: #{errs}")
+        when 422
+          errs = (_resp["errors"] || []).map { |e| "#{e['code']}: #{e['detail']}" }.join("; ")
+          UI.error("  ❌  422: #{errs}")
+        else
+          UI.error("  ❌  HTTP #{code}: #{JSON.generate(_resp)[0..300]}")
+        end
+      end
+
+    end
+
+    UI.important("\n" + ("─" * 60))
+    UI.important("  IAP PRICING — manual step required")
+    UI.important("─" * 60)
+    UI.important("  The App Store Connect API restricts inAppPurchasePricePoints")
+    UI.important("  to Finance-role API keys. Our key is App Manager (sufficient")
+    UI.important("  for submission/metadata but not pricing). Set each pack price")
+    UI.important("  manually in App Store Connect → Your App → In-App Purchases:")
+    UI.important("")
+    packs.each do |pid, pack|
+      UI.important("  • #{pack[:name].ljust(14)} (#{pid.ljust(12)})  →  $#{pack[:usd]} USD")
+    end
+    UI.important("")
+    UI.important("  For each product:")
+    UI.important("  1. Click the product name")
+    UI.important("  2. Under Pricing, click 'Add Pricing'")
+    UI.important("  3. Base country: United States  →  $X.XX")
+    UI.important("  4. ✓ 'Automatically recalculate prices for all other countries'")
+    UI.important("  5. Save")
+    UI.important("─" * 60)
+
+    UI.success("\n🏁  IAP localization complete. Pricing requires 4 manual steps above.")
+  end
+
+  desc "Diagnose what is missing for each IAP (state, localizations, pricing, review screenshot)"
+  lane :iap_diagnose do
+    require "net/http"
+    require "uri"
+    require "json"
+    require "openssl"
+    require "jwt"
+
+    private_key = OpenSSL::PKey::EC.new(File.read(KEY_PATH))
+    now   = Time.now.to_i
+    token = JWT.encode(
+      { iss: ISSUER_ID, iat: now, exp: now + 1200, aud: "appstoreconnect-v1" },
+      private_key, "ES256",
+      { kid: KEY_ID }
+    )
+    base    = "https://api.appstoreconnect.apple.com/v1"
+    headers = { "Authorization" => "Bearer #{token}" }
+
+    asc_get = lambda do |path|
+      url  = path.start_with?("http") ? path : "#{base}#{path}"
+      uri  = URI(url)
+      req  = Net::HTTP::Get.new(uri)
+      headers.each { |k, v| req[k] = v }
+      resp = Net::HTTP.start(uri.hostname, uri.port, use_ssl: true) { |http| http.request(req) }
+      JSON.parse(resp.body)
+    end
+
+    iaps = (asc_get.call("/apps/#{APPLE_ID}/inAppPurchasesV2?limit=50")["data"] || [])
+
+    if iaps.empty?
+      UI.error("No IAPs found")
+      next
+    end
+
+    UI.important("\n#{"─" * 60}")
+    UI.important("  IAP Full Diagnostic")
+    UI.important("─" * 60)
+
+    iaps.each do |iap|
+      iap_id = iap["id"]
+      pid    = iap.dig("attributes", "productId") || iap_id
+      state  = iap.dig("attributes", "state") || "UNKNOWN"
+      UI.message("\n▶ #{pid}  (id: #{iap_id})  state=#{state}")
+
+      # Check localizations via v2 path
+      locs = asc_get.call("https://api.appstoreconnect.apple.com/v2/inAppPurchases/#{iap_id}/inAppPurchaseLocalizations")
+      loc_data = locs["data"] || []
+      if loc_data.empty?
+        UI.error("  ❌ No localizations — run bundle exec fastlane iap_setup")
+      else
+        loc_data.each do |l|
+          name   = l.dig("attributes", "name") || "(no name)"
+          locale = l.dig("attributes", "locale") || "?"
+          lstate = l.dig("attributes", "state") || "?"
+          UI.success("  ✅ Localization [#{locale}] '#{name}' state=#{lstate}")
+        end
+      end
+
+      # Check pricing schedule via v2 path
+      sched = asc_get.call("https://api.appstoreconnect.apple.com/v2/inAppPurchases/#{iap_id}/iapPriceSchedule?include=manualPrices")
+      if sched["errors"]
+        errs = sched["errors"].map { |e| "#{e['status']}: #{e['title']}" }.join("; ")
+        UI.error("  ❌ Pricing schedule: #{errs}")
+      else
+        manual = (sched.dig("included") || []).select { |r| r["type"] == "iapManualPrices" || r["type"] == "inAppPurchaseManualPrices" }
+        usd = manual.find { |m| m.dig("attributes", "territory") == "USA" }
+        if usd
+          price = usd.dig("attributes", "customerPrice") || "?"
+          UI.success("  ✅ USD price set: $#{price}")
+        else
+          UI.error("  ❌ No USD price set — set in App Store Connect → In-App Purchases → #{pid} → Pricing")
+        end
+        UI.message("  ℹ️  #{manual.size} territories have manual prices")
+      end
+    end
+
+    UI.important("\n#{"─" * 60}")
+  end
+
+  desc "Create a new review submission for the rejected v1.0 version, linking all 3 IAPs"
+  lane :resubmit_with_iaps do
+    require "net/http"
+    require "uri"
+    require "json"
+    require "openssl"
+    require "jwt"
+
+    private_key = OpenSSL::PKey::EC.new(File.read(KEY_PATH))
+    now   = Time.now.to_i
+    token = JWT.encode(
+      { iss: ISSUER_ID, iat: now, exp: now + 1200, aud: "appstoreconnect-v1" },
+      private_key, "ES256", { kid: KEY_ID }
+    )
+    base    = "https://api.appstoreconnect.apple.com/v1"
+    headers = { "Authorization" => "Bearer #{token}", "Content-Type" => "application/json" }
+
+    asc_get = lambda do |path|
+      uri  = URI("#{base}#{path}")
+      req  = Net::HTTP::Get.new(uri)
+      headers.each { |k, v| req[k] = v }
+      resp = Net::HTTP.start(uri.hostname, uri.port, use_ssl: true) { |http| http.request(req) }
+      JSON.parse(resp.body)
+    end
+
+    asc_post = lambda do |path, body|
+      uri  = URI("#{base}#{path}")
+      req  = Net::HTTP::Post.new(uri)
+      headers.each { |k, v| req[k] = v }
+      req.body = JSON.generate(body)
+      resp = Net::HTTP.start(uri.hostname, uri.port, use_ssl: true) { |http| http.request(req) }
+      parsed = begin; JSON.parse(resp.body); rescue; {}; end
+      [resp.code.to_i, parsed]
+    end
+
+    asc_patch = lambda do |path, body|
+      uri  = URI("#{base}#{path}")
+      req  = Net::HTTP::Patch.new(uri)
+      headers.each { |k, v| req[k] = v }
+      req.body = JSON.generate(body)
+      resp = Net::HTTP.start(uri.hostname, uri.port, use_ssl: true) { |http| http.request(req) }
+      parsed = begin; JSON.parse(resp.body); rescue; {}; end
+      [resp.code.to_i, parsed]
+    end
+
+    # 1. Find the REJECTED version
+    UI.message("Looking for REJECTED version...")
+    all_v = asc_get.call("/apps/#{APPLE_ID}/appStoreVersions?filter%5Bplatform%5D=IOS&limit=10")
+    version = (all_v["data"] || []).find { |v| %w[REJECTED PREPARE_FOR_SUBMISSION WAITING_FOR_REVIEW DEVELOPER_REJECTED].include?(v.dig("attributes", "appStoreState")) }
+
+    if version.nil?
+      UI.error("No editable version found. All versions are approved or in a terminal state.")
+      next
+    end
+
+    version_id  = version["id"]
+    version_str = version.dig("attributes", "versionString") || "?"
+    state       = version.dig("attributes", "appStoreState")
+    UI.success("Found version #{version_str} in state #{state} (id: #{version_id})")
+
+    # 2. Check IAPs are all ready
+    UI.message("Checking IAP states...")
+    iap_resp = asc_get.call("/apps/#{APPLE_ID}/inAppPurchasesV2?limit=50")
+    iaps = iap_resp["data"] || []
+
+    known_ids = %w[treats_starter_599 treats_plus_1199 treats_pro_2499]
+    our_iaps  = iaps.select { |i| known_ids.include?(i.dig("attributes", "productId")) }
+
+    not_ready = our_iaps.reject { |i| %w[READY_TO_SUBMIT WAITING_FOR_REVIEW IN_REVIEW APPROVED READY_FOR_SALE].include?(i.dig("attributes", "state")) }
+
+    if not_ready.any?
+      UI.error("The following IAPs are NOT ready to submit:")
+      not_ready.each { |i| UI.error("  ❌  #{i.dig('attributes','productId')} → #{i.dig('attributes','state')}") }
+      UI.error("\nTo fix: Open each IAP in App Store Connect → Pricing → set USD price → Save.")
+      UI.error("Then re-run: bundle exec fastlane resubmit_with_iaps")
+      next
+    end
+
+    UI.success("All #{our_iaps.size} IAPs are ready to submit ✅")
+
+    # 3. Find or create a submittable review submission
+    UI.message("Checking for existing review submissions...")
+    subs_resp  = asc_get.call("/apps/#{APPLE_ID}/reviewSubmissions?limit=10")
+    all_subs   = subs_resp["data"] || []
+    submission_id = nil
+
+    # Prefer an existing UNRESOLVED_ISSUES or READY_FOR_REVIEW submission (already has version+IAPs linked)
+    reusable = all_subs.find { |s| %w[UNRESOLVED_ISSUES READY_FOR_REVIEW].include?(s.dig("attributes", "state")) }
+    if reusable
+      submission_id = reusable["id"]
+      UI.success("Reusing existing submission #{submission_id} (state: #{reusable.dig('attributes','state')})")
+    else
+      UI.message("No reusable submission found — creating new one...")
+      code, sub_resp = asc_post.call("/reviewSubmissions", {
+        data: {
+          type: "reviewSubmissions",
+          attributes: { platform: "IOS" },
+          relationships: { app: { data: { type: "apps", id: APPLE_ID } } }
+        }
+      })
+      unless [200, 201].include?(code)
+        errs = (sub_resp["errors"] || []).map { |e| e["detail"] || e["title"] }.join("; ")
+        UI.error("Failed to create review submission: HTTP #{code}: #{errs}")
+        next
+      end
+      submission_id = sub_resp.dig("data", "id")
+      UI.success("Created review submission #{submission_id}")
+
+      # Add the app version
+      UI.message("Adding app version #{version_str} to review submission...")
+      code, item_resp = asc_post.call("/reviewSubmissionItems", {
+        data: {
+          type: "reviewSubmissionItems",
+          relationships: {
+            reviewSubmission: { data: { type: "reviewSubmissions", id: submission_id } },
+            appStoreVersion:  { data: { type: "appStoreVersions",  id: version_id } }
+          }
+        }
+      })
+      case code
+      when 200, 201 then UI.success("  ✅  App version added (item id: #{item_resp.dig('data','id')})")
+      when 409      then UI.message("  ⚠️   Version already in a submission")
+      else
+        errs = (item_resp["errors"] || []).map { |e| e["detail"] || e["title"] }.join("; ")
+        UI.error("  ❌  HTTP #{code}: #{errs}")
+      end
+
+      # Add each IAP
+      our_iaps.each do |iap|
+        pid    = iap.dig("attributes", "productId")
+        iap_id = iap["id"]
+        next if %w[WAITING_FOR_REVIEW IN_REVIEW APPROVED READY_FOR_SALE].include?(iap.dig("attributes", "state"))
+
+        UI.message("Adding IAP #{pid}...")
+        code, item_resp = asc_post.call("/reviewSubmissionItems", {
+          data: {
+            type: "reviewSubmissionItems",
+            relationships: {
+              reviewSubmission: { data: { type: "reviewSubmissions", id: submission_id } },
+              inAppPurchaseV2:  { data: { type: "inAppPurchasesV2",  id: iap_id } }
+            }
+          }
+        })
+        case code
+        when 200, 201 then UI.success("  ✅  #{pid} added")
+        when 409      then UI.message("  ⚠️   #{pid} already in submission")
+        else
+          errs = (item_resp["errors"] || []).map { |e| e["detail"] || e["title"] }.join("; ")
+          UI.error("  ❌  #{pid} HTTP #{code}: #{errs}")
+        end
+      end
+    end
+
+    # 4. Inspect submission items before submitting
+    UI.message("Fetching submission items for #{submission_id}...")
+    items_resp = asc_get.call("/reviewSubmissions/#{submission_id}/items")
+    items = items_resp["data"] || []
+    UI.message("  #{items.size} item(s) in submission:")
+    items.each { |i| UI.message("    type=#{i['type']} id=#{i['id']} state=#{i.dig('attributes','state')}") }
+
+    # 5. Submit the review submission
+    UI.message("Submitting review submission #{submission_id} for review...")
+    code, final_resp = asc_patch.call("/reviewSubmissions/#{submission_id}", {
+      data: {
+        type: "reviewSubmissions",
+        id:   submission_id,
+        attributes: { submitted: true }
+      }
+    })
+    case code
+    when 200, 201
+      UI.success("✅  Successfully submitted for App Review!")
+      UI.success("    Submission ID: #{submission_id}")
+    else
+      errs = (final_resp["errors"] || []).map { |e| e["detail"] || e["title"] }.join("; ")
+      UI.error("❌  Failed to submit: HTTP #{code}: #{errs}")
+      UI.message("    Full response: #{JSON.generate(final_resp)[0..600]}")
+    end
+  end
+
+  lane :link_iaps do
+    require "net/http"
+    require "uri"
+    require "json"
+    require "openssl"
+    require "jwt"
+
+    private_key = OpenSSL::PKey::EC.new(File.read(KEY_PATH))
+    now   = Time.now.to_i
+    token = JWT.encode(
+      { iss: ISSUER_ID, iat: now, exp: now + 1200, aud: "appstoreconnect-v1" },
+      private_key, "ES256",
+      { kid: KEY_ID }
+    )
+
+    base    = "https://api.appstoreconnect.apple.com/v1"
+    headers = { "Authorization" => "Bearer #{token}", "Content-Type" => "application/json" }
+
+    asc_get = lambda do |path|
+      uri  = URI("#{base}#{path}")
+      req  = Net::HTTP::Get.new(uri)
+      headers.each { |k, v| req[k] = v }
+      resp = Net::HTTP.start(uri.hostname, uri.port, use_ssl: true) { |http| http.request(req) }
+      JSON.parse(resp.body)
+    end
+
+    asc_post = lambda do |path, body|
+      uri  = URI("#{base}#{path}")
+      req  = Net::HTTP::Post.new(uri)
+      headers.each { |k, v| req[k] = v }
+      req.body = JSON.generate(body)
+      resp = Net::HTTP.start(uri.hostname, uri.port, use_ssl: true) { |http| http.request(req) }
+      parsed = begin; JSON.parse(resp.body); rescue; {}; end
+      [resp.code.to_i, parsed]
+    end
+
+    # 1. Get the current editable version (PREPARE_FOR_SUBMISSION)
+    UI.message("Fetching current editable version for app #{APPLE_ID}...")
+    versions_resp = asc_get.call("/apps/#{APPLE_ID}/appStoreVersions?filter%5Bplatform%5D=IOS&filter%5BappStoreState%5D=PREPARE_FOR_SUBMISSION&limit=5")
+    versions = versions_resp["data"] || []
+
+    if versions.empty?
+      UI.error("No version in PREPARE_FOR_SUBMISSION state found.")
+      UI.error("Response: #{JSON.generate(versions_resp)[0..400]}")
+      next
+    end
+
+    version = versions.first
+    version_id = version["id"]
+    version_str = version.dig("attributes", "versionString") || "?"
+    UI.success("Found version #{version_str} (id: #{version_id})")
+
+    # 2. Fetch all IAPs and their current state
+    UI.message("Fetching IAP list...")
+    iap_resp = asc_get.call("/apps/#{APPLE_ID}/inAppPurchasesV2?limit=50")
+    iaps = iap_resp["data"] || []
+
+    if iaps.empty?
+      UI.error("No IAPs found.")
+      next
+    end
+
+    UI.message("Found #{iaps.size} IAPs:")
+    iaps.each do |iap|
+      pid   = iap.dig("attributes", "productId") || iap["id"]
+      state = iap.dig("attributes", "state") || "UNKNOWN"
+      UI.message("  #{pid.ljust(16)} state=#{state}")
+    end
+
+    # 3. Submit each IAP for review via inAppPurchaseSubmissions.
+    #    This is the correct API flow — Apple links them to the pending version automatically.
+    #    IAPs must be in MISSING_METADATA or READY_FOR_SUBMISSION state.
+    #    If they are DRAFT/WAITING_FOR_REVIEW they will be skipped gracefully.
+    submitted = 0
+    skipped   = 0
+
+    iaps.each do |iap|
+      iap_id  = iap["id"]
+      pid     = iap.dig("attributes", "productId") || iap_id
+      state   = iap.dig("attributes", "state") || ""
+
+      if state == "WAITING_FOR_REVIEW" || state == "IN_REVIEW" || state == "APPROVED" || state == "READY_FOR_SALE"
+        UI.message("  ⏭  #{pid} already submitted/approved (state: #{state}) — skipping")
+        skipped += 1
+        next
+      end
+
+      body = {
+        data: {
+          type: "inAppPurchaseSubmissions",
+          relationships: {
+            inAppPurchaseV2: { data: { type: "inAppPurchaseV2", id: iap_id } }
+          }
+        }
+      }
+      code, resp_body = asc_post.call("/inAppPurchaseSubmissions", body)
+
+      case code
+      when 200, 201
+        UI.success("  ✅  #{pid} submitted for review")
+        submitted += 1
+      when 409
+        UI.message("  ⚠️   #{pid} already submitted — skipping")
+        skipped += 1
+      else
+        errors = (resp_body["errors"] || []).map { |e| (e["detail"] || e["title"] || "").strip }.join("; ")
+        UI.error("  ❌  #{pid} HTTP #{code}: #{errors}")
+        if errors.include?("pricing") || errors.include?("price") || state == "MISSING_METADATA"
+          UI.error("      → Pricing is not set. Set $USD price in App Store Connect first,")
+          UI.error("        then re-run: bundle exec fastlane link_iaps")
+        end
+      end
+    end
+
+    UI.important("\n#{submitted} submitted, #{skipped} skipped.")
+    if submitted > 0
+      UI.success("✅  IAPs are now submitted for review alongside version #{version_str}.")
+      UI.success("    You can now run: bundle exec fastlane submit")
+    end
+  end
+
+  desc "Delete pending IAP submissions so localizations/pricing can be edited again"
+  lane :iap_reset do
+    require "net/http"
+    require "uri"
+    require "json"
+    require "openssl"
+    require "jwt"
+
+    private_key = OpenSSL::PKey::EC.new(File.read(KEY_PATH))
+    now   = Time.now.to_i
+    token = JWT.encode(
+      { iss: ISSUER_ID, iat: now, exp: now + 1200, aud: "appstoreconnect-v1" },
+      private_key, "ES256",
+      { kid: KEY_ID }
+    )
+    base    = "https://api.appstoreconnect.apple.com/v1"
+    headers = { "Authorization" => "Bearer #{token}", "Content-Type" => "application/json" }
+
+    asc_get = lambda do |path|
+      uri  = URI("#{base}#{path}")
+      req  = Net::HTTP::Get.new(uri)
+      headers.each { |k, v| req[k] = v }
+      resp = Net::HTTP.start(uri.hostname, uri.port, use_ssl: true) { |http| http.request(req) }
+      JSON.parse(resp.body)
+    end
+
+    asc_delete = lambda do |path|
+      uri  = URI("#{base}#{path}")
+      req  = Net::HTTP::Delete.new(uri)
+      headers.each { |k, v| req[k] = v }
+      resp = Net::HTTP.start(uri.hostname, uri.port, use_ssl: true) { |http| http.request(req) }
+      resp.code.to_i
+    end
+
+    iaps = (asc_get.call("/apps/#{APPLE_ID}/inAppPurchasesV2?limit=50")["data"] || [])
+    if iaps.empty?
+      UI.error("No IAPs found")
+      next
+    end
+
+    iaps.each do |iap|
+      iap_id = iap["id"]
+      pid    = iap.dig("attributes", "productId") || iap_id
+      UI.message("\n── #{pid} (#{iap_id})")
+
+      # Fetch and delete any pending submissions
+      subs = asc_get.call("/inAppPurchasesV2/#{iap_id}/inAppPurchaseSubmission")
+      sub_data = subs["data"]
+      if sub_data
+        sub_id = sub_data["id"]
+        UI.message("  Deleting submission #{sub_id}...")
+        code = asc_delete.call("/inAppPurchaseSubmissions/#{sub_id}")
+        case code
+        when 204
+          UI.success("  ✅  Submission deleted — IAP is editable again")
+        when 404
+          UI.message("  ℹ️  No active submission found")
+        else
+          UI.error("  ❌  DELETE submission HTTP #{code}")
+        end
+      else
+        errs = (subs["errors"] || []).map { |e| "#{e['status']}: #{e['title']}" }.join("; ")
+        UI.message("  ℹ️  No submission: #{errs.empty? ? 'none found' : errs}")
+      end
+    end
+
+    UI.success("\nDone. Now run: bundle exec fastlane iap_setup")
+    UI.success("Then set pricing manually in App Store Connect, then run: bundle exec fastlane link_iaps")
+  end
+
+  desc "Check localizations via v1 IAP path (the actual path for these IAPs)"
+  lane :iap_check_locs do
+    require "net/http"
+    require "uri"
+    require "json"
+    require "openssl"
+    require "jwt"
+
+    private_key = OpenSSL::PKey::EC.new(File.read(KEY_PATH))
+    now   = Time.now.to_i
+    token = JWT.encode(
+      { iss: ISSUER_ID, iat: now, exp: now + 1200, aud: "appstoreconnect-v1" },
+      private_key, "ES256", { kid: KEY_ID }
+    )
+    base    = "https://api.appstoreconnect.apple.com/v1"
+    headers = { "Authorization" => "Bearer #{token}" }
+
+    asc_get = lambda do |path|
+      uri  = URI("#{base}#{path}")
+      req  = Net::HTTP::Get.new(uri)
+      headers.each { |k, v| req[k] = v }
+      resp = Net::HTTP.start(uri.hostname, uri.port, use_ssl: true) { |http| http.request(req) }
+      [resp.code.to_i, JSON.parse(resp.body)]
+    end
+
+    _, iap_resp = asc_get.call("/apps/#{APPLE_ID}/inAppPurchasesV2?limit=50")
+    iaps = iap_resp["data"] || []
+    next UI.error("No IAPs found") if iaps.empty?
+
+    iaps.each do |iap|
+      iap_id = iap["id"]
+      pid    = iap.dig("attributes", "productId") || iap_id
+      UI.message("\n▶ #{pid} (#{iap_id})")
+
+      # Localizations via v1 path
+      code, parsed = asc_get.call("/inAppPurchases/#{iap_id}/inAppPurchaseLocalizations")
+      locs = parsed["data"] || []
+      errs = (parsed["errors"] || []).map { |e| "#{e['status']}: #{e['title']}" }.join("; ")
+      if code == 200 && !locs.empty?
+        locs.each do |l|
+          UI.success("  ✅ [#{l.dig('attributes','locale')}] name='#{l.dig('attributes','name')}' desc='#{(l.dig('attributes','description') || '')[0..40]}' state=#{l.dig('attributes','state')}")
+        end
+      else
+        UI.error("  ❌ v1 locs: HTTP #{code} #{errs}")
+      end
+    end
+  end
+
+  desc "One-shot probe: test which relationship type Apple accepts for inAppPurchaseLocalizations"
+  lane :iap_type_probe do
+    require "net/http"
+    require "uri"
+    require "json"
+    require "openssl"
+    require "jwt"
+
+    private_key = OpenSSL::PKey::EC.new(File.read(KEY_PATH))
+    now   = Time.now.to_i
+    token = JWT.encode(
+      { iss: ISSUER_ID, iat: now, exp: now + 1200, aud: "appstoreconnect-v1" },
+      private_key, "ES256", { kid: KEY_ID }
+    )
+    base    = "https://api.appstoreconnect.apple.com/v1"
+    headers = { "Authorization" => "Bearer #{token}", "Content-Type" => "application/json" }
+
+    asc_get = lambda do |path|
+      uri  = URI("#{base}#{path}")
+      req  = Net::HTTP::Get.new(uri)
+      headers.each { |k, v| req[k] = v }
+      resp = Net::HTTP.start(uri.hostname, uri.port, use_ssl: true) { |http| http.request(req) }
+      JSON.parse(resp.body)
+    end
+
+    iap_resp = asc_get.call("/apps/#{APPLE_ID}/inAppPurchasesV2?limit=1")
+    iap = (iap_resp["data"] || []).first
+    next UI.error("No IAPs found") unless iap
+
+    iap_id = iap["id"]
+    UI.message("Testing localization create for IAP id=#{iap_id} type=#{iap['type']}")
+    UI.message("IAP relationships: #{JSON.generate(iap['relationships'] || {})}")
+    UI.message("IAP links: #{JSON.generate(iap['links'] || {})}")
+
+    %w[inAppPurchasesV2 inAppPurchaseV2 inAppPurchases inAppPurchase].each do |try_type|
+      body = {
+        data: {
+          type: "inAppPurchaseLocalizations",
+          attributes: { locale: "en-US", name: "Starter Pack", description: "Test" },
+          relationships: {
+            inAppPurchaseV2: { data: { type: try_type, id: iap_id } }
+          }
+        }
+      }
+      uri  = URI("#{base}/inAppPurchaseLocalizations")
+      req  = Net::HTTP::Post.new(uri)
+      headers.each { |k, v| req[k] = v }
+      req.body = JSON.generate(body)
+      resp = Net::HTTP.start(uri.hostname, uri.port, use_ssl: true) { |http| http.request(req) }
+      parsed = begin; JSON.parse(resp.body); rescue; {}; end
+      detail = (parsed["errors"] || []).map { |e| e["code"] || e["detail"] }.first || parsed.dig("data", "id") || ""
+      UI.message("  type=#{try_type.ljust(20)} → HTTP #{resp.code}  #{detail}")
+      break if resp.code.to_i == 201
+    end
   end
 
   desc "Submit existing build for App Store review"
   lane :submit do
     deliver(
-      api_key:            api_key,
-      skip_binary_upload: true,
-      skip_screenshots:   true,
-      metadata_path:      "fastlane/metadata",
-      submit_for_review:  true,
-      automatic_release:  false,
-      force:              true,
+      api_key:                  api_key,
+      app_identifier:           BUNDLE_ID,
+      skip_binary_upload:       true,
+      skip_screenshots:         true,
+      skip_metadata:            true,
+      submit_for_review:        true,
+      automatic_release:        false,
+      force:                    true,
+      primary_category:         "MZGenre.Education",
+      app_rating_config_path:   "fastlane/metadata/app_rating_config.json",
       submission_information: {
         add_id_info_uses_idfa:                   false,
         add_id_info_serves_ads:                  false,
@@ -154,6 +952,463 @@ platform :ios do
     beta
     metadata
     submit
+  end
+
+  desc "List all App Store versions and their states"
+  lane :list_versions do
+    require "net/http"
+    require "uri"
+    require "json"
+    require "openssl"
+    require "jwt"
+
+    private_key = OpenSSL::PKey::EC.new(File.read(KEY_PATH))
+    now   = Time.now.to_i
+    token = JWT.encode(
+      { iss: ISSUER_ID, iat: now, exp: now + 1200, aud: "appstoreconnect-v1" },
+      private_key, "ES256", { kid: KEY_ID }
+    )
+    base    = "https://api.appstoreconnect.apple.com/v1"
+    headers = { "Authorization" => "Bearer #{token}", "Content-Type" => "application/json" }
+    asc_get = lambda do |path|
+      uri  = URI("#{base}#{path}")
+      req  = Net::HTTP::Get.new(uri)
+      headers.each { |k, v| req[k] = v }
+      resp = Net::HTTP.start(uri.hostname, uri.port, use_ssl: true) { |http| http.request(req) }
+      JSON.parse(resp.body)
+    end
+
+    UI.message("=== App Store Versions ===")
+    versions = asc_get.call("/apps/#{APPLE_ID}/appStoreVersions?limit=20")
+    (versions["data"] || []).each do |v|
+      build_id = v.dig("relationships", "build", "data", "id") || "none"
+      UI.message("  v#{v.dig('attributes','versionString')} state=#{v.dig('attributes','appStoreState')} id=#{v['id']} build=#{build_id}")
+    end
+
+    UI.message("=== Review Submissions ===")
+    subs = asc_get.call("/apps/#{APPLE_ID}/reviewSubmissions?limit=10")
+    (subs["data"] || []).each do |sub|
+      sub_id = sub["id"]
+      state  = sub.dig("attributes", "state")
+      UI.message("  #{sub_id} state=#{state}")
+      items = asc_get.call("/reviewSubmissions/#{sub_id}/items")
+      (items["data"] || []).each do |i|
+        UI.message("    item #{i['id']} state=#{i.dig('attributes','state')}")
+        UI.message("      relationships: #{i.dig('relationships')&.keys&.join(', ')}")
+      end
+    end
+  end
+
+  desc "Debug builds API response"
+  lane :debug_builds do
+    require "net/http"
+    require "uri"
+    require "json"
+    require "openssl"
+    require "jwt"
+
+    private_key = OpenSSL::PKey::EC.new(File.read(KEY_PATH))
+    now   = Time.now.to_i
+    token = JWT.encode(
+      { iss: ISSUER_ID, iat: now, exp: now + 1200, aud: "appstoreconnect-v1" },
+      private_key, "ES256", { kid: KEY_ID }
+    )
+    base    = "https://api.appstoreconnect.apple.com/v1"
+    headers = { "Authorization" => "Bearer #{token}", "Content-Type" => "application/json" }
+
+    [
+      "/builds?filter%5Bapp%5D=#{APPLE_ID}&filter%5Bplatform%5D=IOS&limit=10&sort=-version",
+      "/builds?filter%5Bapp%5D=#{APPLE_ID}&limit=10",
+      "/apps/#{APPLE_ID}/builds?limit=10"
+    ].each do |path|
+      uri  = URI("#{base}#{path}")
+      req  = Net::HTTP::Get.new(uri)
+      headers.each { |k, v| req[k] = v }
+      resp = Net::HTTP.start(uri.hostname, uri.port, use_ssl: true) { |http| http.request(req) }
+      data = JSON.parse(resp.body)
+      count = (data["data"] || []).size
+      UI.message("GET #{path}")
+      UI.message("  HTTP #{resp.code} → #{count} build(s)")
+      (data["data"] || []).each do |b|
+        UI.message("    build=#{b.dig('attributes','version')} state=#{b.dig('attributes','processingState')} expired=#{b.dig('attributes','expired')}")
+      end
+      if data["errors"]
+        UI.error("  Errors: #{data['errors'].map { |e| e['detail'] }.join('; ')}")
+      end
+    end
+  end
+
+  desc "Check builds available in TestFlight and review submission items"
+  lane :check_builds do
+    require "net/http"
+    require "uri"
+    require "json"
+    require "openssl"
+    require "jwt"
+
+    private_key = OpenSSL::PKey::EC.new(File.read(KEY_PATH))
+    now   = Time.now.to_i
+    token = JWT.encode(
+      { iss: ISSUER_ID, iat: now, exp: now + 1200, aud: "appstoreconnect-v1" },
+      private_key, "ES256", { kid: KEY_ID }
+    )
+    base    = "https://api.appstoreconnect.apple.com/v1"
+    headers = { "Authorization" => "Bearer #{token}", "Content-Type" => "application/json" }
+    asc_get = lambda do |path|
+      uri  = URI("#{base}#{path}")
+      req  = Net::HTTP::Get.new(uri)
+      headers.each { |k, v| req[k] = v }
+      resp = Net::HTTP.start(uri.hostname, uri.port, use_ssl: true) { |http| http.request(req) }
+      JSON.parse(resp.body)
+    end
+    asc_post = lambda do |path, body|
+      uri  = URI("#{base}#{path}")
+      req  = Net::HTTP::Post.new(uri)
+      headers.each { |k, v| req[k] = v }
+      req.body = JSON.generate(body)
+      resp = Net::HTTP.start(uri.hostname, uri.port, use_ssl: true) { |http| http.request(req) }
+      parsed = begin; JSON.parse(resp.body); rescue; {}; end
+      [resp.code.to_i, parsed]
+    end
+
+    UI.message("\n=== LATEST BUILDS ===")
+    builds_resp = asc_get.call("/builds?filter%5Bapp%5D=#{APPLE_ID}&filter%5Bplatform%5D=IOS&limit=10&sort=-version")
+    (builds_resp["data"] || []).each do |b|
+      UI.message("  build=#{b.dig('attributes','version').to_s.rjust(3)} expired=#{b.dig('attributes','expired')} state=#{b.dig('attributes','processingState')} id=#{b['id']}")
+    end
+
+    UI.message("\n=== CURRENT REVIEW SUBMISSIONS + ITEMS ===")
+    subs_resp = asc_get.call("/apps/#{APPLE_ID}/reviewSubmissions?limit=10")
+    (subs_resp["data"] || []).each do |sub|
+      sub_id    = sub["id"]
+      sub_state = sub.dig("attributes", "state")
+      UI.message("  Submission #{sub_id} state=#{sub_state}")
+      items_resp = asc_get.call("/reviewSubmissions/#{sub_id}/items")
+      items = items_resp["data"] || []
+      if items.empty?
+        UI.message("    (no items)")
+      else
+        items.each { |i| UI.message("    item type=#{i['type']} id=#{i['id']} state=#{i.dig('attributes','state')}") }
+      end
+    end
+
+    UI.message("\n=== TRY: Submit rejected v1.0 via deprecated appStoreVersionSubmissions ===")
+    version_id = "8cfe8e4c-53ba-4097-abb5-134f0358a255"
+    code, resp = asc_post.call("/appStoreVersionSubmissions", {
+      data: {
+        type: "appStoreVersionSubmissions",
+        relationships: {
+          appStoreVersion: { data: { type: "appStoreVersions", id: version_id } }
+        }
+      }
+    })
+    UI.message("  → HTTP #{code}")
+    if code == 201
+      UI.success("  ✅ Submitted via deprecated endpoint!")
+    else
+      errs = (resp["errors"] || []).map { |e| "#{e['code']}: #{e['detail']}" }.join("; ")
+      UI.message("  → #{errs}")
+    end
+  end
+
+  desc "Check current state of versions and IAPs"
+  lane :check_state do
+    require "net/http"
+    require "uri"
+    require "json"
+    require "openssl"
+    require "jwt"
+
+    private_key = OpenSSL::PKey::EC.new(File.read(KEY_PATH))
+    now   = Time.now.to_i
+    token = JWT.encode(
+      { iss: ISSUER_ID, iat: now, exp: now + 1200, aud: "appstoreconnect-v1" },
+      private_key, "ES256", { kid: KEY_ID }
+    )
+    base    = "https://api.appstoreconnect.apple.com/v1"
+    headers = { "Authorization" => "Bearer #{token}", "Content-Type" => "application/json" }
+    asc_get = lambda do |path|
+      uri  = URI("#{base}#{path}")
+      req  = Net::HTTP::Get.new(uri)
+      headers.each { |k, v| req[k] = v }
+      resp = Net::HTTP.start(uri.hostname, uri.port, use_ssl: true) { |http| http.request(req) }
+      JSON.parse(resp.body)
+    end
+
+    UI.message("\n=== ALL iOS VERSIONS ===")
+    versions = asc_get.call("/apps/#{APPLE_ID}/appStoreVersions?filter%5Bplatform%5D=IOS&limit=10")
+    (versions["data"] || []).each do |v|
+      UI.message("  v#{v.dig('attributes','versionString')} | state=#{v.dig('attributes','appStoreState')} | id=#{v['id']}")
+    end
+
+    UI.message("\n=== IAPs ===")
+    iaps = asc_get.call("/apps/#{APPLE_ID}/inAppPurchasesV2?limit=50")
+    (iaps["data"] || []).each do |iap|
+      pid   = iap.dig("attributes", "productId")
+      state = iap.dig("attributes", "state")
+      UI.message("  #{pid.to_s.ljust(22)} state=#{state}  id=#{iap['id']}")
+    end
+
+    UI.message("\n=== REVIEW SUBMISSIONS ===")
+    subs = asc_get.call("/apps/#{APPLE_ID}/reviewSubmissions?limit=10")
+    if (subs["data"] || []).empty?
+      UI.message("  (none)")
+    else
+      (subs["data"] || []).each do |s|
+        UI.message("  id=#{s['id']} state=#{s.dig('attributes','state')} platform=#{s.dig('attributes','platform')}")
+      end
+    end
+  end
+
+  desc "Create v1.1, cancel old submissions, attach latest build + all 3 IAPs, and submit for App Store review"
+  lane :submit_v11 do
+    require "net/http"
+    require "uri"
+    require "json"
+    require "openssl"
+    require "jwt"
+
+    private_key = OpenSSL::PKey::EC.new(File.read(KEY_PATH))
+    now   = Time.now.to_i
+    token = JWT.encode(
+      { iss: ISSUER_ID, iat: now, exp: now + 1200, aud: "appstoreconnect-v1" },
+      private_key, "ES256", { kid: KEY_ID }
+    )
+    base    = "https://api.appstoreconnect.apple.com/v1"
+    headers = { "Authorization" => "Bearer #{token}", "Content-Type" => "application/json" }
+
+    asc_get = lambda do |path|
+      uri  = URI("#{base}#{path}")
+      req  = Net::HTTP::Get.new(uri)
+      headers.each { |k, v| req[k] = v }
+      resp = Net::HTTP.start(uri.hostname, uri.port, use_ssl: true) { |http| http.request(req) }
+      JSON.parse(resp.body)
+    end
+    asc_post = lambda do |path, body|
+      uri  = URI("#{base}#{path}")
+      req  = Net::HTTP::Post.new(uri)
+      headers.each { |k, v| req[k] = v }
+      req.body = JSON.generate(body)
+      resp = Net::HTTP.start(uri.hostname, uri.port, use_ssl: true) { |http| http.request(req) }
+      parsed = begin; JSON.parse(resp.body); rescue; {}; end
+      [resp.code.to_i, parsed]
+    end
+    asc_patch = lambda do |path, body|
+      uri  = URI("#{base}#{path}")
+      req  = Net::HTTP::Patch.new(uri)
+      headers.each { |k, v| req[k] = v }
+      req.body = JSON.generate(body)
+      resp = Net::HTTP.start(uri.hostname, uri.port, use_ssl: true) { |http| http.request(req) }
+      parsed = begin; JSON.parse(resp.body); rescue; {}; end
+      [resp.code.to_i, parsed]
+    end
+
+    # 1. Find latest VALID non-expired build
+    UI.message("Finding latest valid build...")
+    builds_resp = asc_get.call("/builds?filter%5Bapp%5D=#{APPLE_ID}&limit=20&sort=-version")
+    all_builds = builds_resp["data"] || []
+    all_builds.each do |b|
+      UI.message("  build #{b.dig('attributes','version').to_s.rjust(3)} state=#{b.dig('attributes','processingState')} expired=#{b.dig('attributes','expired')} id=#{b['id']}")
+    end
+    build = all_builds.find { |b| b.dig("attributes", "processingState") == "VALID" && !b.dig("attributes", "expired") }
+    unless build
+      UI.error("No valid non-expired build found. Run: bundle exec fastlane beta")
+      next
+    end
+    build_id  = build["id"]
+    build_num = build.dig("attributes", "version")
+    UI.success("Using build #{build_num} (id: #{build_id})")
+
+    # 2. Check IAP states
+    UI.message("Checking IAP states...")
+    known_ids = %w[treats_starter_599 treats_plus_1199 treats_pro_2499]
+    iap_resp  = asc_get.call("/apps/#{APPLE_ID}/inAppPurchasesV2?limit=50")
+    our_iaps  = (iap_resp["data"] || []).select { |i| known_ids.include?(i.dig("attributes", "productId")) }
+    our_iaps.each { |i| UI.message("  #{i.dig('attributes','productId')} state=#{i.dig('attributes','state')}") }
+    not_ready = our_iaps.reject { |i| %w[READY_TO_SUBMIT WAITING_FOR_REVIEW IN_REVIEW APPROVED READY_FOR_SALE].include?(i.dig("attributes", "state")) }
+    if not_ready.any?
+      UI.error("IAPs not ready: #{not_ready.map { |i| "#{i.dig('attributes','productId')}=#{i.dig('attributes','state')}" }.join(', ')}")
+      UI.error("Set USD pricing in App Store Connect for the missing IAPs, then re-run.")
+      next
+    end
+    UI.success("All #{our_iaps.size} IAPs ready ✅")
+
+    # 3. Cancel ALL open review submissions FIRST (required before creating a new version)
+    UI.message("Cleaning up all open review submissions...")
+    subs_resp0 = asc_get.call("/apps/#{APPLE_ID}/reviewSubmissions?limit=10")
+    (subs_resp0["data"] || []).each do |sub|
+      sub_state = sub.dig("attributes", "state") || ""
+      next unless %w[UNRESOLVED_ISSUES READY_FOR_REVIEW].include?(sub_state)
+      sub_id = sub["id"]
+      UI.message("  Cancelling submission #{sub_id} (#{sub_state})...")
+      code, _ = asc_patch.call("/reviewSubmissions/#{sub_id}", {
+        data: { type: "reviewSubmissions", id: sub_id, attributes: { canceled: true } }
+      })
+      UI.message("  → HTTP #{code}")
+      sleep 3
+    end
+
+    # 4. Check if v1.1 already exists in a submittable state
+    all_v = asc_get.call("/apps/#{APPLE_ID}/appStoreVersions?filter%5Bplatform%5D=IOS&limit=10")
+    submittable_states = %w[PREPARE_FOR_SUBMISSION WAITING_FOR_REVIEW REJECTED DEVELOPER_REJECTED]
+
+    # Prefer v1.1 if it already exists in a submittable state; otherwise fall
+    # back to any other submittable version (e.g. v1.0 in DEVELOPER_REJECTED).
+    existing_version = (all_v["data"] || []).find { |v|
+      v.dig("attributes", "versionString") == "1.1" &&
+      submittable_states.include?(v.dig("attributes", "appStoreState"))
+    }
+    existing_version ||= (all_v["data"] || []).find { |v|
+      submittable_states.include?(v.dig("attributes", "appStoreState"))
+    }
+
+    if existing_version
+      v_str     = existing_version.dig("attributes", "versionString")
+      v_state   = existing_version.dig("attributes", "appStoreState")
+      version_id = existing_version["id"]
+      UI.success("Using existing version #{v_str} (state: #{v_state}, id: #{version_id})")
+    else
+      UI.message("Creating App Store version 1.1...")
+      code, v_resp = asc_post.call("/appStoreVersions", {
+        data: {
+          type: "appStoreVersions",
+          attributes: { platform: "IOS", versionString: "1.1", releaseType: "MANUAL" },
+          relationships: {
+            app:   { data: { type: "apps",   id: APPLE_ID } },
+            build: { data: { type: "builds", id: build_id } }
+          }
+        }
+      })
+      unless [200, 201].include?(code)
+        errs = (v_resp["errors"] || []).map { |e| e["detail"] || e["title"] }.join("; ")
+        UI.error("Failed to create v1.1: HTTP #{code}: #{errs}")
+        next
+      end
+      version_id = v_resp.dig("data", "id")
+      UI.success("Created v1.1 (id: #{version_id})")
+    end
+
+    # 5. Link build to v1.1
+    UI.message("Linking build #{build_num} to v1.1...")
+    code, link_resp = asc_patch.call("/appStoreVersions/#{version_id}", {
+      data: {
+        type: "appStoreVersions", id: version_id,
+        relationships: { build: { data: { type: "builds", id: build_id } } }
+      }
+    })
+    case code
+    when 200, 204 then UI.success("  ✅  Build linked")
+    when 409      then UI.message("  ⚠️   Build already linked")
+    else
+      code2, _ = asc_patch.call("/appStoreVersions/#{version_id}/relationships/build", {
+        data: { type: "builds", id: build_id }
+      })
+      code2 == 204 || code2 == 200 ?
+        UI.success("  ✅  Build linked via relationship endpoint") :
+        UI.message("  ⚠️   Build link HTTP #{code}/#{code2} — continuing")
+    end
+
+    # 5. Set What's New text
+    locs_resp = asc_get.call("/appStoreVersions/#{version_id}/appStoreVersionLocalizations")
+    en_loc = (locs_resp["data"] || []).find { |l| l.dig("attributes", "locale") == "en-US" }
+    whats_new = "Full-screen Profile and Paywall screens with back navigation. Bug fixes and performance improvements."
+    if en_loc
+      asc_patch.call("/appStoreVersionLocalizations/#{en_loc['id']}", {
+        data: { type: "appStoreVersionLocalizations", id: en_loc["id"], attributes: { whatsNew: whats_new } }
+      })
+      UI.success("  ✅  Updated en-US What's New")
+    else
+      asc_post.call("/appStoreVersionLocalizations", {
+        data: {
+          type: "appStoreVersionLocalizations",
+          attributes: { locale: "en-US", whatsNew: whats_new },
+          relationships: { appStoreVersion: { data: { type: "appStoreVersions", id: version_id } } }
+        }
+      })
+      UI.success("  ✅  Created en-US What's New")
+    end
+
+    # 6. Create fresh review submission
+    UI.message("Creating review submission...")
+    code, sub_resp = asc_post.call("/reviewSubmissions", {
+      data: {
+        type: "reviewSubmissions",
+        attributes: { platform: "IOS" },
+        relationships: { app: { data: { type: "apps", id: APPLE_ID } } }
+      }
+    })
+    unless [200, 201].include?(code)
+      errs = (sub_resp["errors"] || []).map { |e| e["detail"] || e["title"] }.join("; ")
+      UI.error("Failed to create review submission: HTTP #{code}: #{errs}")
+      next
+    end
+    submission_id = sub_resp.dig("data", "id")
+    UI.success("Created submission #{submission_id}")
+    sleep 2
+
+    # 8. Add v1.1 to submission
+    UI.message("Adding v1.1 to submission...")
+    code, item_resp = asc_post.call("/reviewSubmissionItems", {
+      data: {
+        type: "reviewSubmissionItems",
+        relationships: {
+          reviewSubmission: { data: { type: "reviewSubmissions", id: submission_id } },
+          appStoreVersion:  { data: { type: "appStoreVersions",  id: version_id } }
+        }
+      }
+    })
+    case code
+    when 200, 201 then UI.success("  ✅  v1.1 added (item: #{item_resp.dig('data','id')})")
+    when 409      then UI.message("  ⚠️   v1.1 already in submission")
+    else
+      errs = (item_resp["errors"] || []).map { |e| e["detail"] || e["title"] }.join("; ")
+      UI.error("  ❌  v1.1 HTTP #{code}: #{errs}")
+    end
+
+    # 9. Add each READY_TO_SUBMIT IAP to submission
+    UI.message("Adding IAPs to submission...")
+    our_iaps.each do |iap|
+      pid    = iap.dig("attributes", "productId")
+      iap_id = iap["id"]
+      next if %w[WAITING_FOR_REVIEW IN_REVIEW APPROVED READY_FOR_SALE].include?(iap.dig("attributes", "state"))
+      code, item_resp = asc_post.call("/reviewSubmissionItems", {
+        data: {
+          type: "reviewSubmissionItems",
+          relationships: {
+            reviewSubmission: { data: { type: "reviewSubmissions", id: submission_id } },
+            inAppPurchaseV2:  { data: { type: "inAppPurchasesV2",  id: iap_id } }
+          }
+        }
+      })
+      case code
+      when 200, 201 then UI.success("  ✅  #{pid} added")
+      when 409      then UI.message("  ⚠️   #{pid} already in submission")
+      else
+        errs = (item_resp["errors"] || []).map { |e| e["detail"] || e["title"] }.join("; ")
+        UI.error("  ❌  #{pid} HTTP #{code}: #{errs}")
+      end
+    end
+
+    # 10. Verify items and submit
+    items = asc_get.call("/reviewSubmissions/#{submission_id}/items")["data"] || []
+    UI.message("Submission has #{items.size} item(s). Submitting for review...")
+
+    code, final_resp = asc_patch.call("/reviewSubmissions/#{submission_id}", {
+      data: {
+        type: "reviewSubmissions",
+        id:   submission_id,
+        attributes: { submitted: true }
+      }
+    })
+    case code
+    when 200, 201
+      UI.success("🎉  Submitted v1.1 (build #{build_num}) + #{our_iaps.size} IAPs for App Store review!")
+      UI.success("    Submission ID: #{submission_id}")
+    else
+      errs = (final_resp["errors"] || []).map { |e| e["detail"] || e["title"] }.join("; ")
+      UI.error("❌  Submit failed: HTTP #{code}: #{errs}")
+      UI.message("    #{JSON.generate(final_resp)[0..800]}")
+    end
   end
 
 end

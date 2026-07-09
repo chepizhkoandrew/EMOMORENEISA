@@ -1,0 +1,1385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Partnership Proposal — Quarks × Madrid</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,400&display=swap');
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html {
+      height: 100%;
+      overflow-y: scroll;
+      scroll-snap-type: y mandatory;
+      scroll-behavior: smooth;
+    }
+
+    :root {
+      --bg:      #0d0d0d;
+      --surface: #161616;
+      --border:  #252525;
+      --text:    #ffffff;
+      --muted:   #aaa;
+      --accent:  #FF4669;
+      --warm:    #d4a96a;
+      --green:   #4ade80;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', -apple-system, system-ui, sans-serif;
+      line-height: 1.5;
+    }
+
+    /* ─── GLOW ON HEADINGS & STRONG ─── */
+    h1, h2, h3 {
+      text-shadow: 0 0 48px rgba(255,255,255,0.14), 0 0 100px rgba(255,255,255,0.05);
+    }
+    strong {
+      color: #ffffff;
+      text-shadow: 0 0 32px rgba(255,255,255,0.18);
+    }
+
+    /* ─── SLIDE WRAPPER ─── */
+    .slide {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 80px 72px;
+      position: relative;
+      border-bottom: 1px solid var(--border);
+      scroll-snap-align: start;
+      scroll-snap-stop: always;
+    }
+
+    .slide-num {
+      position: absolute;
+      top: 36px; right: 48px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      color: #333;
+      text-transform: uppercase;
+    }
+
+    /* ─── SHARED ATOMS ─── */
+    .label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 18px;
+    }
+
+    .tag {
+      display: inline-block;
+      background: var(--accent);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      padding: 7px 18px;
+      border-radius: 100px;
+      margin-bottom: 36px;
+    }
+
+    /* ═══════════════════════════════════════════
+       SLIDE 1 — COVER
+    ═══════════════════════════════════════════ */
+    .s-cover {
+      text-align: center;
+      background: var(--bg);
+    }
+
+    .cover-title {
+      font-size: clamp(52px, 7.5vw, 108px);
+      font-weight: 900;
+      line-height: 1.0;
+      letter-spacing: -0.04em;
+      margin-bottom: 28px;
+    }
+
+    .cover-title .red { color: var(--accent); }
+
+    .cover-sub {
+      font-size: 19px;
+      color: var(--muted);
+      font-weight: 400;
+      max-width: 460px;
+      line-height: 1.65;
+      margin-bottom: 0;
+    }
+
+    .cta-btn {
+      display: inline-block;
+      margin-top: 28px;
+      background: var(--accent);
+      color: #fff;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      text-decoration: none;
+      padding: 12px 28px;
+      border-radius: 100px;
+      transition: opacity 0.2s;
+    }
+    .cta-btn:hover { opacity: 0.82; }
+
+    .cover-logo {
+      margin-top: 72px;
+      filter: invert(1);
+      opacity: 0.4;
+    }
+
+    /* ═══════════════════════════════════════════
+       SLIDE 2 — WHO WE ARE
+    ═══════════════════════════════════════════ */
+    .s-who { background: var(--surface); }
+
+    .who-grid {
+      display: grid;
+      grid-template-columns: 5fr 6fr;
+      gap: 80px;
+      width: 100%;
+      max-width: 1080px;
+      align-items: center;
+    }
+
+    .elevator-box {
+      aspect-ratio: 3 / 4;
+      background: #111;
+      border: 2px dashed #2f2f2f;
+      border-radius: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .elevator-box img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 18px;
+      display: none; /* show once photo is dropped in */
+    }
+
+    .elevator-placeholder {
+      text-align: center;
+      padding: 32px;
+    }
+
+    .elevator-placeholder .icon { font-size: 36px; margin-bottom: 12px; }
+    .elevator-placeholder p { font-size: 13px; color: #444; line-height: 1.6; }
+
+    .elevator-badge {
+      position: absolute;
+      bottom: 20px; left: 50%;
+      transform: translateX(-50%);
+      background: var(--accent);
+      color: #fff;
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      padding: 8px 22px;
+      border-radius: 100px;
+      white-space: nowrap;
+    }
+
+    .who-text h2 {
+      font-size: 52px;
+      font-weight: 900;
+      letter-spacing: -0.035em;
+      line-height: 1.05;
+      margin-bottom: 28px;
+    }
+
+    .who-text p {
+      font-size: 17px;
+      color: #999;
+      line-height: 1.75;
+      margin-bottom: 16px;
+    }
+
+    .who-text strong { color: var(--text); }
+
+    /* ═══════════════════════════════════════════
+       SLIDE 3 — WHAT DO WE WANT
+    ═══════════════════════════════════════════ */
+    .s-want { background: var(--bg); }
+
+    .want-inner {
+      width: 100%;
+      max-width: 760px;
+      text-align: left;
+    }
+
+    .want-inner .discussion-note {
+      font-size: 13px;
+      color: #444;
+      font-style: italic;
+      margin-bottom: 32px;
+    }
+
+    .options-list {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .opt {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 26px 30px;
+    }
+
+    .opt.pick {
+      border-color: var(--accent);
+      background: rgba(255, 70, 105, 0.06);
+    }
+
+    .opt-label {
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 10px;
+    }
+
+    .opt.pick .opt-label { color: var(--accent); }
+
+    .opt-headline {
+      font-size: 20px;
+      font-weight: 700;
+      line-height: 1.3;
+      margin-bottom: 18px;
+    }
+
+    .opt-bullets {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .opt-bullets li {
+      font-size: 14px;
+      color: var(--muted);
+      padding-left: 22px;
+      position: relative;
+      line-height: 1.5;
+    }
+
+    .opt-bullets li::before {
+      content: '→';
+      position: absolute;
+      left: 0;
+      color: var(--accent);
+    }
+
+    /* ═══════════════════════════════════════════
+       SLIDE 4 — REVENUE MODEL
+    ═══════════════════════════════════════════ */
+    .s-revenue { background: var(--surface); }
+
+    .revenue-inner {
+      width: 100%;
+      max-width: 860px;
+    }
+
+    .revenue-inner h2 {
+      font-size: 44px;
+      font-weight: 900;
+      letter-spacing: -0.025em;
+      margin-bottom: 8px;
+    }
+
+    .revenue-inner .subtitle {
+      font-size: 15px;
+      color: var(--muted);
+      margin-bottom: 44px;
+      max-width: 560px;
+      line-height: 1.65;
+    }
+
+    /* Stacked bar */
+    .rev-bar {
+      display: flex;
+      height: 58px;
+      border-radius: 10px;
+      overflow: hidden;
+      margin-bottom: 36px;
+      gap: 2px;
+    }
+
+    .bar-seg {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 700;
+      color: rgba(255,255,255,0.85);
+      overflow: hidden;
+      white-space: nowrap;
+      transition: flex 0.4s ease;
+    }
+
+    .b-apple  { background: #444;          flex: 30; }
+    .b-infra  { background: #1e5c36;       flex: 12; }
+    .b-ops    { background: #1b3f52;       flex: 10; }
+    .b-dev    { background: #3a1e52;       flex: 10; }
+    .b-mkt    { background: #52401e;       flex: 10; font-style:italic; }
+    .b-quarks { background: var(--accent); flex: 14; }
+    .b-madrid { background: #b87333;       flex: 14; }
+
+    /* Cost table */
+    .cost-table { width: 100%; }
+
+    .cost-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 15px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .cost-row:last-child { border-bottom: none; padding-top: 22px; border-top: 1.5px solid #333; margin-top: 4px; }
+
+    .cdot {
+      width: 11px; height: 11px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .cname {
+      flex: 1;
+      font-size: 15px;
+      font-weight: 500;
+    }
+
+    .cnote {
+      font-size: 12px;
+      color: var(--muted);
+      font-style: italic;
+      font-weight: 400;
+    }
+
+    .cpct {
+      font-size: 20px;
+      font-weight: 800;
+      width: 58px;
+      text-align: right;
+      color: var(--muted);
+    }
+
+    .cusd {
+      font-size: 13px;
+      color: var(--muted);
+      width: 70px;
+      text-align: right;
+    }
+
+    .cost-row.total .cname { font-weight: 700; color: var(--text); }
+    .cost-row.total .cpct  { color: var(--accent); font-size: 18px; }
+    .cost-row.total .cusd  { color: var(--accent); }
+
+    .rev-footnote {
+      margin-top: 20px;
+      font-size: 12px;
+      color: #444;
+      font-style: italic;
+      line-height: 1.6;
+    }
+
+    /* ═══════════════════════════════════════════
+       SLIDE 5 — THE SPLIT
+    ═══════════════════════════════════════════ */
+    .s-split {
+      background: var(--bg);
+      overflow: hidden;
+    }
+
+    .split-inner {
+      width: 100%;
+      max-width: 1060px;
+    }
+
+    .split-header {
+      text-align: center;
+      margin-bottom: 64px;
+    }
+
+    .split-header h2 {
+      font-size: 54px;
+      font-weight: 900;
+      letter-spacing: -0.035em;
+      line-height: 1.05;
+    }
+
+    .split-header p {
+      font-size: 17px;
+      color: var(--muted);
+      margin-top: 12px;
+    }
+
+    .split-cols {
+      display: grid;
+      grid-template-columns: 1fr 80px 1fr;
+      gap: 0;
+      align-items: center;
+    }
+
+    .split-side {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+      text-align: center;
+    }
+
+    .split-pct {
+      font-size: 88px;
+      font-weight: 900;
+      letter-spacing: -0.06em;
+      line-height: 1;
+    }
+
+    .split-left .split-pct  { color: var(--accent); }
+    .split-right .split-pct { color: var(--warm); }
+
+    .split-name {
+      font-size: 26px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+    }
+
+    .split-desc {
+      font-size: 13px;
+      color: var(--muted);
+      max-width: 190px;
+      line-height: 1.6;
+    }
+
+    .madrid-cutout {
+      width: 210px;
+      filter: drop-shadow(0 24px 48px rgba(0,0,0,0.7));
+      object-fit: contain;
+      object-position: top;
+    }
+
+    .quarks-split-logo {
+      width: 110px;
+      filter: invert(1);
+      opacity: 0.85;
+    }
+
+    .divider-col {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      color: #2a2a2a;
+      font-size: 40px;
+      font-weight: 900;
+    }
+
+    .divider-col span {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #2a2a2a;
+      text-align: center;
+      line-height: 1.4;
+    }
+
+    .split-footer {
+      margin-top: 52px;
+      text-align: center;
+      padding: 20px 36px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      font-size: 14px;
+      color: var(--muted);
+      line-height: 1.7;
+      max-width: 640px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .split-footer strong { color: var(--text); }
+
+    /* ═══════════════════════════════════════════
+       SLIDE 6 — TIMELINE
+    ═══════════════════════════════════════════ */
+    .s-timeline { background: var(--surface); }
+
+    .timeline-inner {
+      width: 100%;
+      max-width: 920px;
+    }
+
+    .timeline-inner h2 {
+      font-size: 44px;
+      font-weight: 900;
+      letter-spacing: -0.025em;
+      margin-bottom: 8px;
+    }
+
+    .timeline-inner .subtitle {
+      font-size: 15px;
+      color: var(--muted);
+      margin-bottom: 36px;
+    }
+
+    .gantt-ruler {
+      display: flex;
+      padding-left: 164px;
+      margin-bottom: 0;
+    }
+    .gantt-ruler-tick {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 4px;
+    }
+    .gantt-ruler-tick span {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--muted);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+    .gantt-ruler-tick .tick-mark {
+      width: 1px;
+      height: 7px;
+      background: var(--border);
+    }
+    .gantt-axis {
+      height: 1px;
+      background: var(--border);
+      margin-left: 164px;
+      margin-bottom: 10px;
+    }
+    .gantt-rows {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+      margin-bottom: 32px;
+    }
+    .gantt-row {
+      display: flex;
+      align-items: center;
+      height: 28px;
+    }
+    .gantt-lbl {
+      width: 154px;
+      min-width: 154px;
+      font-size: 11px;
+      font-weight: 600;
+      color: #666;
+      text-align: right;
+      padding-right: 10px;
+      line-height: 1.3;
+    }
+    .gantt-track {
+      flex: 1;
+      height: 28px;
+      position: relative;
+    }
+    .gantt-bar {
+      position: absolute;
+      top: 0; height: 100%;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      padding-left: 10px;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      overflow: hidden;
+      white-space: nowrap;
+    }
+    .gantt-bar .g-sf { font-size: 12px; flex-shrink: 0; }
+    .gantt-bar .g-name { overflow: hidden; text-overflow: ellipsis; }
+    .g-dev  { background: rgba(255,70,105,0.2);  color: rgba(255,120,145,1); border: 1px solid rgba(255,70,105,0.35); }
+    .g-both { background: rgba(100,140,220,0.18); color: rgba(140,175,255,0.95); border: 1px solid rgba(100,140,220,0.3); }
+    .g-q    { background: rgba(212,169,106,0.18); color: rgba(212,169,106,0.95); border: 1px solid rgba(212,169,106,0.3); }
+
+    .phase-cards {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+    .pc {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 16px;
+    }
+    .pc-name {
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 5px;
+    }
+    .pc-desc {
+      font-size: 11px;
+      color: var(--muted);
+      line-height: 1.55;
+      margin-bottom: 8px;
+    }
+    .pc-owner {
+      display: inline-block;
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 3px 9px;
+      border-radius: 100px;
+    }
+    .pc-owner.dev  { color: var(--accent); background: rgba(255,70,105,0.1); }
+    .pc-owner.both { color: rgba(140,175,255,0.9); background: rgba(100,140,220,0.1); }
+    .pc-owner.qrks { color: rgba(212,169,106,0.9); background: rgba(212,169,106,0.1); }
+
+    /* ═══════════════════════════════════════════
+       SLIDE 7 — CLOSE
+    ═══════════════════════════════════════════ */
+    .s-close {
+      background: var(--bg);
+      text-align: center;
+    }
+
+    .close-title {
+      font-size: clamp(42px, 6vw, 80px);
+      font-weight: 900;
+      letter-spacing: -0.04em;
+      line-height: 1.05;
+      margin-bottom: 16px;
+    }
+
+    .close-sub {
+      font-size: 17px;
+      color: var(--muted);
+      max-width: 480px;
+      margin-bottom: 52px;
+      line-height: 1.65;
+    }
+
+    .open-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px;
+      max-width: 780px;
+      text-align: left;
+    }
+
+    .open-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 22px 26px;
+    }
+
+    .open-card .oc-label {
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 8px;
+    }
+
+    .open-card .oc-text {
+      font-size: 14px;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+
+    .close-footer {
+      margin-top: 60px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .close-footer img { filter: invert(1); opacity: 0.35; }
+    .close-footer .sep { width: 1px; height: 36px; background: var(--border); }
+    .close-footer p { font-size: 14px; color: var(--muted); text-align: left; line-height: 1.6; }
+
+    /* ─── INSTAGRAM LINK ─── */
+    .madrid-link {
+      color: var(--text);
+      text-decoration: underline;
+      text-underline-offset: 3px;
+      text-decoration-color: rgba(255,255,255,0.25);
+      transition: color 0.2s, text-decoration-color 0.2s;
+    }
+    .madrid-link:hover { color: var(--accent); text-decoration-color: var(--accent); }
+
+    /* ═══════════════════════════════════════════
+       WATERFALL CHART
+    ═══════════════════════════════════════════ */
+    .wfall {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      width: 100%;
+      margin: 32px 0 0;
+    }
+
+    .wf-row {
+      display: grid;
+      grid-template-columns: 210px 1fr 110px;
+      gap: 16px;
+      align-items: center;
+      height: 44px;
+    }
+
+    .wf-row.wf-final-row { height: 56px; margin-top: 8px; }
+
+    .wf-lbl {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+      text-align: right;
+      line-height: 1.3;
+      white-space: nowrap;
+    }
+
+    .wf-deduct-lbl {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--muted);
+    }
+
+    .wf-mkt-lbl { font-style: italic; }
+
+    .wf-final-lbl {
+      color: var(--accent) !important;
+      font-weight: 800 !important;
+      font-size: 13px !important;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .wf-track {
+      position: relative;
+      height: 100%;
+      background: #111;
+      border-radius: 6px;
+      overflow: visible;
+    }
+
+    .wf-fill {
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      border-radius: 6px;
+    }
+
+    .wf-fill-final {
+      background: var(--accent) !important;
+      box-shadow: 0 0 28px rgba(255, 70, 105, 0.35);
+    }
+
+    .wf-amount {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    .wf-final-amt {
+      color: var(--accent) !important;
+      font-size: 16px;
+    }
+
+    .wf-mkt-amt { color: var(--warm) !important; }
+
+    .wf-divider {
+      height: 1px;
+      background: var(--border);
+      margin: 10px 0 4px;
+    }
+
+    /* ─── SPLIT VISUAL (embedded in revenue slide) ─── */
+    .wf-split {
+      display: grid;
+      grid-template-columns: 1fr 64px 1fr;
+      align-items: center;
+      margin-top: 48px;
+      padding-top: 40px;
+      border-top: 1px solid var(--border);
+    }
+
+    .wf-split-side {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+      text-align: center;
+    }
+
+    .wf-split-pct {
+      font-size: 72px;
+      font-weight: 900;
+      letter-spacing: -0.05em;
+      line-height: 1;
+    }
+
+    .wf-split-left .wf-split-pct  { color: var(--accent); }
+    .wf-split-right .wf-split-pct { color: var(--warm); }
+
+    .wf-split-name {
+      font-size: 20px;
+      font-weight: 700;
+    }
+
+    .wf-split-desc {
+      font-size: 12px;
+      color: var(--muted);
+      max-width: 160px;
+      line-height: 1.5;
+    }
+
+    .wf-split-div {
+      text-align: center;
+      font-size: 40px;
+      font-weight: 900;
+      color: #2a2a2a;
+    }
+
+    .wf-madrid-img {
+      width: 180px;
+      filter: drop-shadow(0 16px 32px rgba(0,0,0,0.6));
+      object-fit: contain;
+      object-position: top;
+    }
+
+    .wf-quarks-img {
+      width: 100px;
+      filter: invert(1);
+      opacity: 0.85;
+    }
+
+    /* ═══════════════════════════════════════════
+       MOBILE LAYOUT — ≤ 640 px
+    ═══════════════════════════════════════════ */
+    @media (max-width: 640px) {
+
+      /* Disable snap on mobile — tall slides need free scroll */
+      html { scroll-snap-type: none; }
+      .slide {
+        scroll-snap-align: none;
+        scroll-snap-stop: normal;
+        padding: 52px 22px 44px;
+      }
+      .slide-num { top: 18px; right: 18px; }
+
+      /* ── Slide 1: Cover ── */
+      .cover-sub  { font-size: 16px; }
+      .cover-logo { margin-top: 36px; }
+
+      /* ── Slide 2: Who We Are ── */
+      .who-grid {
+        grid-template-columns: 1fr;
+        gap: 24px;
+      }
+      .elevator-box {
+        aspect-ratio: 4 / 3;
+        max-height: 260px;
+        width: 100%;
+      }
+      .who-text h2 { font-size: 30px; }
+      .who-text p  { font-size: 15px; }
+
+      /* ── Slide 3: What Do We Want ── */
+      .s-want {
+        justify-content: flex-start;
+        padding-top: 76px;
+      }
+      .opt-headline { font-size: 20px !important; }
+      .opt-bullets li { font-size: 15px; }
+
+      /* ── Slide 4: Token Economics ── */
+      .s-revenue { padding: 52px 22px 44px !important; }
+      .revenue-inner h2      { font-size: 28px; }
+      .revenue-inner .subtitle { font-size: 13px; margin-bottom: 20px; }
+
+      .wf-row {
+        grid-template-columns: 106px 1fr 70px;
+        gap: 6px;
+        height: auto;
+        min-height: 34px;
+      }
+      .wf-row.wf-final-row { min-height: 48px; }
+      .wf-lbl    { font-size: 11px; white-space: normal; line-height: 1.25; }
+      .wf-amount { font-size: 11px; width: auto; }
+      .wf-track  { min-height: 28px; }
+
+      /* 50/50 split — stack vertically */
+      .wf-split {
+        grid-template-columns: 1fr;
+        margin-top: 28px;
+        padding-top: 24px;
+      }
+      .wf-split-div    { display: none; }
+      .wf-split-right  { margin-top: 16px; border-top: 1px solid var(--border); padding-top: 20px; }
+      .wf-madrid-img   { width: 90px; }
+      .wf-quarks-img   { width: 72px; }
+      .wf-split-pct    { font-size: 52px; }
+      .wf-split-name   { font-size: 17px; }
+      .wf-split-desc   { font-size: 11px; }
+
+      /* ── Slide 5: Timeline ── */
+      .s-timeline { padding: 52px 22px 44px !important; }
+      .timeline-inner h2       { font-size: 30px; }
+      .timeline-inner .subtitle { font-size: 13px; margin-bottom: 24px; }
+
+      /* Gantt — horizontally scrollable on mobile */
+      .gantt-scroll-wrap {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        margin: 0 -22px;
+        padding: 0 0 8px 22px;
+      }
+      .gantt-scroll-inner { min-width: 520px; padding-right: 22px; }
+
+      /* Phase cards — single column */
+      .phase-cards { grid-template-columns: 1fr; gap: 10px; }
+      .pc          { padding: 14px 16px; }
+      .pc-name     { font-size: 14px; }
+      .pc-desc     { font-size: 12px; }
+
+      /* ── Slide 6: Discussable Topics ── */
+      .close-title { font-size: clamp(30px, 9vw, 48px); }
+      .close-sub   { font-size: 15px; margin-bottom: 24px; }
+      .open-grid   { grid-template-columns: 1fr; max-width: 100%; }
+      .open-card   { padding: 18px 20px; }
+      .open-card .oc-text { font-size: 13px; }
+
+      /* Close footer */
+      .close-footer {
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+        margin-top: 28px;
+        text-align: center;
+      }
+      .close-footer .sep { display: none; }
+      .close-footer p    { text-align: center; }
+      .close-footer .cta-btn { margin-top: 4px; }
+
+    } /* end @media mobile */
+  </style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════
+     01 — COVER
+══════════════════════════════════════ -->
+<section class="slide s-cover">
+  <div class="slide-num">01 / 06</div>
+  <div class="tag">Partnership Proposal · 2026</div>
+  <h1 class="cover-title" style="font-size:clamp(34px,4.8vw,70px); line-height:1.12; max-width:820px;">
+    <span class="red">Professor Madrid</span> — a Spanish learning app built on <span class="red">dog training</span> techniques and <span class="red">NLP</span>.
+  </h1>
+  <a href="https://professormadrid.com" target="_blank" rel="noopener" class="cta-btn">About the app ↗</a>
+
+  <img class="cover-logo" src="/q785A3CE908/assets/quarks.svg" alt="Quarks" width="110">
+</section>
+
+
+<!-- ══════════════════════════════════════
+     02 — WHO WE ARE
+══════════════════════════════════════ -->
+<section class="slide s-who">
+  <div class="slide-num">02 / 06</div>
+  <div class="who-grid">
+
+    <div class="elevator-box">
+      <img src="/q785A3CE908/assets/elevator.png" alt="Andrii and Madrid in the elevator" style="display:block;">
+      <div class="elevator-badge">Our Elevator Pitch</div>
+    </div>
+
+    <div class="who-text">
+      <p class="label">Who we are</p>
+      <h2>An honest man<br>and his dog.</h2>
+      <p>Human + 15 years of experience + dog + lots of AI tools = ...</p>
+      <p><a href="https://www.instagram.com/madrid_the_dog/" target="_blank" rel="noopener" class="madrid-link">Madrid</a> is not a silent partner. He teaches a man of how to learn.</p>
+      <p><strong>We are not asking for investment.</strong> We're offering a product that works, Andrii who stays, and a deal structured so everyone wins $$$ when the app does.</p>
+    </div>
+
+  </div>
+</section>
+
+
+<!-- ══════════════════════════════════════
+     03 — WHAT DO WE WANT?
+══════════════════════════════════════ -->
+<section class="slide s-want">
+  <div class="slide-num">03 / 06</div>
+  <div class="want-inner">
+    <p class="label">What do we want?</p>
+
+    <div class="opt pick" style="border: none; background: transparent; padding: 0;">
+      <div class="opt-headline" style="font-size: clamp(22px, 3vw, 32px); margin-bottom: 28px;">
+        "We built the product.<br>You have the machine.<br>Let's split what's left."
+      </div>
+      <ul class="opt-bullets">
+        <li>You publish, operate, and cover all costs</li>
+        <li>We act as CEO + COO + CPO + CTO — for as long as revenue covers the team</li>
+        <li>50/50 on what remains after everyone takes their cut</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════════════════════════════════
+     04 — TOKEN ECONOMICS + SPLIT
+══════════════════════════════════════ -->
+<section class="slide s-revenue" style="justify-content: flex-start; padding-top: 72px; padding-bottom: 72px;">
+  <div class="slide-num">04 / 06</div>
+  <div class="revenue-inner" style="max-width: 900px;">
+    <p class="label">How the money works</p>
+    <h2>Token Economics</h2>
+    <p class="subtitle">Consumable in-app purchases — not subscriptions. Users buy token packs at ×8 of infrastructure cost. Here is where every dollar goes.</p>
+
+    <!-- WATERFALL CHART -->
+    <div class="wfall">
+
+      <!-- Row: Start -->
+      <div class="wf-row">
+        <div class="wf-lbl">User pays</div>
+        <div class="wf-track">
+          <div class="wf-fill" style="width:100%; background:#2a2a2a;"></div>
+        </div>
+        <div class="wf-amount">$10.00</div>
+      </div>
+
+      <!-- Deduction: Apple -->
+      <div class="wf-row">
+        <div class="wf-lbl wf-deduct-lbl">↘ Apple / Google Store</div>
+        <div class="wf-track" style="background:transparent;">
+          <div class="wf-fill" style="left:70%; right:0; background:rgba(255,70,105,0.18); border:1px dashed rgba(255,70,105,0.45); border-radius:4px; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; color:rgba(255,70,105,0.85);">−$3.00</div>
+        </div>
+        <div class="wf-amount" style="color:rgba(255,70,105,0.7);">−30%</div>
+      </div>
+
+      <!-- Row: After Apple -->
+      <div class="wf-row">
+        <div class="wf-lbl">After Apple</div>
+        <div class="wf-track">
+          <div class="wf-fill" style="width:70%; background:#1a3328;"></div>
+        </div>
+        <div class="wf-amount">$7.00</div>
+      </div>
+
+      <!-- Deduction: Infrastructure -->
+      <div class="wf-row">
+        <div class="wf-lbl wf-deduct-lbl">↘ Infrastructure</div>
+        <div class="wf-track" style="background:transparent;">
+          <div class="wf-fill" style="left:58%; width:12%; background:rgba(100,180,130,0.18); border:1px dashed rgba(100,180,130,0.4); border-radius:4px; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; color:rgba(100,180,130,0.8);">−$1.20</div>
+        </div>
+        <div class="wf-amount" style="color:#444;">−12%</div>
+      </div>
+
+      <!-- Row: After Infra -->
+      <div class="wf-row">
+        <div class="wf-lbl">After Infra</div>
+        <div class="wf-track">
+          <div class="wf-fill" style="width:58%; background:#1a2535;"></div>
+        </div>
+        <div class="wf-amount">$5.80</div>
+      </div>
+
+      <!-- Deduction: Ops -->
+      <div class="wf-row">
+        <div class="wf-lbl wf-deduct-lbl">↘ Ops &amp; Support</div>
+        <div class="wf-track" style="background:transparent;">
+          <div class="wf-fill" style="left:48%; width:10%; background:rgba(100,140,200,0.18); border:1px dashed rgba(100,140,200,0.4); border-radius:4px; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; color:rgba(100,140,200,0.8);">−$1.00</div>
+        </div>
+        <div class="wf-amount" style="color:#444;">−10%</div>
+      </div>
+
+      <!-- Row: After Ops -->
+      <div class="wf-row">
+        <div class="wf-lbl">After Ops</div>
+        <div class="wf-track">
+          <div class="wf-fill" style="width:48%; background:#26192e;"></div>
+        </div>
+        <div class="wf-amount">$4.80</div>
+      </div>
+
+      <!-- Deduction: Development -->
+      <div class="wf-row">
+        <div class="wf-lbl wf-deduct-lbl">↘ Further Development</div>
+        <div class="wf-track" style="background:transparent;">
+          <div class="wf-fill" style="left:38%; width:10%; background:rgba(160,120,200,0.18); border:1px dashed rgba(160,120,200,0.4); border-radius:4px; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; color:rgba(160,120,200,0.8);">−$1.00</div>
+        </div>
+        <div class="wf-amount" style="color:#444;">−10%</div>
+      </div>
+
+      <!-- Row: After Dev -->
+      <div class="wf-row">
+        <div class="wf-lbl">After Development</div>
+        <div class="wf-track">
+          <div class="wf-fill" style="width:38%; background:#302218;"></div>
+        </div>
+        <div class="wf-amount">$3.80</div>
+      </div>
+
+      <!-- Deduction: Marketing (variable) -->
+      <div class="wf-row">
+        <div class="wf-lbl wf-deduct-lbl wf-mkt-lbl">↘ Marketing budget</div>
+        <div class="wf-track" style="background:transparent;">
+          <div class="wf-fill" style="left:28%; width:10%; background:repeating-linear-gradient(45deg,rgba(212,169,106,0.15),rgba(212,169,106,0.15) 3px,transparent 3px,transparent 7px); border:1px dashed rgba(212,169,106,0.4); border-radius:4px; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; color:rgba(212,169,106,0.8);">−X</div>
+        </div>
+        <div class="wf-amount wf-mkt-amt">−X%  TBD</div>
+      </div>
+
+      <div class="wf-divider"></div>
+
+      <!-- Row: REMAINING — highlighted -->
+      <div class="wf-row wf-final-row">
+        <div class="wf-lbl wf-final-lbl">✦ Remaining</div>
+        <div class="wf-track">
+          <div class="wf-fill wf-fill-final" style="width:28%;"></div>
+        </div>
+        <div class="wf-amount wf-final-amt">~$3.80 − X</div>
+      </div>
+
+    </div>
+
+    <!-- SPLIT VISUAL -->
+    <div class="wf-split">
+
+      <div class="wf-split-side wf-split-left">
+        <img class="wf-quarks-img" src="/q785A3CE908/assets/quarks.svg" alt="Quarks">
+        <div class="wf-split-pct">50%</div>
+        <div class="wf-split-name">Quarks</div>
+        <div class="wf-split-desc">Publisher, operator, cost carrier.</div>
+      </div>
+
+      <div class="wf-split-div">÷</div>
+
+      <div class="wf-split-side wf-split-right">
+        <img class="wf-madrid-img" src="/q785A3CE908/assets/madrid.png" alt="Madrid">
+        <div class="wf-split-pct">50%</div>
+        <div class="wf-split-name">Madrid 🐾</div>
+        <div class="wf-split-desc">Andrii &amp; Madrid. Built it, keeping it alive.</div>
+      </div>
+
+    </div>
+
+  </div>
+</section>
+
+
+<!-- ══════════════════════════════════════
+     06 — TIMELINE
+══════════════════════════════════════ -->
+<section class="slide s-timeline" style="justify-content:flex-start; padding-top:64px; padding-bottom:64px;">
+  <div class="slide-num">05 / 06</div>
+  <div class="timeline-inner">
+    <p class="label">Launch plan</p>
+    <h2>The Fast Path</h2>
+    <p class="subtitle">The product is already built and live for testing. Most of this runs in parallel — from here to 500 paid users in roughly two months.</p>
+
+    <div class="gantt-scroll-wrap"><div class="gantt-scroll-inner">
+    <!-- RULER -->
+    <div class="gantt-ruler">
+      <div class="gantt-ruler-tick"><span>Now</span><div class="tick-mark"></div></div>
+      <div class="gantt-ruler-tick"><span>Month 1</span><div class="tick-mark"></div></div>
+      <div class="gantt-ruler-tick"><span>Month 2</span><div class="tick-mark"></div></div>
+      <div class="gantt-ruler-tick"><span>Month 3</span><div class="tick-mark"></div></div>
+    </div>
+    <div class="gantt-axis"></div>
+
+    <!-- GANTT BARS  (track = 3 months = 100%; each month = 33.3%) -->
+    <div class="gantt-rows">
+
+      <div class="gantt-row">
+        <div class="gantt-lbl">Testing &amp; polishing</div>
+        <div class="gantt-track">
+          <!-- ongoing from Now through Month 2 = 0% → 67% -->
+          <div class="gantt-bar g-dev" style="left:0%; width:67%;">
+            <span class="g-sf">✦</span><span class="g-name">Keep testing</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="gantt-row">
+        <div class="gantt-lbl">Infrastructure</div>
+        <div class="gantt-track">
+          <!-- Month 0 → Month 1 = 0% → 33% -->
+          <div class="gantt-bar g-both" style="left:0%; width:33%;">
+            <span class="g-sf">✦</span><span class="g-name">Infra migration</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="gantt-row">
+        <div class="gantt-lbl">Bug fixing &amp; features</div>
+        <div class="gantt-track">
+          <!-- Now → end of marketing ≈ 0% → 56% -->
+          <div class="gantt-bar g-dev" style="left:0%; width:56%;">
+            <span class="g-sf">✦</span><span class="g-name">Bug fixing &amp; new features</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="gantt-row">
+        <div class="gantt-lbl">Marketing</div>
+        <div class="gantt-track">
+          <!-- Week 3 → ~Month 1.75 ≈ 23% → 56% -->
+          <div class="gantt-bar g-both" style="left:23%; width:33%;">
+            <span class="g-sf">✦</span><span class="g-name">Marketing materials</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="gantt-row">
+        <div class="gantt-lbl">Payments &amp; promo</div>
+        <div class="gantt-track">
+          <!-- Halfway through marketing ≈ 39% → Month 2 = 67% -->
+          <div class="gantt-bar g-q" style="left:39%; width:28%;">
+            <span class="g-sf">✦</span><span class="g-name">Payments &amp; promo stack</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="gantt-row">
+        <div class="gantt-lbl">Soft launch</div>
+        <div class="gantt-track">
+          <!-- Month 2 → Month 2+3wks ≈ 67% → 78% -->
+          <div class="gantt-bar g-both" style="left:67%; width:11%;">
+            <span class="g-sf">✦</span><span class="g-name">Warm-up</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="gantt-row">
+        <div class="gantt-lbl">Scale traffic</div>
+        <div class="gantt-track">
+          <!-- Month 2.75 → Month 3 = 78% → 100% -->
+          <div class="gantt-bar g-q" style="left:78%; width:22%;">
+            <span class="g-sf">✦</span><span class="g-name">100 → 500 users</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    </div></div><!-- /gantt-scroll-wrap -->
+
+    <!-- PHASE CARDS -->
+    <div class="phase-cards">
+
+      <div class="pc">
+        <div class="pc-name">Keep testing &amp; polishing</div>
+        <div class="pc-desc">Up to 50 early birds on Andrii's own App Store account — bug fixes, prompt tuning, and new features in parallel.</div>
+        <span class="pc-owner dev">Andrii leads</span>
+      </div>
+
+      <div class="pc">
+        <div class="pc-name">Infrastructure migration</div>
+        <div class="pc-desc">Postgres, Google / iOS auth, analytics — rolled out on Quarks' servers. Andrii assists throughout Month 1.</div>
+        <span class="pc-owner both">Both parties</span>
+      </div>
+
+      <div class="pc">
+        <div class="pc-name">Bug fixing &amp; new features</div>
+        <div class="pc-desc">Running from day one through the marketing period — Andrii fixes bugs and ships missing features in response to early-bird feedback.</div>
+        <span class="pc-owner dev">Andrii leads</span>
+      </div>
+
+      <div class="pc">
+        <div class="pc-name">Marketing materials</div>
+        <div class="pc-desc">Kicks off at week 3 — ad videos, banners, and rewritten copy crafted together while infra and bug fixing are already in progress.</div>
+        <span class="pc-owner both">Both parties</span>
+      </div>
+
+      <div class="pc">
+        <div class="pc-name">Payments &amp; promo stack</div>
+        <div class="pc-desc">Starts once half the marketing materials are ready. Quarks connects payments, Meta, GA, and Amplitude. Andrii assists with configuration.</div>
+        <span class="pc-owner qrks">Quarks leads</span>
+      </div>
+
+      <div class="pc">
+        <div class="pc-name">Soft launch &amp; warm-up</div>
+        <div class="pc-desc">Three weeks live on Quarks' App Store account — let ranking, tracking, and unit economics settle before scaling.</div>
+        <span class="pc-owner both">Both parties</span>
+      </div>
+
+      <div class="pc">
+        <div class="pc-name">Scale the traffic</div>
+        <div class="pc-desc">Gradually open the taps. Target: <strong>100 paid users in month 1</strong>, <strong>500 by month 2</strong>.</div>
+        <span class="pc-owner qrks">Quarks leads</span>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════════════════════════════════
+     07 — CLOSE / OPEN ITEMS
+══════════════════════════════════════ -->
+<section class="slide s-close">
+  <div class="slide-num">06 / 06</div>
+  <p class="label">Open items for discussion</p>
+  <h2 class="close-title">Discussable<br>topics.</h2>
+  <p class="close-sub">Everything above is the frame. These are the numbers we still need to fill in together before we sign.</p>
+
+  <div class="open-grid">
+    <div class="open-card">
+      <div class="oc-label">Split ratio</div>
+      <div class="oc-text">50/50 is a generous offer — and it stays generous if you invest fast and sufficiently so we all reach the first 500 clients within two months. Marketing cost: TBD.</div>
+    </div>
+    <div class="open-card">
+      <div class="oc-label">Marketing strategy</div>
+      <div class="oc-text">Make my dog famous and we all will profit. You can take copyright for everything related to the dog — but let's do it smart. I help create the materials. You invest + consult + approve.</div>
+    </div>
+    <div class="open-card">
+      <div class="oc-label">Cost %s — actuals</div>
+      <div class="oc-text">Infra 12%, Ops 10%, Dev 10% are estimates. We agree on actuals before signing and review quarterly. Zero fixed cost — we don't eat. We work for the goal.</div>
+    </div>
+    <div class="open-card">
+      <div class="oc-label">Token pack pricing</div>
+      <div class="oc-text">Starting price points and pack sizes. ×8 coefficient is the opening anchor — adjustable based on market testing, and could be way more: right now 1 hour of active tutor usage (photos + audio) costs the client ~$2–3.</div>
+    </div>
+    <div class="open-card">
+      <div class="oc-label">Reporting &amp; source of truth</div>
+      <div class="oc-text">Monthly reports by the 10th. App Store Connect is the canonical revenue source. Andrii gets read access.</div>
+    </div>
+    <div class="open-card">
+      <div class="oc-label">Jurisdiction &amp; payment</div>
+      <div class="oc-text">Governing law and how the commission is paid (bank transfer, crypto, etc.). To be agreed.</div>
+    </div>
+  </div>
+
+  <div class="close-footer">
+    <img src="/q785A3CE908/assets/quarks.svg" alt="Quarks" width="72">
+    <div class="sep"></div>
+    <p>Madrid is ready to make money.<br>And you?</p>
+    <a href="https://professormadrid.com" target="_blank" rel="noopener" class="cta-btn" style="margin-top:24px;">About the app ↗</a>
+  </div>
+</section>
+
+</body>
+</html>

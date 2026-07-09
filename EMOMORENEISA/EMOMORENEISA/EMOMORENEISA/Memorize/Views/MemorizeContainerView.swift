@@ -7,29 +7,35 @@ struct MemorizeContainerView: View {
     @State private var tab: Tab = .hub
     @State private var showSettings = false
 
-    enum Tab: Hashable { case hub, vocabulary, progress }
+    enum Tab: Hashable { case hub, progress }
 
     var body: some View {
         ZStack(alignment: .top) {
             TabView(selection: $tab) {
-                LoroMemorizeHubView()
-                    .tabItem { Label("Loro", systemImage: "bird.fill") }
+                LoroMemorizeHubView(showsBackButton: false)
+                    .tabItem { Label(L("Seagull"), systemImage: "bird.fill") }
                     .tag(Tab.hub)
 
-                LoroVocabularyView()
-                    .tabItem { Label("Words", systemImage: "rectangle.stack.fill") }
-                    .tag(Tab.vocabulary)
-
                 LoroStatsView()
-                    .tabItem { Label("Progress", systemImage: "chart.bar.fill") }
+                    .tabItem { Label(L("Progress"), systemImage: "chart.bar.fill") }
                     .tag(Tab.progress)
             }
             .tint(.yellow)
 
+            backButton
             settingsGear
         }
         .sheet(isPresented: $showSettings) {
             MemorizeSettingsView()
+        }
+    }
+
+    private var backButton: some View {
+        HStack {
+            BackButton { dismiss() }
+                .padding(.leading, 16)
+                .padding(.top, 54)
+            Spacer()
         }
     }
 

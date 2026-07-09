@@ -13,20 +13,15 @@ struct SlotMachineView: View {
 
     var body: some View {
         ZStack {
-            Color.black.ignoresSafeArea()
+            GameBackground()
+
+            DreamParticlesView()
+                .allowsHitTesting(false)
+                .ignoresSafeArea()
 
             VStack(spacing: 0) {
                 HStack {
-                    Button {
-                        engine.newRound()
-                    } label: {
-                        HStack(spacing: 6) {
-                            Image(systemName: "chevron.left")
-                            Text("Back")
-                        }
-                        .font(.system(size: 14, weight: .semibold, design: .monospaced))
-                        .foregroundColor(.white.opacity(0.55))
-                    }
+                    BackButton { engine.newRound() }
                     Spacer()
                     Button {
                         stoppedCount = 0
@@ -80,7 +75,7 @@ struct SlotMachineView: View {
             if isSpinning || engine.phase == .readyToStart {
                 VStack {
                     Spacer()
-                    Text("Tap to skip")
+                    Text(L("Tap to skip"))
                         .font(.system(size: 13, weight: .medium, design: .monospaced))
                         .foregroundColor(.white.opacity(0.35))
                         .tracking(1)
@@ -93,6 +88,19 @@ struct SlotMachineView: View {
         .onTapGesture { handleTap() }
         .sheet(isPresented: $showSettings) {
             SettingsSheetView()
+        }
+        .onChange(of: isSpinning) { _, spinning in
+            if spinning {
+                SlotSpinSoundPlayer.shared.play()
+            } else {
+                SlotSpinSoundPlayer.shared.stop()
+            }
+        }
+        .onAppear {
+            if isSpinning { SlotSpinSoundPlayer.shared.play() }
+        }
+        .onDisappear {
+            SlotSpinSoundPlayer.shared.stop()
         }
     }
 
@@ -151,7 +159,7 @@ struct PlayToLearnButton: View {
                         .frame(width: circleSize, height: circleSize)
                         .shadow(color: Color(red: 0.5, green: 0.38, blue: 0.0).opacity(0.5), radius: 4, y: 2)
 
-                    CircularTextView(text: "PLAY  TO  LEARN  ★  ", radius: textRadius, fontSize: textFontSize)
+                    CircularTextView(text: L("PLAY  TO  LEARN  ★  "), radius: textRadius, fontSize: textFontSize)
                         .foregroundColor(.white)
                         .shadow(color: .black.opacity(0.5), radius: 2)
 

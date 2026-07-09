@@ -41,7 +41,7 @@
       overflow: hidden;
       display: flex;
       flex-direction: column;
-      justify-content: space-between;
+      justify-content: flex-end;
     }
 
     /* Radial background matching app's deep-space indigo */
@@ -63,50 +63,85 @@
 
     /* ---- Top content area ---- */
     .hero-top {
-      position: relative;
+      position: absolute;
+      top: 48vh;
+      left: 0;
+      right: 0;
       z-index: 20;
-      padding: 14vh 0.5rem 0;
       text-align: center;
-      flex-shrink: 0;
+      padding: 0 0.5rem;
     }
 
     h1 {
       font-family: 'Fredoka', sans-serif;
-      font-size: clamp(2.5rem, 13vw, 9rem);
+      font-size: clamp(2.8rem, 8.5vw, 6.5rem);
       font-weight: 700;
-      line-height: 1.05;
+      line-height: 1.0;
       letter-spacing: -0.01em;
-      margin-bottom: 0.4rem;
+      margin-bottom: 0.2rem;
       display: block;
       position: relative;
       z-index: 20;
-    }
-
-    /* ---- Text letter background (applied inline) ---- */
-    .tbg {
-      background: rgba(5, 7, 18, 0.52);
-      padding: 0.06em 0.18em;
-      border-radius: 6px;
-      -webkit-box-decoration-break: clone;
-      box-decoration-break: clone;
-      display: inline;
+      white-space: nowrap;
+      text-shadow:
+        0 0 24px rgba(255, 255, 255, 0.45),
+        0 2px 18px rgba(0, 0, 0, 0.95),
+        0 4px 32px rgba(0, 0, 0, 0.8);
     }
 
     /* ---- Hero subtitle ---- */
     .hero-subtitle {
       font-family: 'Fredoka', sans-serif;
-      font-size: clamp(1.3rem, 5.2vw, 3.4rem);
+      font-size: clamp(1.7rem, 4.6vw, 48px);
       font-weight: 500;
       color: var(--text);
       letter-spacing: 0;
-      line-height: 1.65;
-      margin-top: 1rem;
+      line-height: 1.2;
+      margin-top: 0.2rem;
       margin-bottom: 0;
+      text-shadow:
+        0 2px 14px rgba(0, 0, 0, 0.95),
+        0 0 28px rgba(0, 0, 0, 0.7);
     }
 
     .hero-subtitle .hl {
       color: var(--gold);
       font-weight: 600;
+      text-shadow:
+        0 0 18px rgba(245, 166, 35, 0.55),
+        0 2px 14px rgba(0, 0, 0, 0.9);
+    }
+
+    .hero-subtitle-mobile { display: none; }
+
+    .hl-white {
+      color: #fff;
+      font-weight: 700;
+      text-shadow:
+        0 0 18px rgba(255, 255, 255, 0.9),
+        0 0 38px rgba(255, 255, 255, 0.45),
+        0 2px 14px rgba(0, 0, 0, 0.9);
+    }
+
+    @media (max-width: 768px) {
+      .hero-top {
+        top: 38vh;
+      }
+      .dog-img {
+        height: clamp(320px, 58vh, 600px);
+      }
+      .cta-group {
+        flex-wrap: nowrap;
+        gap: 0.5rem;
+        padding: 0 0.5rem;
+      }
+      .btn {
+        width: auto;
+        flex: 1;
+        min-width: 0;
+        font-size: 0.82rem;
+        padding: 0.75rem 1rem;
+      }
     }
 
     /* ---- Dog zone (full-hero overlay, sits behind text + buttons) ---- */
@@ -203,7 +238,8 @@
       align-items: center;
       justify-content: center;
       gap: 0.5rem;
-      width: 240px;
+      width: auto;
+      white-space: nowrap;
       padding: 0.8rem 1.7rem;
       border-radius: 100px;
       font-family: 'DM Sans', sans-serif;
@@ -271,12 +307,12 @@
     ================================================================ */
     #how-it-works {
       background: linear-gradient(180deg, #070818 0%, #0A0C1E 100%);
-      padding: 5rem 3rem 6rem;
+      padding: 5rem 2rem 7rem;
     }
 
     .section-header {
       text-align: center;
-      margin-bottom: 3.5rem;
+      margin-bottom: 5rem;
     }
 
     .section-eyebrow {
@@ -296,40 +332,123 @@
       margin-bottom: 1rem;
     }
 
+    .section-tagline {
+      font-weight: 400;
+      line-height: 1.45;
+    }
+
+    .section-tagline .hl {
+      font-weight: 700;
+      color: var(--gold);
+    }
+
     .section-desc {
       font-size: 1.05rem;
       color: var(--text-muted);
-      max-width: 520px;
+      max-width: 560px;
       line-height: 1.75;
       margin: 0 auto;
     }
 
-    /* Screenshots grid */
-    .features-grid {
-      display: flex;
-      gap: 2rem;
-      justify-content: center;
-      flex-wrap: wrap;
-      max-width: 1100px;
+    /* Use-case blocks */
+    .use-cases {
+      max-width: 1040px;
       margin: 0 auto;
-    }
-
-    .feature-card {
       display: flex;
       flex-direction: column;
+      gap: 6rem;
+    }
+
+    .use-case {
+      display: flex;
       align-items: center;
-      gap: 1rem;
+      gap: 3.5rem;
+    }
+
+    .use-case.reversed {
+      flex-direction: row-reverse;
+    }
+
+    .uc-text {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .uc-number {
+      font-family: 'Fredoka', sans-serif;
+      font-size: 4.5rem;
+      font-weight: 700;
+      color: rgba(245, 166, 35, 0.12);
+      line-height: 1;
+      margin-bottom: -0.6rem;
+      letter-spacing: -0.03em;
+    }
+
+    .uc-title {
+      font-family: 'Fredoka', sans-serif;
+      font-size: clamp(1.4rem, 2.4vw, 1.9rem);
+      font-weight: 700;
+      margin-bottom: 0.9rem;
+      letter-spacing: -0.01em;
+      line-height: 1.2;
+    }
+
+    .uc-desc {
+      font-size: 1rem;
+      color: var(--text-muted);
+      line-height: 1.8;
+      max-width: 420px;
+    }
+
+    .uc-list {
+      list-style: decimal;
+      padding-left: 1.3rem;
+      margin: 0.6rem 0 0.8rem;
+      color: rgba(255,255,255,0.78);
+      font-size: 0.97rem;
+      line-height: 1.7;
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+    }
+
+    .uc-list .hl {
+      color: var(--gold);
+      font-weight: 700;
+    }
+
+    .uc-callout {
+      font-size: 0.95rem;
+      line-height: 1.55;
+      color: rgba(255,255,255,0.65);
+      max-width: 420px;
+    }
+
+    .uc-callout .hl {
+      color: var(--gold);
+      font-weight: 700;
+    }
+
+    .uc-callout strong {
+      color: #fff;
+      font-weight: 700;
+    }
+
+    .uc-screens {
       flex: 0 0 auto;
+      display: flex;
+      gap: 1rem;
+      align-items: flex-end;
     }
 
     /* iPhone 15 Pro frame */
     .iphone-frame {
       position: relative;
-      width: 195px;
-      height: 422px;
+      width: 175px;
+      height: 379px;
       background: #000;
-      border-radius: 44px;
-      border: 11px solid #1c1c1e;
+      border-radius: 40px;
+      border: 10px solid #1c1c1e;
       box-shadow:
         0 0 0 1.5px #3a3a3c,
         0 0 0 0.5px rgba(255, 255, 255, 0.06) inset,
@@ -338,28 +457,26 @@
       overflow: hidden;
     }
 
-    /* Dynamic Island */
     .iphone-frame::before {
       content: '';
       position: absolute;
-      top: 7px;
+      top: 6px;
       left: 50%;
       transform: translateX(-50%);
-      width: 82px;
-      height: 26px;
+      width: 74px;
+      height: 23px;
       background: #1c1c1e;
-      border-radius: 14px;
+      border-radius: 12px;
       z-index: 10;
     }
 
-    /* Right-side button */
     .iphone-frame::after {
       content: '';
       position: absolute;
-      top: 80px;
-      right: -14px;
+      top: 72px;
+      right: -13px;
       width: 3px;
-      height: 62px;
+      height: 56px;
       background: #2e2e30;
       border-radius: 2px;
       z-index: 20;
@@ -373,29 +490,72 @@
       display: block;
     }
 
-    .feature-label {
-      font-size: 0.78rem;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      color: var(--text-muted);
-      text-align: center;
+    .screens-3 .iphone-frame {
+      width: 142px;
+      height: 307px;
+      border-radius: 33px;
+      border-width: 8px;
     }
 
-    .feature-desc {
-      font-size: 0.82rem;
-      color: var(--text-subtle);
-      text-align: center;
-      max-width: 160px;
-      line-height: 1.5;
+    .screens-3 .iphone-frame::before {
+      top: 5px;
+      width: 60px;
+      height: 19px;
+      border-radius: 10px;
+    }
+
+    .screens-3 .iphone-frame::after {
+      top: 58px;
+      right: -11px;
+      height: 45px;
+    }
+
+    .screens-3 .iphone-frame:nth-child(2) {
+      transform: translateY(-24px);
     }
 
     /* ================================================================
        RESPONSIVE
     ================================================================ */
+    @media (max-width: 860px) {
+      .use-case,
+      .use-case.reversed {
+        flex-direction: column;
+        align-items: center;
+        gap: 2.5rem;
+      }
+
+      .uc-text {
+        text-align: center;
+      }
+
+      .uc-desc {
+        max-width: 100%;
+      }
+
+      .uc-screens.screens-3 {
+        overflow-x: auto;
+        padding-bottom: 0.5rem;
+      }
+    }
+
     @media (max-width: 600px) {
       .hero-top {
-        padding: 2rem 1.5rem 0;
+        padding: 2rem 0.75rem 0;
+      }
+
+      h1 {
+        margin-bottom: 1.4rem;
+      }
+
+      .hero-subtitle-desktop { display: none; }
+
+      .hero-subtitle-mobile {
+        display: block;
+        font-size: clamp(2rem, 8.5vw, 2.8rem);
+        margin-top: 0;
+        padding: 0 0.5rem;
+        line-height: 1.25;
       }
 
       .hero-bottom {
@@ -403,24 +563,190 @@
       }
 
       .btn {
-        width: 220px;
-        padding: 0.75rem 1.3rem;
+        padding: 0.65rem 1.2rem;
         font-size: 0.88rem;
       }
 
       #how-it-works {
-        padding: 4rem 1.5rem 5rem;
+        padding: 4rem 0.4rem 5rem;
       }
 
-      .features-grid {
-        gap: 1.5rem;
+      .section-tagline {
+        font-size: clamp(1.45rem, 7.5vw, 2rem);
+      }
+
+      .use-cases {
+        gap: 4.5rem;
       }
 
       .iphone-frame {
-        width: 160px;
-        height: 347px;
-        border-radius: 36px;
+        width: 148px;
+        height: 321px;
+        border-radius: 34px;
         border-width: 9px;
+      }
+
+      .iphone-frame::before {
+        width: 62px;
+        height: 20px;
+      }
+
+      .iphone-frame::after {
+        top: 61px;
+        right: -12px;
+        height: 47px;
+      }
+
+      .screens-3 .iphone-frame {
+        width: 120px;
+        height: 260px;
+        border-radius: 28px;
+        border-width: 7px;
+      }
+
+      .screens-3 .iphone-frame::before {
+        width: 51px;
+        height: 16px;
+      }
+
+      .screens-3 .iphone-frame::after {
+        top: 49px;
+        right: -9px;
+        height: 38px;
+      }
+    }
+
+    /* ================================================================
+       MAGNETIC HOVER — desktop only
+    ================================================================ */
+    @media (min-width: 861px) {
+      .uc-screens .iphone-frame {
+        will-change: transform, filter;
+        transition:
+          transform 0.48s cubic-bezier(0.23, 1, 0.32, 1),
+          filter    0.48s cubic-bezier(0.23, 1, 0.32, 1),
+          box-shadow 0.48s cubic-bezier(0.23, 1, 0.32, 1);
+      }
+
+      .uc-screens:has(.iphone-frame:hover) .iphone-frame:not(:hover) {
+        transform: scale(0.87);
+        filter: brightness(0.42) saturate(0.6);
+      }
+
+      .uc-screens.screens-3:has(.iphone-frame:hover) .iphone-frame:nth-child(2):not(:hover) {
+        transform: translateY(-24px) scale(0.87);
+        filter: brightness(0.42) saturate(0.6);
+      }
+
+      .uc-screens .iphone-frame:hover {
+        transform: scale(1.58);
+        z-index: 50;
+        box-shadow:
+          0 0 0 1.5px #5a5a5c,
+          0 0 0 0.5px rgba(255, 255, 255, 0.12) inset,
+          0 50px 120px rgba(0, 0, 0, 0.95),
+          0 20px 60px rgba(0, 0, 0, 0.7),
+          0 0 80px rgba(245, 166, 35, 0.18);
+      }
+
+      .uc-screens.screens-3 .iphone-frame:nth-child(2):hover {
+        transform: scale(1.58);
+      }
+    }
+
+    /* ================================================================
+       MOBILE CAROUSEL
+    ================================================================ */
+    @media (max-width: 860px) {
+      .uc-carousel {
+        width: 100%;
+        overflow: hidden;
+      }
+
+      .uc-carousel-track {
+        display: flex;
+        gap: 14px;
+        will-change: transform;
+      }
+
+      .uc-carousel-item {
+        flex: 0 0 82vw;
+        max-width: 310px;
+      }
+
+      .uc-carousel .iphone-frame {
+        width: 100%;
+        height: auto;
+        aspect-ratio: 175 / 379;
+        border-radius: 38px;
+        border-width: 9px;
+        transform: none !important;
+        filter: none !important;
+      }
+
+      .uc-carousel .iphone-frame::before {
+        width: 42%;
+        height: 6%;
+        top: 1.6%;
+        border-radius: 8px;
+      }
+
+      .uc-carousel .iphone-frame::after {
+        top: 19%;
+        height: 15%;
+        right: -11px;
+        width: 3px;
+      }
+
+      .uc-carousel-dots {
+        display: flex;
+        justify-content: center;
+        gap: 7px;
+        margin-top: 1rem;
+      }
+
+      .uc-carousel-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.2);
+        transition: background 0.3s, transform 0.3s;
+      }
+
+      .uc-carousel-dot.active {
+        background: var(--gold);
+        transform: scale(1.4);
+      }
+
+      .screens-featured {
+        display: flex !important;
+        justify-content: center;
+        width: 100%;
+      }
+
+      .screens-featured .iphone-frame {
+        width: 82vw;
+        max-width: 310px;
+        height: auto;
+        aspect-ratio: 175 / 379;
+        border-radius: 38px;
+        border-width: 9px;
+        transform: none !important;
+        filter: none !important;
+      }
+
+      .screens-featured .iphone-frame::before {
+        width: 42%;
+        height: 6%;
+        top: 1.6%;
+        border-radius: 8px;
+      }
+
+      .screens-featured .iphone-frame::after {
+        top: 19%;
+        height: 15%;
+        right: -11px;
+        width: 3px;
       }
     }
 
@@ -490,8 +816,9 @@
 
     <!-- ---- Text at top ---- -->
     <div class="hero-top">
-      <h1><span class="tbg">Professor Madrid</span></h1>
-      <p class="hero-subtitle"><span class="tbg">App for <span class="hl">language learning</span>,<br>which uses <span class="hl">dog training</span><br>and <span class="hl">NLP</span> techniques</span></p>
+      <h1>Professor Madrid</h1>
+      <p class="hero-subtitle hero-subtitle-desktop">The first Spanish learning app that <span class="hl">replaces a real tutor</span> —<br>not by simulating one, but by <span class="hl">being</span> one.</p>
+      <p class="hero-subtitle hero-subtitle-mobile"><span class="hl-white">Learn Spanish fast</span><br>with <span class="hl-white">dog training</span> and<br><span class="hl-white">NLP</span> techniques</p>
     </div>
 
     <!-- Floating dream items — positioned relative to hero section -->
@@ -544,88 +871,93 @@
   ================================================================ -->
   <section id="how-it-works">
     <div class="section-header">
-      <div class="section-eyebrow">¿Cómo funciona?</div>
-      <h2 class="section-title">Learn Spanish, doggo style.</h2>
-      <p class="section-desc">
-        Professor Madrid blends AI tutoring, verb conjugation drills, and audio loops into
-        one surprisingly fun app. Your professor is a dog — he means well, mostly.
-      </p>
+      <div class="section-eyebrow">How it works</div>
+      <h2 class="section-title section-tagline"><span class="hl">Learn visually</span> — like children do,<br><span class="hl">repeat and memorise</span> like a dog,<br><span class="hl">play</span> like a Spanish guitar</h2>
     </div>
 
-    <div class="features-grid">
+    <div class="use-cases">
 
-      <div class="feature-card">
-        <div class="iphone-frame">
-          <img
-            src="assets/01_home_splash.png"
-            alt="Daily motivational quote"
-            loading="lazy"
-          >
+      <div class="use-case reversed">
+        <div class="uc-text">
+          <div class="uc-number">01</div>
+          <h3 class="uc-title">Street view — learn anywhere!</h3>
+          <ol class="uc-list">
+            <li><span class="hl">Take a picture</span> of what you see around</li>
+            <li><span class="hl">Professor will describe</span> every object in it</li>
+            <li><span class="hl">Learn by</span> talking with the app about <span class="hl">what you see around</span></li>
+          </ol>
+          <p class="uc-callout"><span class="hl">This is how children do</span> — they remember what they see! And they always have someone to talk about it.</p>
         </div>
-        <div class="feature-label">Daily Motivation</div>
-        <div class="feature-desc">A new dark-humour quote to kick off every session</div>
+        <div class="uc-screens screens-3">
+          <div class="iphone-frame">
+            <img src="assets/03_photo_picker.png" alt="Add photos of what's around you" loading="lazy">
+          </div>
+          <div class="iphone-frame">
+            <img src="assets/02_street_view_labels.png" alt="Spanish labels overlaid on your photo" loading="lazy">
+          </div>
+          <div class="iphone-frame">
+            <img src="assets/03_chat_tutor.png" alt="AI conversation about your photo" loading="lazy">
+          </div>
+        </div>
       </div>
 
-      <div class="feature-card">
-        <div class="iphone-frame">
-          <img
-            src="assets/02_home_modes.png"
-            alt="Choose your learning mode"
-            loading="lazy"
-          >
+      <div class="use-case">
+        <div class="uc-text">
+          <div class="uc-number">02</div>
+          <h3 class="uc-title">Consistency is the trick</h3>
+          <ol class="uc-list">
+            <li>You get a <span class="hl">personal schedule</span> for every word <strong>and</strong> tons of smart <span class="hl">notifications</span></li>
+          </ol>
+          <p class="uc-callout"><span class="hl">This is how dogs learn</span> to ride a bicycle.. Your Spanish is way easier, <strong>you can do it!</strong></p>
         </div>
-        <div class="feature-label">Two Learning Modes</div>
-        <div class="feature-desc">Chat Tutor or Verb Game — you pick the battlefield</div>
+        <div class="uc-screens screens-2">
+          <div class="iphone-frame">
+            <img src="assets/10_el_loro_playback.png" alt="Seagull Steven word playback" loading="lazy">
+          </div>
+          <div class="iphone-frame">
+            <img src="assets/04_seagull_memory.png" alt="Seagull Steven memory queue" loading="lazy">
+          </div>
+        </div>
       </div>
 
-      <div class="feature-card">
-        <div class="iphone-frame">
-          <img
-            src="assets/07_chat_tutor_lesson.png"
-            alt="AI Chat Tutor lesson"
-            loading="lazy"
-          >
+      <div class="use-case reversed">
+        <div class="uc-text">
+          <div class="uc-number">03</div>
+          <h3 class="uc-title">Verbs and times is 80% of Spanish</h3>
+          <ol class="uc-list">
+            <li>Practice verbally — <span class="hl">this is NLP</span></li>
+            <li>Yo como, tu comes, el/ella come.. — remember this, it's <strong>80% of the Spanish language</strong></li>
+            <li><span class="hl">Train reaction</span>, not the knowledge, like dogs do</li>
+          </ol>
+          <p class="uc-callout"><span class="hl">This is how sportsmen do</span> — maximise number of verbal repetitions, because your goal is to <strong>SPEAK SPANISH</strong> (not just to know it)</p>
         </div>
-        <div class="feature-label">AI Chat Tutor</div>
-        <div class="feature-desc">Conversational AI that teaches in Spanish from the first word</div>
+        <div class="uc-screens screens-2">
+          <div class="iphone-frame">
+            <img src="assets/05_verb_slot_machine.png" alt="Verb slot machine" loading="lazy">
+          </div>
+          <div class="iphone-frame">
+            <img src="assets/06_verb_conjugation.png" alt="Verb conjugation game grid" loading="lazy">
+          </div>
+        </div>
       </div>
 
-      <div class="feature-card">
-        <div class="iphone-frame">
-          <img
-            src="assets/10_el_loro_playback.png"
-            alt="Seagull Steven audio loop playback"
-            loading="lazy"
-          >
-        </div>
-        <div class="feature-label">Seagull Steven 🦜</div>
-        <div class="feature-desc">Audio loops of your chat — listen, repeat, get fluent</div>
-      </div>
+    </div>
+  </section>
 
-      <div class="feature-card">
-        <div class="iphone-frame">
-          <img
-            src="assets/12_verb_game_slot_machine.png"
-            alt="Slot machine verb picker"
-            loading="lazy"
-          >
-        </div>
-        <div class="feature-label">Spin the Wheel</div>
-        <div class="feature-desc">Three verbs picked by a slot machine — fate decides your lesson</div>
-      </div>
-
-      <div class="feature-card">
-        <div class="iphone-frame">
-          <img
-            src="assets/13_verb_game_grid.png"
-            alt="Verb conjugation game grid"
-            loading="lazy"
-          >
-        </div>
-        <div class="feature-label">Conjugation Game</div>
-        <div class="feature-desc">Speak the forms aloud. Beat the clock. Don't embarrass the professor.</div>
-      </div>
-
+  <!-- ================================================================
+       BOTTOM CTA
+  ================================================================ -->
+  <section id="bottom-cta" style="padding: 80px 24px; text-align: center; background: transparent;">
+    <div style="max-width: 560px; margin: 0 auto;">
+      <p style="font-size: 1.15rem; color: rgba(255,255,255,0.65); margin-bottom: 32px; line-height: 1.6;">
+        Ready to start speaking Spanish? Download Professor Madrid and begin your first lesson in seconds.
+      </p>
+      <a href="https://apps.apple.com" class="btn btn-primary" target="_blank" rel="noopener" style="display: inline-flex; align-items: center; gap: 10px; font-size: 1.05rem; padding: 16px 32px;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
+        </svg>
+        Download the app
+      </a>
     </div>
   </section>
 
@@ -712,6 +1044,117 @@
       accept.addEventListener('click', function () {
         try { localStorage.setItem(KEY, '1'); } catch (_) {}
         banner.classList.remove('show');
+      });
+    })();
+
+    /* ---- Mobile infinite carousel ---- */
+    (function () {
+      var GAP = 14;
+
+      function buildCarousels() {
+        var isMobile = window.innerWidth <= 860;
+
+        document.querySelectorAll('.uc-carousel').forEach(function (c) { c.remove(); });
+        document.querySelectorAll('.uc-screens').forEach(function (s) { s.style.display = ''; });
+
+        if (!isMobile) return;
+
+        document.querySelectorAll('.uc-screens').forEach(function (screens) {
+          var frames = Array.from(screens.querySelectorAll('.iphone-frame'));
+          var n = frames.length;
+          if (n < 2) return;
+
+          var carousel = document.createElement('div');
+          carousel.className = 'uc-carousel';
+
+          var track = document.createElement('div');
+          track.className = 'uc-carousel-track';
+
+          function makeItem(frame, hidden) {
+            var item = document.createElement('div');
+            item.className = 'uc-carousel-item';
+            if (hidden) item.setAttribute('aria-hidden', 'true');
+            item.appendChild(frame.cloneNode(true));
+            return item;
+          }
+
+          track.appendChild(makeItem(frames[n - 1], true));
+          frames.forEach(function (f) { track.appendChild(makeItem(f, false)); });
+          track.appendChild(makeItem(frames[0], true));
+
+          carousel.appendChild(track);
+
+          var dotsEl = document.createElement('div');
+          dotsEl.className = 'uc-carousel-dots';
+          for (var i = 0; i < n; i++) {
+            var d = document.createElement('span');
+            d.className = 'uc-carousel-dot' + (i === 0 ? ' active' : '');
+            dotsEl.appendChild(d);
+          }
+          carousel.appendChild(dotsEl);
+
+          screens.parentNode.insertBefore(carousel, screens.nextSibling);
+          screens.style.display = 'none';
+
+          var items = Array.from(track.querySelectorAll('.uc-carousel-item'));
+          var cur = 1;
+          var busy = false;
+          var timer = null;
+
+          function itemW() {
+            return items[0] ? items[0].offsetWidth + GAP : 0;
+          }
+
+          function moveTo(idx, instant) {
+            track.style.transition = instant ? 'none' : 'transform 0.44s cubic-bezier(0.25,0.46,0.45,0.94)';
+            track.style.transform = 'translateX(' + (-idx * itemW()) + 'px)';
+            cur = idx;
+            var real = ((cur - 1) % n + n) % n;
+            dotsEl.querySelectorAll('.uc-carousel-dot').forEach(function (dot, j) {
+              dot.classList.toggle('active', j === real);
+            });
+          }
+
+          track.addEventListener('transitionend', function () {
+            busy = false;
+            if (cur <= 0) moveTo(n, true);
+            else if (cur >= n + 1) moveTo(1, true);
+          });
+
+          function next() { if (!busy) { busy = true; moveTo(cur + 1, false); } }
+          function prev() { if (!busy) { busy = true; moveTo(cur - 1, false); } }
+          function startTimer() { stopTimer(); timer = setInterval(next, 3200); }
+          function stopTimer() { if (timer) { clearInterval(timer); timer = null; } }
+
+          requestAnimationFrame(function () { moveTo(1, true); startTimer(); });
+
+          var tx0, ty0, drag;
+          carousel.addEventListener('touchstart', function (e) {
+            tx0 = e.touches[0].clientX;
+            ty0 = e.touches[0].clientY;
+            drag = false;
+            stopTimer();
+          }, { passive: true });
+          carousel.addEventListener('touchmove', function (e) {
+            var dx = Math.abs(e.touches[0].clientX - tx0);
+            var dy = Math.abs(e.touches[0].clientY - ty0);
+            if (!drag && dx > dy && dx > 8) drag = true;
+          }, { passive: true });
+          carousel.addEventListener('touchend', function (e) {
+            if (drag) {
+              var dx = e.changedTouches[0].clientX - tx0;
+              if (dx < -40) next(); else if (dx > 40) prev();
+            }
+            startTimer();
+          });
+        });
+      }
+
+      buildCarousels();
+      var rstTimer;
+      window.addEventListener('resize', function () {
+        clearTimeout(rstTimer);
+        rstTimer = setTimeout(buildCarousels, 200);
       });
     })();
   </script>

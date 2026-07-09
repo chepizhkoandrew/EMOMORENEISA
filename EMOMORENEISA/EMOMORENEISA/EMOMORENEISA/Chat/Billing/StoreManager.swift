@@ -5,8 +5,9 @@ import Observation
 // Treat pack metadata: product id -> headline shown on the paywall.
 struct TreatPack: Identifiable {
     let id: String          // StoreKit product id
-    let headline: String    // e.g. "~14 conversations"
+    let treats: Int         // treats credited on purchase
     let bonusLabel: String?  // e.g. "+15% bonus"
+    var headline: String { "\(treats.formatted()) treats" }
 }
 
 @Observable
@@ -16,10 +17,9 @@ final class StoreManager {
 
     // Order defines display order on the paywall (cheapest -> whale).
     static let packCatalog: [TreatPack] = [
-        TreatPack(id: "treats_599",  headline: "~6 conversations",  bonusLabel: nil),
-        TreatPack(id: "treats_1199", headline: "~14 conversations", bonusLabel: "+15% bonus"),
-        TreatPack(id: "treats_2499", headline: "~31 conversations", bonusLabel: "+25% bonus"),
-        TreatPack(id: "treats_4999", headline: "~74 conversations", bonusLabel: "Best value · +48%")
+        TreatPack(id: "treats_starter_599",  treats: 599,   bonusLabel: nil),
+        TreatPack(id: "treats_plus_1199",    treats: 1_379, bonusLabel: "+15% bonus"),
+        TreatPack(id: "treats_pro_2499",     treats: 3_124, bonusLabel: "+25% bonus"),
     ]
 
     var products: [Product] = []
@@ -60,6 +60,8 @@ final class StoreManager {
         lastError = nil
         defer { purchaseInProgress = nil }
 
+        AnalyticsService.shared.track(.purchaseStarted(productId: product.id))
+
         do {
             let result = try await product.purchase()
             switch result {
@@ -70,8 +72,13 @@ final class StoreManager {
                 }
                 let credited = await creditOnServer(jws: verification.jwsRepresentation)
                 await transaction.finish()
+                if credited {
+                    let treats = pack(for: product.id)?.treats ?? 0
+                    AnalyticsService.shared.track(.purchaseCompleted(productId: product.id, treats: treats))
+                }
                 return credited
             case .userCancelled:
+                AnalyticsService.shared.track(.purchaseCancelled(productId: product.id))
                 return false
             case .pending:
                 lastError = "Purchase is pending approval."

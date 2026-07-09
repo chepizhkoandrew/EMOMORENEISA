@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Professor Madrid × Quarks — Partnership Proposal</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,500&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --navy:       #08111E;
+            --navy-mid:   #0D1B2E;
+            --navy-light: #112240;
+            --gold:       #F5A623;
+            --gold-dim:   rgba(245,166,35,0.12);
+            --gold-border:rgba(245,166,35,0.28);
+            --white:      #FFFFFF;
+            --grey:       #7A8799;
+            --grey-light: #A8B6C6;
+            --coral:      #FF4669;
+            --card:       rgba(255,255,255,0.04);
+            --border:     rgba(255,255,255,0.08);
+        }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--navy);
+            color: var(--white);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* ── NAV ── */
+        nav {
+            position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 14px 48px;
+            background: rgba(8,17,30,0.88);
+            backdrop-filter: blur(16px);
+            border-bottom: 1px solid var(--border);
+        }
+        .nav-brand {
+            display: flex; align-items: center; gap: 12px;
+            text-decoration: none;
+        }
+        .nav-brand img {
+            width: 34px; height: 34px; border-radius: 8px;
+        }
+        .nav-brand-name {
+            font-size: 15px; font-weight: 700; color: var(--white);
+            letter-spacing: -0.3px;
+        }
+        .nav-tag {
+            font-size: 12px; font-weight: 600; color: var(--grey);
+            letter-spacing: 0.4px;
+        }
+        .nav-btn {
+            font-size: 13px; font-weight: 700;
+            background: var(--gold); color: var(--navy);
+            padding: 8px 18px; border-radius: 20px;
+            text-decoration: none; letter-spacing: -0.2px;
+            transition: opacity .2s;
+        }
+        .nav-btn:hover { opacity: .85; }
+
+        /* ── LAYOUT ── */
+        .wrap {
+            max-width: 1100px; margin: 0 auto;
+            padding-left: 48px; padding-right: 48px;
+        }
+        section { padding: 100px 0; }
+        section.wrap { padding: 100px 48px; }
+
+        .label {
+            font-size: 11px; font-weight: 700;
+            letter-spacing: 2px; text-transform: uppercase;
+            color: var(--gold); margin-bottom: 16px;
+        }
+        h1 {
+            font-size: clamp(52px,7vw,96px);
+            font-weight: 900; letter-spacing: -3px; line-height: .96;
+        }
+        h2 {
+            font-size: clamp(34px,4.5vw,58px);
+            font-weight: 800; letter-spacing: -2px; line-height: 1.05;
+        }
+        h3 { font-size: 20px; font-weight: 700; letter-spacing: -.4px; }
+        p  { font-size: 17px; line-height: 1.72; color: var(--grey); }
+
+        .gold  { color: var(--gold);  }
+        .coral { color: var(--coral); }
+        .white { color: var(--white); }
+
+        /* ── BUTTONS ── */
+        .btn {
+            display: inline-block;
+            font-size: 15px; font-weight: 700;
+            padding: 14px 28px; border-radius: 12px;
+            text-decoration: none; letter-spacing: -.2px;
+            transition: opacity .2s, border-color .2s;
+        }
+        .btn-gold  { background: var(--gold); color: var(--navy); }
+        .btn-ghost { background: transparent; color: var(--white); border: 1px solid var(--border); }
+        .btn:hover { opacity: .82; }
+
+        /* ── COVER ── */
+        #cover {
+            min-height: 100vh; padding-top: 120px; padding-bottom: 80px;
+            display: flex; flex-direction: column; justify-content: center;
+        }
+        .cover-for {
+            display: inline-flex; align-items: center; gap: 8px;
+            background: rgba(255,70,105,.1); border: 1px solid rgba(255,70,105,.25);
+            border-radius: 20px; padding: 6px 14px;
+            font-size: 13px; font-weight: 600; color: var(--coral);
+            margin-bottom: 36px; width: fit-content;
+        }
+        .cover-sub {
+            font-size: clamp(17px,2vw,22px); font-weight: 400;
+            color: var(--grey); max-width: 600px;
+            margin-top: 28px; line-height: 1.55;
+        }
+        .cover-sub strong { color: var(--white); font-weight: 600; }
+        .cover-actions { display: flex; gap: 14px; margin-top: 44px; flex-wrap: wrap; }
+        .cover-rule { width: 56px; height: 3px; background: var(--gold); border-radius: 2px; margin: 44px 0; }
+        .cover-byline { font-size: 14px; color: var(--grey); }
+        .cover-byline strong { color: var(--grey-light); }
+
+        /* ── STATS ── */
+        .stats-grid {
+            display: grid; grid-template-columns: repeat(3,1fr);
+            gap: 20px; margin-top: 48px;
+        }
+        .stat {
+            background: var(--card); border: 1px solid var(--border);
+            border-radius: 18px; padding: 32px;
+        }
+        .stat-n {
+            font-size: 52px; font-weight: 900;
+            letter-spacing: -2.5px; color: var(--gold); line-height: 1;
+        }
+        .stat-l {
+            font-size: 15px; font-weight: 600;
+            color: var(--white); margin-top: 10px;
+        }
+        .stat-s { font-size: 13px; color: var(--grey); margin-top: 4px; }
+
+        /* ── PROBLEM ── */
+        .prob-grid {
+            display: grid; grid-template-columns: repeat(3,1fr);
+            gap: 18px; margin-top: 48px;
+        }
+        .prob-card {
+            background: var(--card); border: 1px solid var(--border);
+            border-radius: 18px; padding: 32px;
+        }
+        .prob-n {
+            font-size: 52px; font-weight: 900; letter-spacing: -2px;
+            color: rgba(255,255,255,.07); line-height: 1; margin-bottom: 20px;
+        }
+        .prob-card h3 { font-size: 19px; color: var(--white); margin-bottom: 10px; }
+        .prob-card p  { font-size: 15px; }
+
+        /* ── QUOTE BAND ── */
+        .quote-band {
+            background: var(--navy-light);
+            border-top: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+            padding: 72px 48px; text-align: center;
+        }
+        .quote-text {
+            font-size: clamp(18px,2.4vw,28px); font-weight: 500;
+            font-style: italic; color: var(--white);
+            max-width: 760px; margin: 0 auto; line-height: 1.55;
+        }
+        .quote-attr { font-size: 14px; color: var(--grey); margin-top: 20px; }
+
+        /* ── SCREENSHOTS ── */
+        .shots-hero {
+            display: grid; grid-template-columns: repeat(3,1fr);
+            gap: 20px; margin-top: 52px;
+        }
+        .shots-duo {
+            display: grid; grid-template-columns: repeat(2,1fr);
+            gap: 20px; margin-top: 20px;
+            max-width: 74%; margin-left: auto; margin-right: auto;
+        }
+        .shot-wrap { display: flex; flex-direction: column; }
+        .phone {
+            background: #191919;
+            border-radius: 44px; padding: 12px;
+            box-shadow: 0 48px 96px rgba(0,0,0,.7), 0 0 0 1px rgba(255,255,255,.07);
+            position: relative;
+        }
+        .phone img { width: 100%; border-radius: 34px; display: block; }
+        .shot-cap { font-size: 14px; font-weight: 700; color: var(--white); margin-top: 16px; text-align: center; }
+        .shot-sub { font-size: 13px; color: var(--grey); margin-top: 4px; text-align: center; }
+
+        /* ── SCIENCE ── */
+        .sci-grid {
+            display: grid; grid-template-columns: repeat(3,1fr);
+            gap: 28px; margin-top: 52px;
+        }
+        .sci-card { display: flex; flex-direction: column; }
+        .sci-card img {
+            width: 100%; border-radius: 20px;
+            box-shadow: 0 24px 64px rgba(0,0,0,.45);
+        }
+        .sci-body { padding: 22px 4px; }
+        .sci-tag {
+            font-size: 11px; font-weight: 700; letter-spacing: 1.5px;
+            text-transform: uppercase; color: var(--gold); margin-bottom: 8px;
+        }
+        .sci-body h3 { font-size: 18px; color: var(--white); margin-bottom: 10px; }
+        .sci-body p  { font-size: 14px; line-height: 1.62; }
+
+        /* ── TECH ── */
+        .tech-grid {
+            display: grid; grid-template-columns: repeat(2,1fr);
+            gap: 14px; margin-top: 48px;
+        }
+        .tech-card {
+            background: var(--card); border: 1px solid var(--border);
+            border-radius: 16px; padding: 24px 26px;
+            display: flex; gap: 18px; align-items: flex-start;
+        }
+        .tech-icon { font-size: 26px; flex-shrink: 0; line-height: 1; margin-top: 2px; }
+        .tech-card h3 { font-size: 16px; color: var(--white); margin-bottom: 6px; }
+        .tech-card p  { font-size: 14px; line-height: 1.56; }
+
+        /* ── DEAL ── */
+        .deal-cols {
+            display: grid; grid-template-columns: 1fr 1fr;
+            gap: 20px; margin-top: 48px;
+        }
+        .deal-col {
+            background: var(--card); border: 1px solid var(--border);
+            border-radius: 18px; padding: 32px;
+        }
+        .deal-col-lbl {
+            font-size: 11px; font-weight: 700; letter-spacing: 2px;
+            text-transform: uppercase; color: var(--grey); margin-bottom: 14px;
+        }
+        .deal-col h3 { font-size: 26px; margin-bottom: 22px; }
+        .deal-col ul { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+        .deal-col li { font-size: 15px; color: var(--grey-light); display: flex; gap: 10px; }
+        .deal-col li::before { content: '→'; color: var(--gold); font-weight: 700; flex-shrink: 0; }
+
+        .rev-box {
+            background: var(--gold-dim); border: 1px solid var(--gold-border);
+            border-radius: 20px; padding: 44px; margin-top: 28px; text-align: center;
+        }
+        .rev-formula {
+            font-size: clamp(16px,2vw,22px); font-weight: 500;
+            color: var(--white); line-height: 1.7; letter-spacing: -.2px;
+        }
+        .rev-formula .big {
+            font-size: clamp(40px,5vw,64px); font-weight: 900;
+            color: var(--gold); letter-spacing: -2.5px; display: inline-block;
+        }
+        .rev-note { font-size: 14px; color: var(--grey); margin-top: 16px; }
+
+        .terms-table {
+            width: 100%; border-collapse: collapse; margin-top: 28px;
+        }
+        .terms-table th {
+            text-align: left; font-size: 12px; font-weight: 700;
+            letter-spacing: 1.5px; text-transform: uppercase;
+            color: var(--grey); padding: 14px 18px;
+            border-bottom: 1px solid var(--border);
+        }
+        .terms-table td {
+            padding: 16px 18px; font-size: 15px; color: var(--white);
+            border-bottom: 1px solid var(--border); vertical-align: top;
+        }
+        .terms-table td:first-child {
+            font-weight: 600; color: var(--gold); width: 28%; white-space: nowrap;
+        }
+        .terms-table tr:last-child td { border-bottom: none; }
+
+        /* ── NEXT STEPS ── */
+        .steps { display: flex; flex-direction: column; gap: 14px; margin-top: 48px; }
+        .step {
+            display: flex; gap: 24px; align-items: flex-start;
+            background: var(--card); border: 1px solid var(--border);
+            border-radius: 18px; padding: 28px 32px;
+        }
+        .step-n {
+            font-size: 44px; font-weight: 900; letter-spacing: -2px;
+            color: var(--gold); line-height: 1; flex-shrink: 0; width: 48px;
+        }
+        .step h3 { font-size: 19px; color: var(--white); margin-bottom: 6px; }
+        .step p  { font-size: 15px; }
+
+        /* ── LINKS ── */
+        .link-grid {
+            display: grid; grid-template-columns: repeat(2,1fr);
+            gap: 14px; margin-top: 48px;
+        }
+        .link-card {
+            display: flex; align-items: center; gap: 16px;
+            background: var(--card); border: 1px solid var(--border);
+            border-radius: 16px; padding: 22px 26px;
+            text-decoration: none;
+            transition: border-color .2s, background .2s;
+        }
+        .link-card:hover {
+            border-color: var(--gold-border);
+            background: var(--gold-dim);
+        }
+        .link-ico { font-size: 28px; flex-shrink: 0; }
+        .link-lbl { font-size: 12px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--grey); }
+        .link-ttl { font-size: 16px; font-weight: 600; color: var(--white); margin-top: 4px; }
+
+        /* ── CONTACT ── */
+        #contact {
+            background: var(--navy-light);
+            border-top: 1px solid var(--border);
+        }
+        .contact-inner {
+            max-width: 1100px; margin: 0 auto;
+            padding: 100px 48px;
+            display: grid; grid-template-columns: auto 1fr;
+            gap: 64px; align-items: center;
+        }
+        .contact-photo {
+            width: 200px; height: 220px; border-radius: 24px;
+            object-fit: cover; object-position: top center;
+            box-shadow: 0 24px 64px rgba(0,0,0,.55);
+        }
+        .contact-name {
+            font-size: clamp(36px,4vw,52px); font-weight: 900;
+            letter-spacing: -2px; color: var(--white);
+        }
+        .contact-role { font-size: 17px; color: var(--grey); margin-top: 6px; margin-bottom: 32px; }
+        .c-links { display: flex; flex-direction: column; gap: 12px; }
+        .c-link {
+            display: flex; align-items: center; gap: 14px;
+            text-decoration: none; font-size: 16px; font-weight: 500;
+            color: var(--white); transition: color .2s;
+        }
+        .c-link:hover { color: var(--gold); }
+        .c-link-ico {
+            width: 38px; height: 38px;
+            background: var(--card); border: 1px solid var(--border);
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 17px; flex-shrink: 0;
+        }
+
+        /* ── FOOTER ── */
+        footer {
+            text-align: center; padding: 28px 48px;
+            font-size: 12px; color: var(--grey);
+            border-top: 1px solid var(--border);
+        }
+
+        /* ── UTILS ── */
+        .mt16  { margin-top: 16px; }
+        .mt24  { margin-top: 24px; }
+        .muted { font-size: 14px; max-width: 640px; margin-top: 16px; }
+    </style>
+</head>
+<body>
+
+<!-- ── NAV ── -->
+<nav>
+    <a href="#cover" class="nav-brand">
+        <img src="../appstore/app_icon_1024.png" alt="Professor Madrid">
+        <span class="nav-brand-name">Professor Madrid</span>
+    </a>
+    <span class="nav-tag">Partnership Proposal · July 2026</span>
+    <a href="#contact" class="nav-btn">Contact Andrii →</a>
+</nav>
+
+
+<!-- ── COVER ── -->
+<div id="cover" class="wrap">
+    <div class="cover-for">⚡ Prepared exclusively for Quarks · quarks.tech</div>
+    <h1>The Spanish tutor<br>that <span class="gold">actually</span><br>works.</h1>
+    <p class="cover-sub">
+        <strong>Professor Madrid</strong> is a fully built, tested, and deployable AI-powered iOS Spanish learning app.
+        We are proposing a complete asset transfer to Quarks in exchange for a
+        <strong>revenue share</strong> — no equity, no upfront fee.
+    </p>
+    <div class="cover-actions">
+        <a href="http://professormadrid.com" target="_blank" class="btn btn-gold">↗ professormadrid.com</a>
+        <a href="#deal" class="btn btn-ghost">See the terms</a>
+    </div>
+    <div class="cover-rule"></div>
+    <p class="cover-byline">
+        Created by <strong>Andrii Chepizhko</strong> &nbsp;·&nbsp; July 2026 &nbsp;·&nbsp;
+        For discussion only — not legally binding
+    </p>
+</div>
+
+
+<!-- ── MARKET ── -->
+<section class="wrap" id="market">
+    <div class="label">The Opportunity</div>
+    <h2>The market is proven.<br>The gap is not filled.</h2>
+    <div class="stats-grid">
+        <div class="stat">
+            <div class="stat-n">$6.1B</div>
+            <div class="stat-l">Global language learning market</div>
+            <div class="stat-s">Projected to reach $21B by 2031. Growing fast.</div>
+        </div>
+        <div class="stat">
+            <div class="stat-n">500M</div>
+            <div class="stat-l">Duolingo downloads</div>
+            <div class="stat-s">$4B valuation. Proved the demand. Did not solve it.</div>
+        </div>
+        <div class="stat">
+            <div class="stat-n">€50</div>
+            <div class="stat-l">Cost of one private tutor hour</div>
+            <div class="stat-s">That is the real benchmark. Professor Madrid wins.</div>
+        </div>
+    </div>
+</section>
+
+
+<!-- ── PROBLEM ── -->
+<section class="wrap" id="problem">
+    <div class="label">The Problem</div>
+    <h2>Duolingo retains users.<br>It does not make them fluent.</h2>
+    <div class="prob-grid">
+        <div class="prob-card">
+            <div class="prob-n">01</div>
+            <h3>Apps teach recognition</h3>
+            <p>They train you to pick correct answers. Language requires production — actually speaking, forming sentences, making and correcting mistakes in real time.</p>
+        </div>
+        <div class="prob-card">
+            <div class="prob-n">02</div>
+            <h3>Adults need real conversation</h3>
+            <p>Not a gamified exercise loop. Adults who need Spanish for work, travel, or life need something that adapts, responds, and pushes back — like a tutor does.</p>
+        </div>
+        <div class="prob-card">
+            <div class="prob-n">03</div>
+            <h3>Engagement is not fluency</h3>
+            <p>A user can complete 300 lessons and still not order coffee in Spanish. The product is sticky. The outcome is not. That gap is where Professor Madrid lives.</p>
+        </div>
+    </div>
+</section>
+
+
+<!-- ── QUOTE ── -->
+<div class="quote-band">
+    <p class="quote-text">
+        "They say Spanish is the language of passion, of poetry, of sunsets in Barcelona —
+        and also of forms you must fill in triplicate at the immigration office."
+    </p>
+    <p class="quote-attr">— Professor Madrid, in-app quote · The dog is serious about this</p>
+</div>
+
+
+<!-- ── PRODUCT ── -->
+<section class="wrap" id="product">
+    <div class="label">The Product</div>
+    <h2>An AI tutor.<br>Not an AI checkbox.</h2>
+    <p class="muted">Four integrated modes. One coherent experience. Every interaction powered by frontier models — not cost-optimized lite versions.</p>
+
+    <div class="shots-hero">
+        <div class="shot-wrap">
+            <div class="phone">
+                <img src="../appstore/screenshots/en-US/iPhone67/00_intro.png" alt="Intro screen">
+            </div>
+            <div class="shot-cap">Meet the Professor</div>
+            <div class="shot-sub">Madrid the dog. Your AI Spanish tutor.</div>
+        </div>
+        <div class="shot-wrap">
+            <div class="phone">
+                <img src="../appstore/screenshots/en-US/iPhone67/02_street_view_labels.png" alt="Street View AR labels">
+            </div>
+            <div class="shot-cap">Street View Mode</div>
+            <div class="shot-sub">AI labels your real world in Spanish</div>
+        </div>
+        <div class="shot-wrap">
+            <div class="phone">
+                <img src="../appstore/screenshots/en-US/iPhone67/06_verb_slot_machine.png" alt="Verb slot machine">
+            </div>
+            <div class="shot-cap">The Verb Game</div>
+            <div class="shot-sub">3 random verbs. Speak the full conjugation matrix.</div>
+        </div>
+    </div>
+
+    <div class="shots-duo">
+        <div class="shot-wrap">
+            <div class="phone">
+                <img src="../appstore/screenshots/en-US/iPhone67/04_el_loro_playback.png" alt="Parrot playback">
+            </div>
+            <div class="shot-cap">Seagull Steven</div>
+            <div class="shot-sub">Loop any phrase 1–20× with karaoke word-by-word highlighting</div>
+        </div>
+        <div class="shot-wrap">
+            <div class="phone">
+                <img src="../appstore/screenshots/en-US/iPhone67/07_verb_conjugation.png" alt="Conjugation grid">
+            </div>
+            <div class="shot-cap">Live Conjugation Grid</div>
+            <div class="shot-sub">Speak your answers. Instant green or red feedback.</div>
+        </div>
+    </div>
+</section>
+
+
+<!-- ── SCIENCE ── -->
+<section class="wrap" id="science">
+    <div class="label">The Science</div>
+    <h2>Built on research.<br>Not on vibes.</h2>
+    <p class="muted">Every core feature maps directly to a proven body of learning science. This is not "AI-powered" as a marketing badge — it is applied cognitive research, translated into product.</p>
+    <div class="sci-grid">
+        <div class="sci-card">
+            <img src="./illustrations/theory-ebbinghaus.png" alt="Ebbinghaus Spaced Repetition">
+            <div class="sci-body">
+                <div class="sci-tag">Ebbinghaus · 1885</div>
+                <h3>Spaced Repetition</h3>
+                <p>Memory decays on a predictable curve. Strategic repetition flattens it permanently. Seagull Steven loops phrases at neurological depth — you don't memorize, you absorb.</p>
+            </div>
+        </div>
+        <div class="sci-card">
+            <img src="./illustrations/theory-krashen.png" alt="Krashen Comprehensible Input">
+            <div class="sci-body">
+                <div class="sci-tag">Krashen · 1982</div>
+                <h3>Comprehensible Input</h3>
+                <p>Language is acquired, not learned — through exposure to input slightly above your current level. The Chat Tutor calibrates every response to push you forward without overwhelming you.</p>
+            </div>
+        </div>
+        <div class="sci-card">
+            <img src="./illustrations/theory-embodied-cognition.png" alt="Embodied Cognition">
+            <div class="sci-body">
+                <div class="sci-tag">Varela et al. · 1991</div>
+                <h3>Embodied Cognition</h3>
+                <p>Words attached to real objects are retained 5× longer than flashcard vocabulary. Street View teaches Spanish from your actual surroundings — your brain stores it the way it stored your native language.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+
+<!-- ── BUILT ── -->
+<section class="wrap" id="built">
+    <div class="label">What Is Already Built</div>
+    <h2>This is not a pitch<br>for something to build.</h2>
+    <p class="muted">Every component listed below is live, tested, and operational. The source code, credentials, and all assets transfer to Quarks on signing.</p>
+    <div class="tech-grid">
+        <div class="tech-card">
+            <div class="tech-icon">🔐</div>
+            <div>
+                <h3>Authentication</h3>
+                <p>Sign in with Apple and Sign in with Google — both fully configured, tested, and working in production. Session management via Supabase.</p>
+            </div>
+        </div>
+        <div class="tech-card">
+            <div class="tech-icon">🗄️</div>
+            <div>
+                <h3>Backend & Database</h3>
+                <p>Supabase (PostgreSQL). Cloud-agnostic — portable to Google Cloud SQL or Amazon RDS without significant architectural changes.</p>
+            </div>
+        </div>
+        <div class="tech-card">
+            <div class="tech-icon">🤖</div>
+            <div>
+                <h3>AI Stack</h3>
+                <p>Google Cloud for speech-to-text and TTS. Frontier conversation and vision models via OpenAI. API keys switchable to Quarks accounts via config — no rewrite needed.</p>
+            </div>
+        </div>
+        <div class="tech-card">
+            <div class="tech-icon">📊</div>
+            <div>
+                <h3>Analytics</h3>
+                <p>Live dashboard exists today. Ready to connect to Amplitude, Mixpanel, or any platform Quarks already operates. Full user journey event tracking in place.</p>
+            </div>
+        </div>
+        <div class="tech-card">
+            <div class="tech-icon">🌐</div>
+            <div>
+                <h3>Landing Page & Domain</h3>
+                <p>professormadrid.com — live and operational. Transfers to Quarks as part of this agreement, along with all DNS credentials.</p>
+            </div>
+        </div>
+        <div class="tech-card">
+            <div class="tech-icon">📱</div>
+            <div>
+                <h3>App Store Assets</h3>
+                <p>1024px icon, all iPhone screenshots, App Store copy, and IAP artwork — fully prepared and submission-ready from day one.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+
+<!-- ── DEAL ── -->
+<section class="wrap" id="deal">
+    <div class="label">The Deal</div>
+    <h2>Simple structure.<br>Aligned incentives.</h2>
+
+    <div class="deal-cols">
+        <div class="deal-col">
+            <div class="deal-col-lbl">Creator brings</div>
+            <h3>The Product</h3>
+            <ul>
+                <li>Fully built iOS app + full source code</li>
+                <li>All infrastructure, credentials, API configs</li>
+                <li>Landing page + custom domain</li>
+                <li>App Store assets (icon, screenshots, copy)</li>
+                <li>Ongoing active development & feature roadmap</li>
+                <li>Technical support and bug fixes</li>
+                <li>Up to $1,000 symbolic co-investment</li>
+            </ul>
+        </div>
+        <div class="deal-col">
+            <div class="deal-col-lbl">Quarks brings</div>
+            <h3>The Distribution</h3>
+            <ul>
+                <li>App Store account + release management</li>
+                <li>Payment infrastructure (already in place)</li>
+                <li>All AI token costs (Google Cloud + OpenAI)</li>
+                <li>Infrastructure and operational costs</li>
+                <li>Marketing budget</li>
+                <li>Team financing for design, support, etc.</li>
+                <li>Minimum $5,000 operational commitment (90 days)</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="rev-box">
+        <div class="rev-formula">
+            User pays $10 &nbsp;→&nbsp; Apple keeps $3 &nbsp;→&nbsp; Quarks receives <span class="big">$7</span><br>
+            Creator receives <span class="big">30%</span> &nbsp;→&nbsp; <span class="big">$2.10</span> per subscriber
+        </div>
+        <p class="rev-note">
+            Market rate for an active developer who transfers a completed, commercially viable product: 25–35% of net revenue.
+            The creator is a permanent technical co-founder without an equity ask.
+        </p>
+    </div>
+
+    <table class="terms-table">
+        <tr>
+            <th>Term</th>
+            <th>Detail</th>
+        </tr>
+        <tr>
+            <td>Revenue share</td>
+            <td>30% of Quarks's net revenue (after Apple's 30% cut), paid monthly within 15 days</td>
+        </tr>
+        <tr>
+            <td>IP ownership</td>
+            <td>Full transfer to Quarks on signing — code, assets, domain, all credentials</td>
+        </tr>
+        <tr>
+            <td>Exclusivity</td>
+            <td>Both parties agree not to apply this codebase to a competing product or parallel release</td>
+        </tr>
+        <tr>
+            <td>Analytics access</td>
+            <td>Creator receives read-only access to App Store Connect and all analytics dashboards</td>
+        </tr>
+        <tr>
+            <td>Team approval</td>
+            <td>Creator approves anyone with source code access. 5 business days to respond — silence = approved.</td>
+        </tr>
+        <tr>
+            <td>Initial term</td>
+            <td>24 months from first public App Store release, auto-renewing annually with 90-day exit notice</td>
+        </tr>
+        <tr>
+            <td>Acquisition clause</td>
+            <td>If Quarks sells the app as a standalone asset, Creator receives 30% of the sale price</td>
+        </tr>
+    </table>
+</section>
+
+
+<!-- ── NEXT STEPS ── -->
+<section class="wrap" id="next">
+    <div class="label">Next Steps</div>
+    <h2>Three decisions.<br>Then we ship.</h2>
+    <div class="steps">
+        <div class="step">
+            <div class="step-n">1</div>
+            <div>
+                <h3>Agree on the three core terms</h3>
+                <p>Revenue split %, minimum 90-day operational budget commitment, and the code-reuse prohibition. Everything else is detail that legal can handle.</p>
+            </div>
+        </div>
+        <div class="step">
+            <div class="step-n">2</div>
+            <div>
+                <h3>Set a launch date</h3>
+                <p>Even an aspirational one. Without a date, proposals become parking lots. Apple review takes 1–4 weeks — we can be live in 8 weeks from signing.</p>
+            </div>
+        </div>
+        <div class="step">
+            <div class="step-n">3</div>
+            <div>
+                <h3>Get it in writing</h3>
+                <p>Engage a lawyer for a proper Collaboration and IP Transfer Agreement. Budget approximately $500–$1,500. Split 50/50. The full draft term sheet is linked below.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+
+<!-- ── LINKS ── -->
+<section class="wrap" id="links">
+    <div class="label">Supporting Materials</div>
+    <h2>Everything needed<br>to evaluate this.</h2>
+    <div class="link-grid">
+        <a href="http://professormadrid.com" target="_blank" class="link-card">
+            <div class="link-ico">🌐</div>
+            <div>
+                <div class="link-lbl">Live Product</div>
+                <div class="link-ttl">professormadrid.com</div>
+            </div>
+        </a>
+        <a href="./partnership-proposal-quarks.md" target="_blank" class="link-card">
+            <div class="link-ico">📄</div>
+            <div>
+                <div class="link-lbl">Full Term Sheet</div>
+                <div class="link-ttl">partnership-proposal-quarks.md</div>
+            </div>
+        </a>
+        <a href="https://www.instagram.com/madrid_the_dog/" target="_blank" class="link-card">
+            <div class="link-ico">🐕</div>
+            <div>
+                <div class="link-lbl">The Professor's Instagram</div>
+                <div class="link-ttl">@madrid_the_dog · 1,001 followers</div>
+            </div>
+        </a>
+        <a href="https://www.linkedin.com/in/andrii-chepizhko-1914265b/" target="_blank" class="link-card">
+            <div class="link-ico">💼</div>
+            <div>
+                <div class="link-lbl">Creator LinkedIn</div>
+                <div class="link-ttl">Andrii Chepizhko</div>
+            </div>
+        </a>
+    </div>
+</section>
+
+
+<!-- ── CONTACT ── -->
+<div id="contact">
+    <div class="contact-inner">
+        <img src="./assets/andrii-photo.png" alt="Andrii Chepizhko" class="contact-photo">
+        <div>
+            <div class="label">The Creator</div>
+            <div class="contact-name">Andrii Chepizhko</div>
+            <div class="contact-role">iOS Developer & Product Creator · Professor Madrid</div>
+            <div class="c-links">
+                <a href="tel:+34611371682" class="c-link">
+                    <div class="c-link-ico">📞</div>
+                    +34 611 371 682
+                </a>
+                <a href="https://wa.me/34611371682" target="_blank" class="c-link">
+                    <div class="c-link-ico">💬</div>
+                    WhatsApp
+                </a>
+                <a href="https://www.linkedin.com/in/andrii-chepizhko-1914265b/" target="_blank" class="c-link">
+                    <div class="c-link-ico">🔗</div>
+                    linkedin.com/in/andrii-chepizhko-1914265b
+                </a>
+                <a href="https://www.instagram.com/madrid_the_dog/" target="_blank" class="c-link">
+                    <div class="c-link-ico">🐕</div>
+                    @madrid_the_dog on Instagram
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- ── FOOTER ── -->
+<footer>
+    Professor Madrid × Quarks &nbsp;·&nbsp; Partnership Proposal &nbsp;·&nbsp; July 2026 &nbsp;·&nbsp;
+    For discussion only — not a legally binding offer or agreement
+</footer>
+
+</body>
+</html>

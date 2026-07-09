@@ -22,24 +22,14 @@ struct SessionListView: View {
                     sessionList
                 }
             }
-            .navigationTitle("Chat Tutor")
+            .navigationTitle(L("Chat Tutor"))
             .navigationBarTitleDisplayMode(.large)
             .toolbarColorScheme(.dark, for: .navigationBar)
             .toolbarBackground(AppColors.backgroundTop, for: .navigationBar)
             .toolbarBackground(.visible, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button {
-                        dismiss()
-                    } label: {
-                        HStack(spacing: 6) {
-                            Image(systemName: "chevron.left")
-                                .font(.system(size: 14, weight: .semibold))
-                            Text("Home")
-                                .font(.system(size: 16, weight: .medium))
-                        }
-                        .foregroundColor(.yellow)
-                    }
+                    BackButton { dismiss() }
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     HStack(spacing: 16) {
@@ -72,19 +62,21 @@ struct SessionListView: View {
             }
             .navigationDestination(for: LocalChatSession.self) { session in
                 ChatView(session: session)
+                    .onAppear { BackgroundMusicPlayer.shared.fadeOut(duration: 1.5) }
+                    .onDisappear { BackgroundMusicPlayer.shared.play() }
             }
             .navigationDestination(item: $navigateToNewSession) { session in
                 ChatView(session: session)
+                    .onAppear { BackgroundMusicPlayer.shared.fadeOut(duration: 1.5) }
+                    .onDisappear { BackgroundMusicPlayer.shared.play() }
             }
-        }
-        .fullScreenCover(isPresented: $showProfile) {
-            NavigationStack {
+            .navigationDestination(isPresented: $showProfile) {
                 ProfileView()
                     .environment(authState)
             }
-        }
-        .sheet(isPresented: $wallet.showPaywall) {
-            PaywallView()
+            .navigationDestination(isPresented: $wallet.showPaywall) {
+                PaywallView()
+            }
         }
         .task {
             StoreManager.shared.start()
@@ -137,11 +129,11 @@ struct SessionListView: View {
                 .foregroundColor(AppColors.textTertiary)
 
             VStack(spacing: 10) {
-                Text("No sessions yet")
+                Text(L("No sessions yet"))
                     .font(.system(size: 26, weight: .bold, design: .rounded))
                     .foregroundColor(AppColors.textSecondary)
 
-                Text("Start your first Spanish lesson\nwith Professor Madrid.")
+                Text(L("Start your first Spanish lesson\nwith Professor Madrid."))
                     .font(.system(size: 17, weight: .regular, design: .rounded))
                     .foregroundColor(AppColors.textTertiary)
                     .multilineTextAlignment(.center)
@@ -154,7 +146,7 @@ struct SessionListView: View {
                 HStack(spacing: 10) {
                     Image(systemName: "plus")
                         .font(.system(size: 16, weight: .bold))
-                    Text("Start First Lesson")
+                    Text(L("Start First Lesson"))
                         .font(.system(size: 17, weight: .bold, design: .rounded))
                 }
                 .foregroundColor(.black)
@@ -199,7 +191,7 @@ struct SessionRowView: View {
             }
 
             VStack(alignment: .leading, spacing: 4) {
-                Text(session.title ?? session.topic ?? session.modeEnum.displayLabel)
+                Text(session.title ?? session.topic ?? L(session.modeEnum.displayLabel))
                     .font(.system(size: 17, weight: .semibold, design: .rounded))
                     .foregroundColor(AppColors.textPrimary)
                     .lineLimit(2)
@@ -227,8 +219,8 @@ struct SessionRowView: View {
 
     private var relativeTime: String {
         let diff = Date().timeIntervalSince(session.updatedAt)
-        if diff < 3600 { return "\(Int(diff / 60))m ago" }
-        if diff < 86400 { return "\(Int(diff / 3600))h ago" }
-        return "\(Int(diff / 86400))d ago"
+        if diff < 3600 { return L("%dm ago", Int(diff / 60)) }
+        if diff < 86400 { return L("%dh ago", Int(diff / 3600)) }
+        return L("%dd ago", Int(diff / 86400))
     }
 }

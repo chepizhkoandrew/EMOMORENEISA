@@ -286,10 +286,9 @@ INSERT INTO pricing_config (
     'loro_drill', 3
   ),
   jsonb_build_array(
-    jsonb_build_object('product_id','treats_599','usd',5.99,'base_treats',599,'bonus_pct',0,'total_treats',599,'headline_conversations',6,'is_min',true),
-    jsonb_build_object('product_id','treats_1199','usd',11.99,'base_treats',1199,'bonus_pct',15,'total_treats',1379,'headline_conversations',14),
-    jsonb_build_object('product_id','treats_2499','usd',24.99,'base_treats',2499,'bonus_pct',25,'total_treats',3124,'headline_conversations',31),
-    jsonb_build_object('product_id','treats_4999','usd',49.99,'base_treats',4999,'bonus_pct',48,'total_treats',7399,'headline_conversations',74)
+    jsonb_build_object('product_id','treats_starter_599','usd',5.99,'base_treats',599,'bonus_pct',0,'total_treats',599,'headline_conversations',6,'is_min',true),
+    jsonb_build_object('product_id','treats_plus_1199','usd',11.99,'base_treats',1199,'bonus_pct',15,'total_treats',1379,'headline_conversations',14),
+    jsonb_build_object('product_id','treats_pro_2499','usd',24.99,'base_treats',2499,'bonus_pct',25,'total_treats',3124,'headline_conversations',31)
   ),
   jsonb_build_object(
     'trial_grant_treats', 250,

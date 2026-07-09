@@ -49,3 +49,37 @@ struct LoroImage: View {
         }
     }
 }
+
+/// Shows the phrase's memorization illustration saved on-device. When no
+/// illustration exists (generation failed or is still pending), it falls back to
+/// the given El Loro seagull pose so the cue slot is never empty.
+///
+/// The image is drawn in a fixed SQUARE card (fill + clip) so illustrations of
+/// any aspect ratio render at a uniform size — no layout shift between cards —
+/// with a soft rounded card and border so the art always pops consistently.
+struct LoroIllustrationView: View {
+    let url: URL?
+    var fallback: LoroAsset
+    var size: CGFloat = 120
+
+    private var image: UIImage? {
+        guard let url else { return nil }
+        return UIImage(contentsOfFile: url.path)
+    }
+
+    var body: some View {
+        if let image {
+            Image(uiImage: image)
+                .resizable()
+                .scaledToFill()
+                .frame(width: size, height: size)
+                .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 20, style: .continuous)
+                        .strokeBorder(Color.white.opacity(0.12), lineWidth: 1)
+                )
+        } else {
+            LoroImage(asset: fallback, size: size)
+        }
+    }
+}

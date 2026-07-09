@@ -7,6 +7,9 @@ struct SignInView: View {
     @State private var isLoading = false
     @State private var errorMessage: String? = nil
     @State private var currentNonce: String? = nil
+    @State private var showEmailForm = false
+    @State private var emailInput = ""
+    @State private var passwordInput = ""
 
     var body: some View {
         ZStack {
@@ -29,7 +32,7 @@ struct SignInView: View {
 
                 Spacer().frame(height: 48)
 
-                Text("Sign in to save your progress\nand continue your Spanish journey.")
+                Text(L("Sign in to save your progress\nand continue your Spanish journey."))
                     .font(.system(size: 16, weight: .regular, design: .monospaced))
                     .foregroundColor(.white.opacity(0.6))
                     .multilineTextAlignment(.center)
@@ -63,7 +66,7 @@ struct SignInView: View {
                                 Image(systemName: "g.circle.fill")
                                     .font(.system(size: 22))
                                     .foregroundColor(.white)
-                                Text("Continue with Google")
+                                Text(L("Continue with Google"))
                                     .font(.system(size: 16, weight: .semibold, design: .monospaced))
                                     .foregroundColor(.white)
                             }
@@ -74,6 +77,27 @@ struct SignInView: View {
                             .clipShape(RoundedRectangle(cornerRadius: 14))
                         }
                         .padding(.horizontal, 32)
+
+                        if showEmailForm {
+                            emailFormSection
+                        } else {
+                            Button(action: { withAnimation { showEmailForm = true } }) {
+                                HStack(spacing: 12) {
+                                    Image(systemName: "envelope.fill")
+                                        .font(.system(size: 18))
+                                        .foregroundColor(.white)
+                                    Text(L("Continue with Email"))
+                                        .font(.system(size: 16, weight: .semibold, design: .monospaced))
+                                        .foregroundColor(.white)
+                                }
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 16)
+                                .background(Color.white.opacity(0.12))
+                                .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.white.opacity(0.2), lineWidth: 1))
+                                .clipShape(RoundedRectangle(cornerRadius: 14))
+                            }
+                            .padding(.horizontal, 32)
+                        }
                     }
                 }
 
@@ -97,13 +121,59 @@ struct SignInView: View {
         }
     }
 
+    private var emailFormSection: some View {
+        VStack(spacing: 10) {
+            TextField(L("Email"), text: $emailInput)
+                .keyboardType(.emailAddress)
+                .textContentType(.emailAddress)
+                .autocapitalization(.none)
+                .disableAutocorrection(true)
+                .font(.system(size: 15, weight: .regular, design: .monospaced))
+                .foregroundColor(.white)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 14)
+                .background(Color.white.opacity(0.08))
+                .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.white.opacity(0.2), lineWidth: 1))
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+
+            SecureField(L("Password"), text: $passwordInput)
+                .textContentType(.password)
+                .font(.system(size: 15, weight: .regular, design: .monospaced))
+                .foregroundColor(.white)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 14)
+                .background(Color.white.opacity(0.08))
+                .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.white.opacity(0.2), lineWidth: 1))
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+
+            Button(action: handleEmailSignIn) {
+                Text(L("Sign In"))
+                    .font(.system(size: 16, weight: .bold, design: .monospaced))
+                    .foregroundColor(.black)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 16)
+                    .background(Color.yellow)
+                    .clipShape(RoundedRectangle(cornerRadius: 14))
+            }
+            .disabled(emailInput.isEmpty || passwordInput.isEmpty)
+            .opacity(emailInput.isEmpty || passwordInput.isEmpty ? 0.5 : 1)
+
+            Button(action: { withAnimation { showEmailForm = false; emailInput = ""; passwordInput = ""; errorMessage = nil } }) {
+                Text(L("Cancel"))
+                    .font(.system(size: 13, weight: .regular, design: .monospaced))
+                    .foregroundColor(.white.opacity(0.45))
+            }
+        }
+        .padding(.horizontal, 32)
+    }
+
     private var consentNotice: some View {
         let terms = "https://professormadrid.com/terms"
         let privacy = "https://professormadrid.com/privacy"
         let text = try? AttributedString(
-            markdown: "By continuing, you agree to our [Terms & Conditions](\(terms)) and [Privacy Policy](\(privacy))."
+            markdown: L("By continuing, you agree to our [Terms & Conditions](%@) and [Privacy Policy](%@).", terms, privacy)
         )
-        return Text(text ?? "By continuing, you agree to our Terms & Conditions and Privacy Policy.")
+        return Text(text ?? AttributedString(L("By continuing, you agree to our Terms & Conditions and Privacy Policy.")))
             .font(.system(size: 12, weight: .regular, design: .monospaced))
             .foregroundColor(.white.opacity(0.45))
             .tint(.yellow)
@@ -118,7 +188,7 @@ struct SignInView: View {
                   let tokenData = credential.identityToken,
                   let idToken = String(data: tokenData, encoding: .utf8),
                   let nonce = currentNonce else {
-                errorMessage = "Apple Sign-In failed: missing credential."
+                errorMessage = L("Apple Sign-In failed: missing credential.")
                 return
             }
             let displayName: String? = {
@@ -142,6 +212,22 @@ struct SignInView: View {
             let nsErr = error as NSError
             if nsErr.code != ASAuthorizationError.canceled.rawValue {
                 errorMessage = error.localizedDescription
+            }
+        }
+    }
+
+    private func handleEmailSignIn() {
+        guard !emailInput.isEmpty, !passwordInput.isEmpty else { return }
+        isLoading = true
+        errorMessage = nil
+        Task {
+            do {
+                try await AuthService.shared.signInWithEmail(email: emailInput, password: passwordInput)
+            } catch {
+                await MainActor.run {
+                    errorMessage = error.localizedDescription
+                    isLoading = false
+                }
             }
         }
     }

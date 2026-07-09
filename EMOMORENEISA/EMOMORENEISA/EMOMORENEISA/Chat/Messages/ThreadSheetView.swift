@@ -32,12 +32,12 @@ struct ThreadSheetView: View {
                     threadInputBar
                 }
             }
-            .navigationTitle("Thread")
+            .navigationTitle(L("Thread"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbarColorScheme(.dark, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Done") { dismiss() }
+                    Button(L("Done")) { dismiss() }
                         .foregroundColor(.yellow)
                         .font(.system(size: 17, weight: .semibold, design: .monospaced))
                 }
@@ -47,7 +47,7 @@ struct ThreadSheetView: View {
 
     private var parentHeader: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Original message")
+            Text(L("Original message"))
                 .font(.system(size: 13, weight: .bold, design: .monospaced))
                 .foregroundColor(AppColors.textTertiary)
                 .tracking(1)
@@ -101,7 +101,7 @@ struct ThreadSheetView: View {
 
     private var threadInputBar: some View {
         HStack(spacing: 12) {
-            TextField("Reply in thread…", text: $inputText, axis: .vertical)
+            TextField(L("Reply in thread…"), text: $inputText, axis: .vertical)
                 .font(.system(size: 17, design: .monospaced))
                 .foregroundColor(AppColors.textPrimary)
                 .lineLimit(1...4)
@@ -162,7 +162,7 @@ struct ThreadSheetView: View {
             )
             addThreadMessage(assistantMsg)
             if autoVoiceEnabled && !TTSService.shared.isQueueActive {
-                TTSService.shared.speak(text: reply, messageId: assistantMsg.id)
+                TTSService.shared.speak(text: reply, messageId: assistantMsg.id, context: "sentence")
             }
         } catch {
             errorMessage = error.localizedDescription

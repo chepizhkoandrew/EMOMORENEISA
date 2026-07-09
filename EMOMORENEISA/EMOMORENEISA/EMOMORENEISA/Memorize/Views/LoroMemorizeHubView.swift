@@ -1,19 +1,19 @@
 import SwiftUI
 import SwiftData
+import Combine
 
 /// The Memorize Hub — the 90%-case surface (spec §11.1 / §11.2). Shows El Loro,
 /// how many words he knows, the primary "Loro Memorize!" CTA, and the Due-Now
 /// list. The CTA opens `SRSPlayerView` for the passive listening session.
 struct LoroMemorizeHubView: View {
+    var showsBackButton: Bool = true
+
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
 
     @Query(filter: #Predicate<MemoryCard> { !$0.isArchived },
            sort: \MemoryCard.nextDueAt)
     private var activeCards: [MemoryCard]
-
-    @Query(filter: #Predicate<MemoryCard> { $0.isArchived })
-    private var knownCards: [MemoryCard]
 
     @AppStorage("loro.sessionSizeCap") private var sessionSizeCap: Int = 20
 
@@ -28,6 +28,17 @@ struct LoroMemorizeHubView: View {
         service.buildQueue(sessionCap: sessionSizeCap, now: now)
     }
 
+    private var dueLaterCards: [MemoryCard] {
+        let dueIds = Set(dueCards.map { $0.id })
+        return activeCards.filter { card in
+            !dueIds.contains(card.id)
+                && !card.isPaused
+                && card.nextDueAt != nil
+                && card.nextDueAt! > now
+        }
+        .sorted { ($0.nextDueAt ?? .distantFuture) < ($1.nextDueAt ?? .distantFuture) }
+    }
+
     var body: some View {
         ZStack {
             AppBackground()
@@ -39,13 +50,11 @@ struct LoroMemorizeHubView: View {
                     LoroImage(asset: dueCards.isEmpty ? .sleeping : .idle, size: 230)
                         .padding(.top, 4)
 
-                    Text("Seagull Steven knows \(knownCards.count) word\(knownCards.count == 1 ? "" : "s")")
-                        .font(.system(size: 20, weight: .bold, design: .rounded))
-                        .foregroundColor(AppColors.textPrimary)
-
                     cta
 
                     dueSection
+
+                    dueLaterSection
                 }
                 .padding(.horizontal, 20)
                 .padding(.bottom, 40)
@@ -64,20 +73,17 @@ struct LoroMemorizeHubView: View {
             now = Date()
             await MemoryCardNotificationService.shared.refresh(dueCount: service.dueCount())
         }
+        .onReceive(Timer.publish(every: 30, on: .main, in: .common).autoconnect()) { _ in
+            now = Date()
+        }
     }
 
     private var header: some View {
         HStack {
-            Button {
-                dismiss()
-            } label: {
-                HStack(spacing: 6) {
-                    Image(systemName: "chevron.left")
-                        .font(.system(size: 14, weight: .semibold))
-                    Text("Home")
-                        .font(.system(size: 16, weight: .medium, design: .rounded))
-                }
-                .foregroundColor(.yellow)
+            if showsBackButton {
+                BackButton { dismiss() }
+            } else {
+                Color.clear.frame(width: 36, height: 36)
             }
             Spacer()
         }
@@ -94,6 +100,22 @@ struct LoroMemorizeHubView: View {
             SignInView()
                 .environment(authState)
         }
+    }
+
+    private var nextDueInText: String? {
+        let upcoming = activeCards
+            .filter { !dueCards.contains($0) && !$0.isPaused && ($0.nextDueAt ?? .distantPast) > now }
+            .sorted { ($0.nextDueAt ?? .distantFuture) < ($1.nextDueAt ?? .distantFuture) }
+        guard let nextDate = upcoming.first?.nextDueAt else { return nil }
+        let diff = max(0, nextDate.timeIntervalSince(now))
+        if diff < 3600 {
+            let mins = Int(diff / 60) + 1
+            return L("%d min", mins)
+        }
+        let hours = Int(diff / 3600)
+        if hours < 24 { return L("%d hour", hours) }
+        let days = Int(diff / 86400) + 1
+        return L("%d day", days)
     }
 
     @ViewBuilder
@@ -119,24 +141,39 @@ struct LoroMemorizeHubView: View {
                         .stroke(Color.white.opacity(0.30), lineWidth: 1.5)
 
                     HStack(spacing: 12) {
-                        Image(systemName: "play.circle.fill")
+                        Image(systemName: "brain.head.profile")
                             .font(.system(size: 26, weight: .bold))
                             .foregroundColor(.black.opacity(0.7))
-                        Text("Practice Memory")
+                        Text(L("Practice Memory"))
                             .font(.system(size: 20, weight: .black, design: .rounded))
                             .foregroundColor(.black.opacity(0.85))
-                        Text("\(dueCards.count)")
-                            .font(.system(size: 14, weight: .black, design: .rounded))
-                            .foregroundColor(.white)
-                            .padding(.horizontal, 9).padding(.vertical, 3)
-                            .background(Color.black.opacity(0.45))
-                            .clipShape(Capsule())
                     }
                 }
                 .frame(height: 64)
                 .shadow(color: Color.yellow.opacity(0.45), radius: 18, y: 6)
             }
             .buttonStyle(.plain)
+        } else {
+            VStack(spacing: 8) {
+                Image(systemName: "brain.head.profile")
+                    .font(.system(size: 30))
+                    .foregroundColor(AppColors.textTertiary)
+                if let timeStr = nextDueInText {
+                    Text(L("Next practice in %@", timeStr))
+                        .font(.system(size: 15, weight: .medium, design: .rounded))
+                        .foregroundColor(AppColors.textSecondary)
+                } else if activeCards.isEmpty {
+                    Text(L("No words yet"))
+                        .font(.system(size: 15, weight: .semibold, design: .rounded))
+                        .foregroundColor(AppColors.textSecondary)
+                    Text(L("Use Explore mode to discover and add words to your queue"))
+                        .font(.system(size: 13, design: .rounded))
+                        .foregroundColor(AppColors.textTertiary)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 20)
+                }
+            }
+            .padding(.vertical, 12)
         }
     }
 
@@ -149,7 +186,7 @@ struct LoroMemorizeHubView: View {
                 HStack(spacing: 8) {
                     Image(systemName: "bubble.left.and.bubble.right.fill")
                         .font(.system(size: 15, weight: .semibold))
-                    Text("Teach Seagull Steven in Chat")
+                    Text(L("Teach Seagull Steven in Chat"))
                         .font(.system(size: 15, weight: .bold, design: .rounded))
                 }
                 .foregroundColor(.black.opacity(0.85))
@@ -160,18 +197,49 @@ struct LoroMemorizeHubView: View {
             .padding(.top, 12)
         } else {
             VStack(alignment: .leading, spacing: 10) {
-                Text("Due now")
+                Text(L("Due now"))
                     .font(.system(size: 14, weight: .bold, design: .rounded))
                     .foregroundColor(AppColors.textTertiary)
                 ForEach(dueCards) { card in
-                    dueRow(card)
+                    dueRow(card, subtitle: nil)
                 }
             }
             .padding(.top, 8)
         }
     }
 
-    private func dueRow(_ card: MemoryCard) -> some View {
+    @ViewBuilder
+    private var dueLaterSection: some View {
+        if !dueLaterCards.isEmpty {
+            VStack(alignment: .leading, spacing: 10) {
+                Text(L("Due later"))
+                    .font(.system(size: 14, weight: .bold, design: .rounded))
+                    .foregroundColor(AppColors.textTertiary)
+                ForEach(dueLaterCards) { card in
+                    dueRow(card, subtitle: timeUntilDueLabel(card))
+                }
+            }
+            .padding(.top, 8)
+        }
+    }
+
+    private func timeUntilDueLabel(_ card: MemoryCard) -> String? {
+        guard let due = card.nextDueAt else { return nil }
+        let diff = due.timeIntervalSince(now)
+        guard diff > 0 else { return nil }
+        if diff < 3600 {
+            let mins = max(1, Int(diff / 60))
+            return L("in %d min", mins)
+        }
+        let hours = Int(diff / 3600)
+        if hours < 24 {
+            return L("in %d hour", hours)
+        }
+        let days = Int(diff / 86400) + 1
+        return L("in %d day", days)
+    }
+
+    private func dueRow(_ card: MemoryCard, subtitle: String?) -> some View {
         Button {
             replayCard = card
         } label: {
@@ -182,9 +250,11 @@ struct LoroMemorizeHubView: View {
                         .font(.system(size: 16, weight: .semibold, design: .rounded))
                         .foregroundColor(AppColors.textPrimary)
                         .lineLimit(1)
-                    Text(card.stage.horizonLabel)
-                        .font(.system(size: 12, design: .rounded))
-                        .foregroundColor(AppColors.textSecondary)
+                    if let subtitle {
+                        Text(subtitle)
+                            .font(.system(size: 12, design: .rounded))
+                            .foregroundColor(AppColors.textSecondary)
+                    }
                 }
                 Spacer()
                 Text("\(card.exposureCount)/13")

@@ -59,6 +59,19 @@ final class MemoryCardServiceTests: XCTestCase {
         XCTAssertEqual(due.timeIntervalSince1970, expected.timeIntervalSince1970, accuracy: 5)
     }
 
+    func test_createCard_copiesIllustrationPathFromPhrase() {
+        let phrase = makePhraseWithAudio()
+        phrase.illustrationPath = "esp-parrot/\(phrase.id.uuidString)/illustration.jpg"
+        let card = try! XCTUnwrap(service.createCard(from: phrase, loops: 4))
+        XCTAssertEqual(card.illustrationPath, phrase.illustrationPath)
+    }
+
+    func test_createCard_withNoIllustration_leavesIllustrationPathNil() {
+        let phrase = makePhraseWithAudio()
+        let card = try! XCTUnwrap(service.createCard(from: phrase, loops: 4))
+        XCTAssertNil(card.illustrationPath)
+    }
+
     func test_createCard_calledTwiceForSamePhrase_createsExactlyOneCard_idempotent() {
         let phrase = makePhraseWithAudio()
         let first = service.createCard(from: phrase, loops: 4)
