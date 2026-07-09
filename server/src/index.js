@@ -735,8 +735,9 @@ async function callProbe(prompt, res) {
 
 app.post("/v1/onboarding/probe", requireUser, async (req, res) => {
   const { pass, pronoun, quizLanguage, previousProbe } = req.body || {};
-  if (!ONBOARDING_PRONOUNS.has(pronoun)) return res.status(400).json({ error: "bad_pronoun" });
-  if (!ONBOARDING_LANGS.has(quizLanguage)) return res.status(400).json({ error: "bad_language" });
+  console.log(`[onboarding/probe] user=${req.user.id} pass=${JSON.stringify(pass)} pronoun=${JSON.stringify(pronoun)} quizLanguage=${JSON.stringify(quizLanguage)}`);
+  if (!ONBOARDING_PRONOUNS.has(pronoun)) return res.status(400).json({ error: "bad_pronoun", received: pronoun });
+  if (!ONBOARDING_LANGS.has(quizLanguage)) return res.status(400).json({ error: "bad_language", received: quizLanguage });
   const transcripts = pickTranscripts(req.body);
 
   let prompt;
@@ -755,8 +756,9 @@ app.post("/v1/onboarding/probe", requireUser, async (req, res) => {
 
 app.post("/v1/onboarding/synthesize", requireUser, async (req, res) => {
   const { pronoun, quizLanguage, probes } = req.body || {};
-  if (!ONBOARDING_PRONOUNS.has(pronoun)) return res.status(400).json({ error: "bad_pronoun" });
-  if (!ONBOARDING_LANGS.has(quizLanguage)) return res.status(400).json({ error: "bad_language" });
+  console.log(`[onboarding/synthesize] user=${req.user.id} pronoun=${JSON.stringify(pronoun)} quizLanguage=${JSON.stringify(quizLanguage)} probes=${JSON.stringify(probes)}`);
+  if (!ONBOARDING_PRONOUNS.has(pronoun)) return res.status(400).json({ error: "bad_pronoun", received: pronoun });
+  if (!ONBOARDING_LANGS.has(quizLanguage)) return res.status(400).json({ error: "bad_language", received: quizLanguage });
   const transcripts = pickTranscripts(req.body);
 
   const prompt = synthesisPrompt({

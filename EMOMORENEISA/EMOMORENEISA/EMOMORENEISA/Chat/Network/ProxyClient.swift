@@ -407,7 +407,8 @@ final class ProxyClient {
         let json = (try? JSONSerialization.jsonObject(with: respData)) as? [String: Any] ?? [:]
 
         if status != 200 {
-            print("[PROXY] \(method) \(path) → HTTP \(status) | body: \(String(data: respData, encoding: .utf8)?.prefix(200) ?? "<binary>")")
+            let sentBody = body.flatMap { String(data: $0, encoding: .utf8) } ?? "<none>"
+            print("[PROXY] \(method) \(path) → HTTP \(status) | resp: \(String(data: respData, encoding: .utf8)?.prefix(300) ?? "<binary>") | sent: \(sentBody.prefix(400))")
         }
 
         if status == 200 { return json }
