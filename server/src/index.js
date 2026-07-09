@@ -776,17 +776,25 @@ app.post("/v1/onboarding/synthesize", requireUser, async (req, res) => {
       temperature: 0.35,
       maxOutputTokens: 2048
     });
+    console.log(`[onboarding/synthesize] gemini responded, ${raw.text.length} chars, outputTokens=${raw.usage?.outputTokens}`);
   } catch (e) {
+    console.error(`[onboarding/synthesize] gemini call failed: ${e.message}`);
     return res.status(e.status || 502).json({ error: "synthesis_upstream", detail: e.message });
   }
 
   let parsed;
   try { parsed = JSON.parse(raw.text); }
-  catch (_) { return res.status(502).json({ error: "synthesis_invalid_json" }); }
+  catch (_) {
+    console.error(`[onboarding/synthesize] JSON.parse failed, raw text (first 500 chars): ${raw.text.slice(0, 500)}`);
+    return res.status(502).json({ error: "synthesis_invalid_json" });
+  }
 
   const required = ["tutor_cheat_sheet", "narrative_summary", "about_me_user_facing", "city_flavor", "extracted_slots"];
   for (const k of required) {
-    if (!(k in parsed)) return res.status(502).json({ error: `synthesis_missing_${k}` });
+    if (!(k in parsed)) {
+      console.error(`[onboarding/synthesize] missing key "${k}" — parsed keys: ${Object.keys(parsed).join(", ")}`);
+      return res.status(502).json({ error: `synthesis_missing_${k}` });
+    }
   }
 
   // level_breakdown is a v5 addition — normalise to a stable camelCase shape
@@ -843,9 +851,12 @@ app.post("/v1/onboarding/synthesize", requireUser, async (req, res) => {
     });
     if (error) {
       console.error("[onboarding/synthesize] failed to persist onboarding_syntheses:", error.message);
+    } else {
+      console.log("[onboarding/synthesize] persisted onboarding_syntheses ok");
     }
   }
 
+  console.log(`[onboarding/synthesize] responding 200, user=${req.user.id}`);
   res.json(synthesisRecord);
 });
 
