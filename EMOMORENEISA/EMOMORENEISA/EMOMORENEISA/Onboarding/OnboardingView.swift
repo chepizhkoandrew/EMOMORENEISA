@@ -128,6 +128,12 @@ struct OnboardingView: View {
         }
     }
 
+    private func typewriterDelay(after char: Character) -> UInt64 {
+        if ".!?".contains(char) { return 420_000_000 }
+        if ",;:".contains(char) { return 180_000_000 }
+        return 28_000_000
+    }
+
     private func startTypewriter(for text: String) {
         typewriterTask?.cancel()
         displayedText = ""
@@ -138,7 +144,7 @@ struct OnboardingView: View {
                 built.append(char)
                 displayedText = built
                 do {
-                    try await Task.sleep(nanoseconds: 28_000_000)
+                    try await Task.sleep(nanoseconds: typewriterDelay(after: char))
                 } catch {
                     return
                 }
@@ -246,12 +252,12 @@ struct OnboardingView: View {
             Text(text)
                 .font(.system(size: 24, weight: .bold, design: .rounded))
                 .foregroundColor(.white)
-                .multilineTextAlignment(.center)
+                .multilineTextAlignment(.leading)
                 .fixedSize(horizontal: false, vertical: true)
                 .lineSpacing(4)
                 .padding(.vertical, 18)
                 .padding(.horizontal, 20)
-                .frame(maxWidth: .infinity)
+                .frame(maxWidth: .infinity, alignment: .leading)
                 .background(
                     RoundedRectangle(cornerRadius: 18)
                         .fill(Color.black.opacity(0.42))
@@ -356,6 +362,11 @@ struct OnboardingView: View {
                     Circle()
                         .stroke(Color.white.opacity(0.10), lineWidth: 1)
                         .frame(width: orbSize, height: orbSize)
+                    if isRecording {
+                        EdgeEqualizerRing(level: coordinator.recorder.audioLevel,
+                                          color: .white.opacity(0.9),
+                                          diameter: orbSize)
+                    }
                     orbContent
                 }
             }
@@ -417,9 +428,9 @@ struct OnboardingView: View {
             PulsingEqualizerView(color: .black, barCount: 9,
                                  maxHeight: 52, barWidth: 4.5, spacing: 4.5)
         case .recording:
-            LiveEqualizerView(level: coordinator.recorder.audioLevel,
-                              color: .white, barCount: 9,
-                              maxHeight: 52, barWidth: 4.5, spacing: 4.5)
+            Image(systemName: "stop.fill")
+                .font(.system(size: 30, weight: .bold))
+                .foregroundColor(.white)
         case .transcribing, .thinking:
             ProgressView().tint(.black).scaleEffect(1.3)
         default:
@@ -453,14 +464,9 @@ struct OnboardingView: View {
            !coordinator.lastTranscriptPreview.isEmpty {
             HStack(alignment: .center, spacing: 12) {
                 VStack(alignment: .leading, spacing: 4) {
-                    HStack(spacing: 4) {
-                        Image(systemName: "pencil")
-                            .font(.system(size: 11, weight: .medium))
-                            .foregroundColor(.white.opacity(0.45))
-                        Text(store.quizLanguage == .uk ? "Натисни, щоб редагувати" : "Tap to edit")
-                            .font(.system(size: 11, weight: .medium, design: .rounded))
-                            .foregroundColor(.white.opacity(0.45))
-                    }
+                    Image(systemName: "pencil")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundColor(.white.opacity(0.45))
                     TextEditor(text: Binding(
                         get: { coordinator.lastTranscriptPreview },
                         set: { coordinator.updateTranscript($0) }
@@ -632,6 +638,44 @@ struct LiveEqualizerView: View {
                 }
             }
             .frame(height: maxHeight)
+        }
+    }
+}
+
+/// Level-driven equalizer arranged as a ring around the orb's edge, used
+/// while recording. The center of the orb shows a stop icon instead, so a
+/// glance makes it clear that tapping again stops the recording — rather
+/// than looking like the user must wait out the full time limit.
+struct EdgeEqualizerRing: View {
+    var level: Float
+    var color: Color
+    var diameter: CGFloat
+    var barCount: Int = 28
+    var barWidth: CGFloat = 2.5
+    var minLength: CGFloat = 5
+    var maxLength: CGFloat = 13
+
+    var body: some View {
+        TimelineView(.animation(minimumInterval: 1.0 / 30.0, paused: false)) { context in
+            let t = context.date.timeIntervalSinceReferenceDate
+            let base = Double(max(0.05, min(1.0, level)))
+            let radius = diameter / 2 - maxLength / 2 - 3
+            ZStack {
+                ForEach(0..<barCount, id: \.self) { i in
+                    let angle = Double(i) / Double(barCount) * 360.0
+                    let jitter = 0.35 * sin(t * 8.0 + Double(i) * 0.9)
+                    let value = base * (0.65 + jitter)
+                    let normalized = max(0.12, min(1.0, value))
+                    let length = minLength + (maxLength - minLength) * CGFloat(normalized)
+                    Capsule()
+                        .fill(color)
+                        .frame(width: barWidth, height: length)
+                        .offset(y: -radius)
+                        .rotationEffect(.degrees(angle))
+                        .animation(.easeOut(duration: 0.08), value: level)
+                }
+            }
+            .frame(width: diameter, height: diameter)
         }
     }
 }

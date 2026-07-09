@@ -117,7 +117,15 @@ export async function geminiText({ prompt, model, temperature = 0.4, maxOutputTo
       generationConfig: {
         temperature,
         maxOutputTokens,
-        responseMimeType: "application/json"
+        responseMimeType: "application/json",
+        // gemini-2.5-* models reserve part of maxOutputTokens for internal
+        // "thinking" tokens by default. For the short structured JSON this
+        // function is used for (onboarding probe/synthesis — its only
+        // callers), that reasoning budget was starving the actual visible
+        // answer, producing an empty/truncated `text` and a hard JSON parse
+        // failure (surfaced as probe_invalid_json, silently falling back to
+        // the generic question every time). Disable it — no caller needs it.
+        thinkingConfig: { thinkingBudget: 0 }
       }
     })
   });

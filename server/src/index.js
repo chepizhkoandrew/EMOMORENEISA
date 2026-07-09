@@ -808,7 +808,7 @@ app.post("/v1/onboarding/synthesize", requireUser, async (req, res) => {
     goals: rawGoals.map((g) => String(g || "")).filter(Boolean).slice(0, 6)
   };
 
-  res.json({
+  const synthesisRecord = {
     tutorCheatSheet: String(parsed.tutor_cheat_sheet || ""),
     narrativeSummary: String(parsed.narrative_summary || ""),
     aboutMeUserFacing: String(parsed.about_me_user_facing || ""),
@@ -817,7 +817,34 @@ app.post("/v1/onboarding/synthesize", requireUser, async (req, res) => {
     levelBreakdown,
     version: ONBOARDING_QUIZ_VERSION,
     voiceTag: activeVoiceTag()
-  });
+  };
+
+  // Persist server-side the moment it's computed — previously this was only
+  // ever handed back to the client to save, so the backend never actually
+  // remembered a user's onboarding profile. Best-effort: a failure here must
+  // not block the response, since the client still persists its own copy.
+  const sb = supabase();
+  if (sb) {
+    const { error } = await sb.from("onboarding_syntheses").upsert({
+      user_id: req.user.id,
+      quiz_version: synthesisRecord.version,
+      pronoun,
+      quiz_language: quizLanguage,
+      tutor_cheat_sheet: synthesisRecord.tutorCheatSheet,
+      narrative_summary: synthesisRecord.narrativeSummary,
+      about_me_user_facing: synthesisRecord.aboutMeUserFacing,
+      city_flavor: synthesisRecord.cityFlavor,
+      extracted_slots: synthesisRecord.extractedSlots,
+      level_breakdown: levelBreakdown,
+      voice_tag: synthesisRecord.voiceTag,
+      updated_at: new Date().toISOString()
+    });
+    if (error) {
+      console.error("[onboarding/synthesize] failed to persist onboarding_syntheses:", error.message);
+    }
+  }
+
+  res.json(synthesisRecord);
 });
 
 app.get("/v1/voice/current", requireUser, (req, res) => {
