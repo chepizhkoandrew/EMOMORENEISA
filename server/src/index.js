@@ -774,7 +774,11 @@ app.post("/v1/onboarding/synthesize", requireUser, async (req, res) => {
       prompt,
       model: config.models.onboardingSynthesis,
       temperature: 0.35,
-      maxOutputTokens: 2048
+      // gemini-2.5-pro can't run with thinking disabled (see providers.js),
+      // so reasoning tokens now eat into this budget too — bumped up from
+      // 2048 for headroom.
+      maxOutputTokens: 4096,
+      disableThinking: false
     });
     console.log(`[onboarding/synthesize] gemini responded, ${raw.text.length} chars, outputTokens=${raw.usage?.outputTokens}`);
   } catch (e) {

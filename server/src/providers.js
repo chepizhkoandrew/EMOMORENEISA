@@ -102,7 +102,7 @@ export async function geminiTTS(text, model = config.models.ttsGemini) {
 // Gemini text completion via generativelanguage generateContent. Used by the
 // onboarding reasoning routes (probe passes + synthesis). Returns the raw
 // text body — callers are responsible for JSON.parse and validation.
-export async function geminiText({ prompt, model, temperature = 0.4, maxOutputTokens = 1024 }) {
+export async function geminiText({ prompt, model, temperature = 0.4, maxOutputTokens = 1024, disableThinking = true }) {
   if (!config.geminiKey) {
     const err = new Error("gemini_not_configured");
     err.status = 503;
@@ -118,14 +118,15 @@ export async function geminiText({ prompt, model, temperature = 0.4, maxOutputTo
         temperature,
         maxOutputTokens,
         responseMimeType: "application/json",
-        // gemini-2.5-* models reserve part of maxOutputTokens for internal
-        // "thinking" tokens by default. For the short structured JSON this
-        // function is used for (onboarding probe/synthesis — its only
-        // callers), that reasoning budget was starving the actual visible
-        // answer, producing an empty/truncated `text` and a hard JSON parse
-        // failure (surfaced as probe_invalid_json, silently falling back to
-        // the generic question every time). Disable it — no caller needs it.
-        thinkingConfig: { thinkingBudget: 0 }
+        // gemini-2.5-flash reserves part of maxOutputTokens for internal
+        // "thinking" tokens by default. For the short structured JSON the
+        // onboarding probe uses this for, that reasoning budget was starving
+        // the actual visible answer (empty/truncated text -> JSON parse
+        // failure -> silent fallback to the generic question every time).
+        // BUT gemini-2.5-pro (onboarding synthesis) rejects thinkingBudget:0
+        // outright ("Budget 0 is invalid. This model only works in thinking
+        // mode.") — so this must be opt-out per call, not blanket-disabled.
+        ...(disableThinking ? { thinkingConfig: { thinkingBudget: 0 } } : {})
       }
     })
   });
