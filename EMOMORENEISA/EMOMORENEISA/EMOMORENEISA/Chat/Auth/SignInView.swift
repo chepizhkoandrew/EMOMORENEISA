@@ -10,6 +10,8 @@ struct SignInView: View {
     @State private var showEmailForm = false
     @State private var emailInput = ""
     @State private var passwordInput = ""
+    @State private var isCreatingAccount = false
+    @State private var hasAgreedToTerms = false
 
     var body: some View {
         ZStack {
@@ -32,7 +34,7 @@ struct SignInView: View {
 
                 Spacer().frame(height: 48)
 
-                Text(L("Sign in to save your progress\nand continue your Spanish journey."))
+                Text(L("Log in or create an account to save your progress\nand continue your Spanish journey."))
                     .font(.system(size: 16, weight: .regular, design: .monospaced))
                     .foregroundColor(.white.opacity(0.6))
                     .multilineTextAlignment(.center)
@@ -46,47 +48,34 @@ struct SignInView: View {
                         .tint(.yellow)
                         .scaleEffect(1.4)
                 } else {
-                    VStack(spacing: 14) {
-                        SignInWithAppleButton(.signIn) { request in
-                            let nonce = randomNonceString()
-                            currentNonce = nonce
-                            request.requestedScopes = [.fullName, .email]
-                            request.nonce = sha256(nonce)
-                        } onCompletion: { result in
-                            handleAppleSignIn(result)
-                        }
-                        .signInWithAppleButtonStyle(.white)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 52)
-                        .clipShape(RoundedRectangle(cornerRadius: 14))
-                        .padding(.horizontal, 32)
+                    VStack(spacing: 18) {
+                        consentCheckbox
+                            .padding(.horizontal, 32)
 
-                        Button(action: handleGoogleSignIn) {
-                            HStack(spacing: 12) {
-                                Image(systemName: "g.circle.fill")
-                                    .font(.system(size: 22))
-                                    .foregroundColor(.white)
-                                Text(L("Continue with Google"))
-                                    .font(.system(size: 16, weight: .semibold, design: .monospaced))
-                                    .foregroundColor(.white)
+                        VStack(spacing: 14) {
+                            SignInWithAppleButton(.signIn) { request in
+                                let nonce = randomNonceString()
+                                currentNonce = nonce
+                                request.requestedScopes = [.fullName, .email]
+                                request.nonce = sha256(nonce)
+                            } onCompletion: { result in
+                                handleAppleSignIn(result)
                             }
+                            .signInWithAppleButtonStyle(.white)
                             .frame(maxWidth: .infinity)
-                            .padding(.vertical, 16)
-                            .background(Color.white.opacity(0.12))
-                            .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.white.opacity(0.2), lineWidth: 1))
+                            .frame(height: 52)
                             .clipShape(RoundedRectangle(cornerRadius: 14))
-                        }
-                        .padding(.horizontal, 32)
+                            .padding(.horizontal, 32)
+                            .disabled(!hasAgreedToTerms)
+                            .allowsHitTesting(hasAgreedToTerms)
+                            .opacity(hasAgreedToTerms ? 1 : 0.4)
 
-                        if showEmailForm {
-                            emailFormSection
-                        } else {
-                            Button(action: { withAnimation { showEmailForm = true } }) {
+                            Button(action: handleGoogleSignIn) {
                                 HStack(spacing: 12) {
-                                    Image(systemName: "envelope.fill")
-                                        .font(.system(size: 18))
+                                    Image(systemName: "g.circle.fill")
+                                        .font(.system(size: 22))
                                         .foregroundColor(.white)
-                                    Text(L("Continue with Email"))
+                                    Text(L("Continue with Google"))
                                         .font(.system(size: 16, weight: .semibold, design: .monospaced))
                                         .foregroundColor(.white)
                                 }
@@ -97,6 +86,31 @@ struct SignInView: View {
                                 .clipShape(RoundedRectangle(cornerRadius: 14))
                             }
                             .padding(.horizontal, 32)
+                            .disabled(!hasAgreedToTerms)
+                            .opacity(hasAgreedToTerms ? 1 : 0.4)
+
+                            if showEmailForm {
+                                emailFormSection
+                            } else {
+                                Button(action: { withAnimation { showEmailForm = true } }) {
+                                    HStack(spacing: 12) {
+                                        Image(systemName: "envelope.fill")
+                                            .font(.system(size: 18))
+                                            .foregroundColor(.white)
+                                        Text(L("Continue with Email"))
+                                            .font(.system(size: 16, weight: .semibold, design: .monospaced))
+                                            .foregroundColor(.white)
+                                    }
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 16)
+                                    .background(Color.white.opacity(0.12))
+                                    .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.white.opacity(0.2), lineWidth: 1))
+                                    .clipShape(RoundedRectangle(cornerRadius: 14))
+                                }
+                                .padding(.horizontal, 32)
+                                .disabled(!hasAgreedToTerms)
+                                .opacity(hasAgreedToTerms ? 1 : 0.4)
+                            }
                         }
                     }
                 }
@@ -110,12 +124,6 @@ struct SignInView: View {
                         .padding(.top, 16)
                 }
 
-                if !isLoading {
-                    consentNotice
-                        .padding(.horizontal, 32)
-                        .padding(.top, 24)
-                }
-
                 Spacer()
             }
         }
@@ -123,6 +131,13 @@ struct SignInView: View {
 
     private var emailFormSection: some View {
         VStack(spacing: 10) {
+            Picker("", selection: $isCreatingAccount) {
+                Text(L("Log In")).tag(false)
+                Text(L("Create Account")).tag(true)
+            }
+            .pickerStyle(.segmented)
+            .padding(.bottom, 4)
+
             TextField(L("Email"), text: $emailInput)
                 .keyboardType(.emailAddress)
                 .textContentType(.emailAddress)
@@ -146,8 +161,8 @@ struct SignInView: View {
                 .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.white.opacity(0.2), lineWidth: 1))
                 .clipShape(RoundedRectangle(cornerRadius: 12))
 
-            Button(action: handleEmailSignIn) {
-                Text(L("Sign In"))
+            Button(action: isCreatingAccount ? handleEmailSignUp : handleEmailSignIn) {
+                Text(isCreatingAccount ? L("Create Account") : L("Log In"))
                     .font(.system(size: 16, weight: .bold, design: .monospaced))
                     .foregroundColor(.black)
                     .frame(maxWidth: .infinity)
@@ -155,10 +170,10 @@ struct SignInView: View {
                     .background(Color.yellow)
                     .clipShape(RoundedRectangle(cornerRadius: 14))
             }
-            .disabled(emailInput.isEmpty || passwordInput.isEmpty)
-            .opacity(emailInput.isEmpty || passwordInput.isEmpty ? 0.5 : 1)
+            .disabled(emailInput.isEmpty || passwordInput.isEmpty || !hasAgreedToTerms)
+            .opacity(emailInput.isEmpty || passwordInput.isEmpty || !hasAgreedToTerms ? 0.5 : 1)
 
-            Button(action: { withAnimation { showEmailForm = false; emailInput = ""; passwordInput = ""; errorMessage = nil } }) {
+            Button(action: { withAnimation { showEmailForm = false; emailInput = ""; passwordInput = ""; errorMessage = nil; isCreatingAccount = false } }) {
                 Text(L("Cancel"))
                     .font(.system(size: 13, weight: .regular, design: .monospaced))
                     .foregroundColor(.white.opacity(0.45))
@@ -167,18 +182,55 @@ struct SignInView: View {
         .padding(.horizontal, 32)
     }
 
-    private var consentNotice: some View {
+    // Explicit affirmative action, not just "continuing implies agreement" —
+    // the checkbox icon toggles `hasAgreedToTerms` (which gates every
+    // sign-in/sign-up button below); the text is a plain, unwrapped `Text`
+    // so its embedded links stay independently tappable rather than being
+    // swallowed by a surrounding Button's tap gesture.
+    private var consentCheckbox: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            aiDisclosureText
+
+            HStack(alignment: .top, spacing: 10) {
+                Button {
+                    withAnimation(.easeInOut(duration: 0.15)) { hasAgreedToTerms.toggle() }
+                } label: {
+                    Image(systemName: hasAgreedToTerms ? "checkmark.square.fill" : "square")
+                        .font(.system(size: 20))
+                        .foregroundColor(hasAgreedToTerms ? .yellow : .white.opacity(0.4))
+                }
+                .buttonStyle(.plain)
+
+                consentText
+            }
+        }
+    }
+
+    // Apple Guideline 5.1.1(i)/5.1.2(i): pointing only to the Terms/Privacy
+    // pages is explicitly called out as insufficient — the app itself must
+    // name the data and the third parties before the user consents.
+    private var aiDisclosureText: some View {
+        Text(L("To power your lessons, your messages, voice recordings, and photos are sent to OpenAI and Google Gemini."))
+            .font(.system(size: 12, weight: .regular, design: .monospaced))
+            .foregroundColor(.white.opacity(0.5))
+            .multilineTextAlignment(.leading)
+            .lineSpacing(3)
+            .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var consentText: some View {
         let terms = "https://professormadrid.com/terms"
         let privacy = "https://professormadrid.com/privacy"
         let text = try? AttributedString(
-            markdown: L("By continuing, you agree to our [Terms & Conditions](%@) and [Privacy Policy](%@).", terms, privacy)
+            markdown: L("I agree to the [Terms & Conditions](%@) and [Privacy Policy](%@).", terms, privacy)
         )
-        return Text(text ?? AttributedString(L("By continuing, you agree to our Terms & Conditions and Privacy Policy.")))
-            .font(.system(size: 12, weight: .regular, design: .monospaced))
-            .foregroundColor(.white.opacity(0.45))
+        return Text(text ?? AttributedString(L("I agree to the Terms & Conditions and Privacy Policy.")))
+            .font(.system(size: 13, weight: .regular, design: .monospaced))
+            .foregroundColor(.white.opacity(0.65))
             .tint(.yellow)
-            .multilineTextAlignment(.center)
-            .lineSpacing(4)
+            .multilineTextAlignment(.leading)
+            .lineSpacing(3)
+            .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private func handleAppleSignIn(_ result: Result<ASAuthorization, Error>) {
@@ -223,6 +275,22 @@ struct SignInView: View {
         Task {
             do {
                 try await AuthService.shared.signInWithEmail(email: emailInput, password: passwordInput)
+            } catch {
+                await MainActor.run {
+                    errorMessage = error.localizedDescription
+                    isLoading = false
+                }
+            }
+        }
+    }
+
+    private func handleEmailSignUp() {
+        guard !emailInput.isEmpty, !passwordInput.isEmpty else { return }
+        isLoading = true
+        errorMessage = nil
+        Task {
+            do {
+                try await AuthService.shared.signUpWithEmail(email: emailInput, password: passwordInput)
             } catch {
                 await MainActor.run {
                     errorMessage = error.localizedDescription

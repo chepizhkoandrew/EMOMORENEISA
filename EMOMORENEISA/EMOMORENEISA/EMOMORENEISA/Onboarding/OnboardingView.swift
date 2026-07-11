@@ -16,6 +16,8 @@ struct OnboardingView: View {
     @State private var typewriterTask: Task<Void, Never>? = nil
     @State private var thinkingProgress: Double = 0
     @State private var thinkingProgressTask: Task<Void, Never>? = nil
+    @State private var arrowScale: CGFloat = 1.0
+    @State private var arrowSpinCount: Int = 0
 
     var body: some View {
         ZStack {
@@ -458,6 +460,26 @@ struct OnboardingView: View {
     // forward arrow advances to the next question, tapping the mic orb above
     // re-records. Back navigation lives in the top-left arrow.
 
+    /// One-shot "notice me" nudge on the forward arrow — pops bigger then
+    /// settles back, with a single full spin, so the user notices there's
+    /// now a way forward without any added text. Fires fresh every time the
+    /// arrow (re)appears, since `reviewTranscriptCard`'s `if` branch tears
+    /// the button down between questions — `.onAppear` naturally retriggers
+    /// it each time. `arrowSpinCount` only ever increments (never resets to
+    /// 0), so each hint is a clean forward spin from wherever it last ended
+    /// rather than an abrupt snap-back.
+    private func playArrowHint() {
+        withAnimation(.spring(response: 0.28, dampingFraction: 0.45)) {
+            arrowScale = 1.24
+            arrowSpinCount += 1
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.22) {
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.6)) {
+                arrowScale = 1.0
+            }
+        }
+    }
+
     @ViewBuilder
     private var reviewTranscriptCard: some View {
         if case .reviewingAnswer = coordinator.phase,
@@ -490,8 +512,11 @@ struct OnboardingView: View {
                             .font(.system(size: 22, weight: .bold))
                             .foregroundColor(.black)
                     }
+                    .scaleEffect(arrowScale)
+                    .rotationEffect(.degrees(Double(arrowSpinCount) * 360))
                 }
                 .buttonStyle(.plain)
+                .onAppear { playArrowHint() }
             }
             .padding(.horizontal, 14)
             .padding(.vertical, 12)
@@ -567,9 +592,6 @@ struct OnboardingView: View {
         ZStack {
             Color.black.opacity(0.55).ignoresSafeArea()
             VStack(spacing: 16) {
-                Image(systemName: "checkmark.seal.fill")
-                    .font(.system(size: 60))
-                    .foregroundColor(.yellow)
                 Text(store.quizLanguage == .uk
                      ? "Класно поспілкувалися!"
                      : "Great to meet you!")

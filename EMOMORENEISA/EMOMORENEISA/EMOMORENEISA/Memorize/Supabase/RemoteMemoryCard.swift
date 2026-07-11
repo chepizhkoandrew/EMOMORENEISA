@@ -13,6 +13,7 @@ struct RemoteMemoryCard: Codable, Identifiable {
     var lastPlayedAt: Date?
     var isArchived: Bool
     var deviceId: String
+    var userId: UUID?
     var event: String?
     var updatedAt: Date
 
@@ -23,11 +24,12 @@ struct RemoteMemoryCard: Codable, Identifiable {
         case lastPlayedAt  = "last_played_at"
         case isArchived    = "is_archived"
         case deviceId      = "device_id"
+        case userId        = "user_id"
         case event
         case updatedAt     = "updated_at"
     }
 
-    init(card: MemoryCard, event: String? = nil, deviceId: String = RemoteMemoryCard.currentDeviceId) {
+    init(card: MemoryCard, event: String? = nil, deviceId: String = RemoteMemoryCard.currentDeviceId, userId: UUID? = nil) {
         self.id = card.id
         self.content = card.content
         self.translation = card.translation
@@ -36,6 +38,7 @@ struct RemoteMemoryCard: Codable, Identifiable {
         self.lastPlayedAt = card.lastPlayedAt
         self.isArchived = card.isArchived
         self.deviceId = deviceId
+        self.userId = userId
         self.event = event
         self.updatedAt = Date()
     }

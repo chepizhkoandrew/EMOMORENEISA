@@ -151,14 +151,6 @@ Check current state of versions and IAPs
 
 Create v1.1, cancel old submissions, attach latest build + all 3 IAPs, and submit for App Store review
 
-### ios check_version_details
-
-```sh
-[bundle exec] fastlane ios check_version_details
-```
-
-TEMP diagnostic - remove after use
-
 ----
 
 This README.md is auto-generated and will be re-generated every time [_fastlane_](https://fastlane.tools) is run.

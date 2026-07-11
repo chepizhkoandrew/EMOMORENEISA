@@ -32,6 +32,16 @@ struct ESPProfile: Codable, Identifiable {
     var userPronoun: String?              // "he" | "she" | "they"
     var onboardingProfile: OnboardingProfile?
 
+    // Single source of truth for "has this user finished onboarding at all"
+    // (feature-tour carousel + voice quiz together) — gates both, and is the
+    // one field QA flips in Supabase directly to force a replay on relaunch.
+    var hasCompletedOnboarding: Bool
+
+    // nil until the user explicitly accepts the standalone in-app AI-data-
+    // sharing disclosure (AIDisclosureView) — gates every signed-in user
+    // (new and existing) per Apple 5.1.1(i)/5.1.2(i).
+    var aiDisclosureAcceptedAt: Date?
+
     enum CodingKeys: String, CodingKey {
         case id
         case displayName        = "display_name"
@@ -57,6 +67,8 @@ struct ESPProfile: Codable, Identifiable {
         case exerciseHistory    = "exercise_history"
         case userPronoun        = "user_pronoun"
         case onboardingProfile  = "onboarding_profile"
+        case hasCompletedOnboarding = "has_completed_onboarding"
+        case aiDisclosureAcceptedAt = "ai_disclosure_accepted_at"
     }
 
     init(
@@ -83,7 +95,9 @@ struct ESPProfile: Codable, Identifiable {
         targetLevel: String? = nil,
         exerciseHistory: [String] = [],
         userPronoun: String? = nil,
-        onboardingProfile: OnboardingProfile? = nil
+        onboardingProfile: OnboardingProfile? = nil,
+        hasCompletedOnboarding: Bool = false,
+        aiDisclosureAcceptedAt: Date? = nil
     ) {
         self.id = id
         self.displayName = displayName
@@ -109,6 +123,8 @@ struct ESPProfile: Codable, Identifiable {
         self.exerciseHistory = exerciseHistory
         self.userPronoun = userPronoun
         self.onboardingProfile = onboardingProfile
+        self.hasCompletedOnboarding = hasCompletedOnboarding
+        self.aiDisclosureAcceptedAt = aiDisclosureAcceptedAt
     }
 
     init(from decoder: Decoder) throws {
@@ -137,6 +153,8 @@ struct ESPProfile: Codable, Identifiable {
         exerciseHistory   = (try? c.decode([String].self, forKey: .exerciseHistory)) ?? []
         userPronoun       = try? c.decodeIfPresent(String.self, forKey: .userPronoun)
         onboardingProfile = try? c.decodeIfPresent(OnboardingProfile.self, forKey: .onboardingProfile)
+        hasCompletedOnboarding = (try? c.decode(Bool.self, forKey: .hasCompletedOnboarding)) ?? false
+        aiDisclosureAcceptedAt = try? c.decodeIfPresent(Date.self, forKey: .aiDisclosureAcceptedAt)
     }
 
     var levelEnum: StudentLevel {
@@ -237,6 +255,7 @@ final class LocalStudentProfile {
     var exerciseHistory: [String]
     var userPronoun: String? = nil
     var onboardingProfileJSON: Data = Data()
+    var hasCompletedOnboarding: Bool = false
 
     private static let encoder = JSONEncoder()
     private static let decoder = JSONDecoder()
@@ -265,6 +284,7 @@ final class LocalStudentProfile {
         self.exerciseHistory = remote.exerciseHistory
         self.userPronoun = remote.userPronoun
         self.onboardingProfileJSON = (try? Self.encoder.encode(remote.onboardingProfile)) ?? Data()
+        self.hasCompletedOnboarding = remote.hasCompletedOnboarding
     }
 
     func update(from remote: ESPProfile) {
@@ -290,6 +310,7 @@ final class LocalStudentProfile {
         exerciseHistory = remote.exerciseHistory
         userPronoun = remote.userPronoun
         onboardingProfileJSON = (try? Self.encoder.encode(remote.onboardingProfile)) ?? Data()
+        hasCompletedOnboarding = remote.hasCompletedOnboarding
     }
 
     var wordBank: [WordEntry] {

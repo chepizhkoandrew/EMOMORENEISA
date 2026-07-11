@@ -56,9 +56,9 @@ struct CountdownOverlayView: View {
 struct HomeView: View {
     @StateObject private var engine = GameEngine()
     @Environment(AuthState.self) private var authState
+    @Environment(\.modelContext) private var modelContext
     @AppStorage("timerSeconds") private var timerSeconds: Double = 4.0
     @AppStorage("selectedTenseName") private var selectedTenseName: String = Tense.present.rawValue
-    @AppStorage("onboardingCompleted") private var onboardingCompleted: Bool = false
     @State private var speechPermissionGranted = false
     @State private var showModeSelector: Bool = false
     @State private var showOnboarding: Bool = false
@@ -71,26 +71,43 @@ struct HomeView: View {
 
             switch engine.phase {
             case .idle:
-                if showModeSelector {
-                    if authState.isLoading {
-                        ProgressView()
-                            .tint(.yellow)
-                            .scaleEffect(1.4)
-                            .transition(.opacity)
-                    } else if authState.isSignedIn {
-                        ModeSelectorView(onVerbGame: {
-                            engine.timerSeconds = timerSeconds
-                            engine.selectedTense = selectedTense
-                            engine.startSpin()
-                        })
+                if authState.isLoading {
+                    // Session restore races first paint — show nothing until it
+                    // resolves so an already-signed-in user never sees a flash
+                    // of SignInView before we know they're authenticated.
+                    ProgressView()
+                        .tint(.yellow)
+                        .scaleEffect(1.4)
+                        .transition(.opacity)
+                } else if !authState.isSignedIn {
+                    // Sign-in is the very first screen — no game mode is
+                    // reachable without an account.
+                    SignInView()
                         .environment(authState)
                         .transition(.opacity)
-                        .task { await WalletManager.shared.bootstrap() }
-                    } else {
-                        SignInView()
-                            .environment(authState)
-                            .transition(.opacity)
-                    }
+                } else if authState.needsAIDisclosure {
+                    // Blocks EVERYTHING past this point, including the
+                    // onboarding voice quiz — that quiz itself sends
+                    // recordings to Gemini, so the disclosure must come
+                    // first. Applies to existing accounts too, not just new
+                    // signups (see AuthState.needsAIDisclosure).
+                    AIDisclosureView()
+                        .transition(.opacity)
+                } else if showModeSelector || !authState.needsOnboarding {
+                    // Returning user who already finished the tour + voice
+                    // quiz (or someone who progressed there already this
+                    // session) — skip straight past the typewriter/carousel.
+                    // No extra audio setup needed here: the `.onAppear`/
+                    // `.onChange` below already start background music
+                    // unconditionally before this switch ever branches.
+                    ModeSelectorView(onVerbGame: {
+                        engine.timerSeconds = timerSeconds
+                        engine.selectedTense = selectedTense
+                        engine.startSpin()
+                    })
+                    .environment(authState)
+                    .transition(.opacity)
+                    .task { await WalletManager.shared.bootstrap() }
                 } else if showOnboarding {
                     OnboardingCarouselView(
                         onFinish: {
@@ -135,6 +152,7 @@ struct HomeView: View {
         }
         .animation(.easeInOut(duration: 0.35), value: engine.phase == .idle)
         .onAppear {
+            engine.attemptService = VerbAttemptService(context: modelContext)
             SpeechService().requestPermission { granted in
                 speechPermissionGranted = granted
             }
@@ -151,6 +169,18 @@ struct HomeView: View {
             case .countdown, .playing, .review, .results:
                 BackgroundMusicPlayer.shared.fadeOut(duration: 1.5)
             }
+        }
+        .onChange(of: authState.userId) { _, _ in
+            // HomeView is a single long-lived instance — these @State flags
+            // otherwise never reset within a running process. Without this,
+            // a sign-out/sign-in (or switching accounts) inherits whatever
+            // showModeSelector was left at by the PREVIOUS session, which
+            // short-circuits the `!authState.needsOnboarding` check below
+            // and silently skips onboarding even when the fresh profile says
+            // it's needed (only a full process relaunch happened to reset
+            // this by accident before, masking the bug).
+            showModeSelector = false
+            showOnboarding = false
         }
     }
 }

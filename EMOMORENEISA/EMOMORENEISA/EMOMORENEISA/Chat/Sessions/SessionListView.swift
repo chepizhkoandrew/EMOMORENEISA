@@ -63,12 +63,18 @@ struct SessionListView: View {
             .navigationDestination(for: LocalChatSession.self) { session in
                 ChatView(session: session)
                     .onAppear { BackgroundMusicPlayer.shared.fadeOut(duration: 1.5) }
-                    .onDisappear { BackgroundMusicPlayer.shared.play() }
+                    .onDisappear {
+                        TTSService.shared.stop()
+                        BackgroundMusicPlayer.shared.play()
+                    }
             }
             .navigationDestination(item: $navigateToNewSession) { session in
                 ChatView(session: session)
                     .onAppear { BackgroundMusicPlayer.shared.fadeOut(duration: 1.5) }
-                    .onDisappear { BackgroundMusicPlayer.shared.play() }
+                    .onDisappear {
+                        TTSService.shared.stop()
+                        BackgroundMusicPlayer.shared.play()
+                    }
             }
             .navigationDestination(isPresented: $showProfile) {
                 ProfileView()

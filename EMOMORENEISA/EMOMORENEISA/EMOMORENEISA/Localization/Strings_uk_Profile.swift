@@ -44,5 +44,5 @@ let ukProfileStrings: [String: String] = [
     "Delete Account Permanently": "Видалити акаунт назавжди",
     "Delete My Account": "Видалити мій акаунт",
     "This will permanently delete your account, all sessions, memory cards, and treat balance. This cannot be undone.": "Це назавжди видалить твій акаунт, усі заняття, картки пам’яті та смаколики. Скасувати буде неможливо.",
-    "Deletion failed. Please try again or contact support@professormadrid.com.": "Не вдалося видалити. Спробуй ще раз або напиши на support@professormadrid.com.",
+    "Deletion failed. Please try again or contact support-professormadrid@priroda.tech.": "Не вдалося видалити. Спробуй ще раз або напиши на support-professormadrid@priroda.tech.",
 ]

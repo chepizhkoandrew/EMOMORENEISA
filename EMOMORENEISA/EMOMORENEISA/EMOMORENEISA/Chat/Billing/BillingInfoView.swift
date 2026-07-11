@@ -16,18 +16,22 @@ struct BillingInfoView: View {
         let note: String
     }
 
-    // Mirrors server config.actionCosts (treats per action).
+    // Mirrors server config.actionCosts (treats per action) exactly — see
+    // server/src/config.js. Every entry here corresponds to a real debit();
+    // there is no free daily allowance for anything in this list.
     private let activities: [Activity] = [
         Activity(icon: "bubble.left.and.bubble.right.fill", name: L("Chat reply"),
                  cost: L("~5 treats"), note: L("A full AI answer from your tutor.")),
         Activity(icon: "speaker.wave.2.fill", name: L("Voice line"),
                  cost: L("~2 treats"), note: L("Hearing a reply spoken aloud.")),
-        Activity(icon: "map.fill", name: L("Street View photo"),
-                 cost: L("20 free / day, then ~9"), note: L("Browsing the world for context.")),
-        Activity(icon: "repeat", name: L("Loro drill"),
-                 cost: L("~3 treats"), note: L("A repeat-after-me pronunciation set.")),
-        Activity(icon: "text.magnifyingglass", name: L("Word help"),
-                 cost: L("~6 treats"), note: L("Tap a word for a deeper explanation."))
+        Activity(icon: "map.fill", name: L("Street View photo chat"),
+                 cost: L("~9 treats"), note: L("Asking the tutor about a photo you've taken.")),
+        Activity(icon: "tag.fill", name: L("Street View photo labels"),
+                 cost: L("~6 treats"), note: L("Identifying and labelling objects in your photo.")),
+        Activity(icon: "plus.circle.fill", name: L("Add to Memorise"),
+                 cost: L("~3 treats"), note: L("Generates the repeat-audio and picture for a new word or phrase.")),
+        Activity(icon: "checkmark.bubble.fill", name: L("Verb check"),
+                 cost: L("~2 treats"), note: L("Checking your spoken answer in Verbs & Times."))
     ]
 
     var body: some View {
@@ -124,7 +128,6 @@ struct BillingInfoView: View {
         VStack(alignment: .leading, spacing: 8) {
             sectionTitle(L("Ways to spend less"))
             bullet(L("Turn off automatic voice replies in Profile and tap a message only when you want to hear it — voice is the easiest way to save."))
-            bullet(L("Street View gives you 20 free photos every day before any treats are used."))
             bullet(L("Chatting in text uses the fewest treats."))
         }
     }

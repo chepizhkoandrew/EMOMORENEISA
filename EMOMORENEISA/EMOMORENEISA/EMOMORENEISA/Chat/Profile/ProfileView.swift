@@ -7,6 +7,7 @@ struct ProfileView: View {
     @Environment(AuthState.self) private var authState
     @State private var editingLevel: StudentLevel = .beginner
     @State private var editingFocus: String = ""
+    @State private var editingPronoun: UserPronoun = .they
     @State private var isSaving = false
     @State private var showSignOutConfirm = false
     @State private var showDeleteConfirm = false
@@ -35,6 +36,7 @@ struct ProfileView: View {
                     treatsSection
                     aboutMeSection
                     languageSection
+                    pronounSection
                     voiceSection
                     levelSection
                     focusSection
@@ -86,7 +88,7 @@ struct ProfileView: View {
                         try await authState.deleteAccount()
                     } catch {
                         isDeletingAccount = false
-                        deleteError = L("Deletion failed. Please try again or contact support@professormadrid.com.")
+                        deleteError = L("Deletion failed. Please try again or contact support-professormadrid@priroda.tech.")
                     }
                 }
             }
@@ -180,6 +182,42 @@ struct ProfileView: View {
             .background(AppColors.cardBackground)
             .clipShape(RoundedRectangle(cornerRadius: 14))
             .overlay(RoundedRectangle(cornerRadius: 14).stroke(AppColors.cardBorder, lineWidth: 1))
+        }
+    }
+
+    // MARK: - Pronoun
+
+    // Drives gendered grammar everywhere the tutor addresses the user in a
+    // gendered language (Ukrainian past-tense endings especially) — see
+    // ESPProfile.profileDigest, included in every chat system prompt.
+    private var pronounSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            sectionHeader(L("Pronoun"))
+            HStack(spacing: 2) {
+                ForEach(UserPronoun.allCases) { pronoun in
+                    Button { editingPronoun = pronoun; saveProfile() } label: {
+                        Text("\(pronoun.ukLabel) · \(pronoun.displayLabel)")
+                            .font(.system(size: 13, weight: .semibold, design: .rounded))
+                            .foregroundColor(editingPronoun == pronoun ? .black : AppColors.textSecondary)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.8)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 9)
+                            .background(
+                                RoundedRectangle(cornerRadius: 10)
+                                    .fill(editingPronoun == pronoun ? Color.yellow : Color.clear)
+                            )
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(3)
+            .background(AppColors.cardBackground)
+            .clipShape(RoundedRectangle(cornerRadius: 14))
+            .overlay(RoundedRectangle(cornerRadius: 14).stroke(AppColors.cardBorder, lineWidth: 1))
+            Text(L("This shapes how your tutor addresses you — especially gendered endings in Ukrainian."))
+                .font(.system(size: 12, weight: .regular, design: .rounded))
+                .foregroundColor(AppColors.textTertiary)
         }
     }
 
@@ -495,13 +533,20 @@ struct ProfileView: View {
         guard let p = profile else { return }
         editingLevel = p.levelEnum
         editingFocus = p.currentStudyTopic ?? ""
+        editingPronoun = p.userPronoun.flatMap(UserPronoun.init(rawValue:)) ?? .they
     }
 
     private func saveProfile() {
         guard var p = profile else { return }
         p.level = editingLevel.rawValue
         p.currentStudyTopic = editingFocus.isEmpty ? nil : editingFocus
+        p.userPronoun = editingPronoun.rawValue
         p.updatedAt = Date()
+        // Update the in-memory profile immediately (not just Supabase) so a
+        // pronoun change takes effect on the very next chat message in this
+        // same session — PromptBuilder reads `authState.profile` fresh per
+        // message, it doesn't wait for a relaunch/reload.
+        authState.profile = p
         Task { await SupabaseSyncService.shared.updateProfile(p) }
     }
 }

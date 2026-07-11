@@ -1,0 +1,2 @@
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS user_pronoun TEXT;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS onboarding_profile JSONB;

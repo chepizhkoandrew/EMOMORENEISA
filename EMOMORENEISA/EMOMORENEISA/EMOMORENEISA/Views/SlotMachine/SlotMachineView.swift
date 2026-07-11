@@ -3,10 +3,12 @@ import SwiftUI
 struct SlotMachineView: View {
     @EnvironmentObject var engine: GameEngine
     @Environment(\.verticalSizeClass) private var verticalSizeClass
+    @Environment(AuthState.self) private var authState
 
     @State private var stoppedCount = 0
     @State private var skipSpinRequested = false
     @State private var showSettings = false
+    @State private var showProfile = false
 
     private var isLandscape: Bool { verticalSizeClass == .compact }
     private var isSpinning: Bool { engine.phase == .spinning }
@@ -37,6 +39,14 @@ struct SlotMachineView: View {
                         showSettings = true
                     } label: {
                         Image(systemName: "gearshape.fill")
+                            .font(.system(size: 17, weight: .semibold, design: .monospaced))
+                            .foregroundColor(.white.opacity(0.55))
+                    }
+                    .padding(.trailing, 14)
+                    Button {
+                        showProfile = true
+                    } label: {
+                        Image(systemName: "person.circle.fill")
                             .font(.system(size: 17, weight: .semibold, design: .monospaced))
                             .foregroundColor(.white.opacity(0.55))
                     }
@@ -88,6 +98,12 @@ struct SlotMachineView: View {
         .onTapGesture { handleTap() }
         .sheet(isPresented: $showSettings) {
             SettingsSheetView()
+        }
+        .fullScreenCover(isPresented: $showProfile) {
+            NavigationStack {
+                ProfileView(onBack: { showProfile = false })
+                    .environment(authState)
+            }
         }
         .onChange(of: isSpinning) { _, spinning in
             if spinning {

@@ -1,0 +1,12 @@
+{
+  "lang": "uk",
+  "gender": "he",
+  "voiceTag": "gcloud|es-ES|es-ES-Chirp3-HD-Achird|0.9",
+  "slots": {
+    "q6": {
+      "path": "q6_uk_he.aac",
+      "sha": "6989456ef0048d69383c5613a28adcad",
+      "bytes": 78831
+    }
+  }
+}

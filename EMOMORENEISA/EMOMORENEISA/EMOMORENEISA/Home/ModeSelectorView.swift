@@ -5,6 +5,13 @@ import AVFoundation
 struct ModeSelectorView: View {
     let onVerbGame: () -> Void
     @State private var showExplore = false
+    /// True from the moment a new chat session is created until it's actually
+    /// launched (there's a deliberate 0.35s delay between the two). Without
+    /// this, `showExplore` flipping to false fires the "resume typewriter +
+    /// music" branch immediately, only for `launchedSession` to kill it again
+    /// 0.35s later — a real restart-then-stop race on every single Explore
+    /// launch, not just a theoretical one.
+    @State private var pendingSessionLaunch = false
     @State private var showMemorize = false
     @State private var launchedSession: LocalChatSession? = nil
     @State private var appear = false
@@ -139,6 +146,7 @@ struct ModeSelectorView: View {
         .fullScreenCover(isPresented: $showExplore) {
             if authState.isSignedIn {
                 NewSessionView(onSessionCreated: { session in
+                    pendingSessionLaunch = true
                     showExplore = false
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
                         launchedSession = session
@@ -152,6 +160,7 @@ struct ModeSelectorView: View {
         }
         .fullScreenCover(isPresented: $showMemorize) {
             MemorizeContainerView()
+                .environment(authState)
         }
         .onChange(of: showMemorize) { _, isShowing in
             if isShowing {
@@ -170,18 +179,24 @@ struct ModeSelectorView: View {
                 bubblePlayer?.stop()
                 bubblePlayer = nil
                 BackgroundMusicPlayer.shared.fadeOut(duration: 1.5)
-            } else {
+            } else if !pendingSessionLaunch {
+                // Only resume here if we're actually landing back on this
+                // screen — a pending session launch means we're 0.35s away
+                // from `launchedSession` taking over, which will stop this
+                // right back down again.
                 startTypewriter()
                 BackgroundMusicPlayer.shared.play()
             }
         }
         .onChange(of: launchedSession) { _, session in
             if session != nil {
+                pendingSessionLaunch = false
                 typeTask?.cancel()
                 bubblePlayer?.stop()
                 bubblePlayer = nil
             } else {
                 startTypewriter()
+                BackgroundMusicPlayer.shared.play()
             }
         }
         .fullScreenCover(item: $launchedSession) { session in
@@ -190,7 +205,10 @@ struct ModeSelectorView: View {
             }
             .environment(authState)
             .onAppear { BackgroundMusicPlayer.shared.fadeOut(duration: 1.5) }
-            .onDisappear { BackgroundMusicPlayer.shared.play() }
+            .onDisappear {
+                TTSService.shared.stop()
+                BackgroundMusicPlayer.shared.play()
+            }
         }
     }
 

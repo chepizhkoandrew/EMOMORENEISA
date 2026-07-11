@@ -50,13 +50,15 @@ final class OnboardingCoordinator {
     var recordingSecondsRemaining: Int = 0
 
     /// Hard cap on how long a single answer recording can run before we
-    /// auto-stop it and send whatever was captured. Q11 (speak in Spanish)
-    /// gets extra time since the user must formulate and speak a sentence.
+    /// auto-stop it and send whatever was captured. Q6 (speak in Spanish)
+    /// gets extra time — the user has to formulate and speak a sentence in
+    /// a language they're still learning, slowly, which the default cap
+    /// doesn't leave room for.
     static let defaultMaxRecordingSeconds: Int = 25
-    static let q11MaxRecordingSeconds: Int = 45
+    static let q6MaxRecordingSeconds: Int = 45
 
     static func maxRecordingSeconds(for slot: OnboardingSlot) -> Int {
-        slot == .q11 ? q11MaxRecordingSeconds : defaultMaxRecordingSeconds
+        slot == .q6 ? q6MaxRecordingSeconds : defaultMaxRecordingSeconds
     }
 
     private var recordingTimer: Timer?
@@ -101,6 +103,7 @@ final class OnboardingCoordinator {
         case .playingQuestion(let slot):
             // Interrupt-to-answer: gracefully fade the question audio and
             // start listening immediately. The user chose to jump in early.
+            print("[ONB-COORD] toggleMic(): interrupting question playback for \(slot) to start recording early")
             await player.fadeOutAndStop(duration: 0.25)
             startRecording(for: slot)
         case .awaitingAnswer(let slot), .reviewingAnswer(let slot):
@@ -181,7 +184,23 @@ final class OnboardingCoordinator {
     func confirmAndAdvance() async {
         guard case .reviewingAnswer(let slot) = phase else { return }
         guard let idx = Self.flow.firstIndex(of: slot) else { return }
+        persistAnswerRemotely(slot)
         await runNext(from: idx + 1)
+    }
+
+    /// Fire-and-forget mirror of a single confirmed answer to Supabase — the
+    /// user has just confirmed this transcript (post any manual edit), so
+    /// it's final for this pass. Runs on every confirm, including
+    /// re-confirms after a back-navigation re-record (upsert, not insert).
+    private func persistAnswerRemotely(_ slot: OnboardingSlot) {
+        guard let userId = AuthState.shared.userId,
+              let transcript = store.transcripts[slot],
+              !transcript.trimmingCharacters(in: .whitespaces).isEmpty else { return }
+        let answer = RemoteOnboardingAnswer(userId: userId, slot: slot.rawValue,
+                                            transcript: transcript, recordedAt: Date())
+        Task.detached {
+            await SupabaseSyncService.shared.upsertOnboardingAnswer(answer)
+        }
     }
 
     /// Called from the UI when the user edits the transcript text after recording.
@@ -255,6 +274,25 @@ final class OnboardingCoordinator {
         phase = .thinking
     }
 
+    /// Move to `.awaitingAnswer(slot)` once question playback/probe work is
+    /// done — unless the user already interrupted it (tapped the mic to
+    /// answer early — see `toggleMic()`'s `.playingQuestion` case — which
+    /// jumps phase to `.recording` immediately, or has since finished
+    /// recording/confirmed). Without this guard, the original `runNext` call
+    /// resumes after its `await` and unconditionally stomps phase back to
+    /// `.awaitingAnswer`, silently dropping the in-progress recording and
+    /// making the question look like it "asks again" once the user taps the
+    /// now-idle-looking mic a second time.
+    @MainActor
+    private func settleAwaitingAnswer(_ slot: OnboardingSlot) {
+        switch phase {
+        case .recording(slot), .transcribing(slot), .reviewingAnswer(slot):
+            print("[ONB-COORD] settleAwaitingAnswer(\(slot)) skipped — phase already moved to \(phase)")
+        default:
+            phase = .awaitingAnswer(slot)
+        }
+    }
+
     // MARK: - State machine
 
     @MainActor
@@ -297,29 +335,33 @@ final class OnboardingCoordinator {
             // Reuse a cached probe when the user has navigated back and
             // forward — no need to re-bill Gemini for the same input set.
             if let cached = store.probes[1] {
+                print("[ONB-COORD] q8: using cached probe")
                 store.currentQuestionText = cached.nextQuestionText
                 await playDynamicQuestion(slot: .q8, text: cached.nextQuestionText)
-                phase = .awaitingAnswer(.q8)
+                settleAwaitingAnswer(.q8)
                 return
             }
             enterThinking(label: store.quizLanguage == .uk
                 ? "Аналізую твої відповіді…"
                 : "Thinking about you…")
             if let probe = await analyst.probe(pass: 1, transcripts: store.transcripts) {
+                print("[ONB-COORD] q8: probe pass 1 succeeded — playing generated question")
                 store.probes[1] = probe
                 store.currentQuestionText = probe.nextQuestionText
                 await playDynamicQuestion(slot: .q8, text: probe.nextQuestionText)
             } else {
+                print("[ONB-COORD] q8: probe pass 1 failed/timed out — playing fallback line")
                 await playFallback(for: .q8)
             }
-            phase = .awaitingAnswer(.q8)
+            settleAwaitingAnswer(.q8)
             return
         }
         if slot == .q9 {
             if let cached = store.probes[2] {
+                print("[ONB-COORD] q9: using cached probe")
                 store.currentQuestionText = cached.nextQuestionText
                 await playDynamicQuestion(slot: .q9, text: cached.nextQuestionText)
-                phase = .awaitingAnswer(.q9)
+                settleAwaitingAnswer(.q9)
                 return
             }
             enterThinking(label: store.quizLanguage == .uk
@@ -335,13 +377,15 @@ final class OnboardingCoordinator {
             if let probe = await analyst.probe(pass: 2,
                                                transcripts: store.transcripts,
                                                previousProbe: prev) {
+                print("[ONB-COORD] q9: probe pass 2 succeeded — playing generated question")
                 store.probes[2] = probe
                 store.currentQuestionText = probe.nextQuestionText
                 await playDynamicQuestion(slot: .q9, text: probe.nextQuestionText)
             } else {
+                print("[ONB-COORD] q9: probe pass 2 failed/timed out — playing fallback line")
                 await playFallback(for: .q9)
             }
-            phase = .awaitingAnswer(.q9)
+            settleAwaitingAnswer(.q9)
             return
         }
 
@@ -362,16 +406,20 @@ final class OnboardingCoordinator {
             language: store.quizLanguage,
             pronoun: store.pronoun ?? .they
         ) {
+            print("[ONB-COORD] \(slot): playing bundled audio")
             phase = .playingQuestion(slot)
             await player.playPrefetched(url: bundleURL)
         } else {
+            print("[ONB-COORD] \(slot): no bundled audio — prefetching dynamic TTS")
             phase = .thinking
             if let tmp = await player.prefetchDynamic(text: text) {
                 phase = .playingQuestion(slot)
                 await player.playPrefetched(url: tmp)
+            } else {
+                print("[ONB-COORD] \(slot): dynamic TTS prefetch failed — proceeding with no audio")
             }
         }
-        phase = .awaitingAnswer(slot)
+        settleAwaitingAnswer(slot)
     }
 
     @MainActor
@@ -396,14 +444,17 @@ final class OnboardingCoordinator {
 
     @MainActor
     private func finish() async {
+        print("[ONB-COORD] finish(): entering synthesis")
         enterThinking(label: store.quizLanguage == .uk
             ? "Зберігаю твій профіль… майже готово."
             : "Saving your profile… almost there.")
         guard let syn = await analyst.synthesize(transcripts: store.transcripts,
                                                  probes: store.probes) else {
+            print("[ONB-COORD] finish(): synthesis failed — surfacing .failed")
             phase = .failed("synthesis_failed")
             return
         }
+        print("[ONB-COORD] finish(): synthesis succeeded — playing closing line")
         store.synthesis = syn
 
         // Closing line: on-the-fly TTS, warm greeting using the confirmed name.
@@ -422,6 +473,7 @@ final class OnboardingCoordinator {
         }
         store.currentQuestionText = closingText
         await player.playDynamic(text: closingText)
+        print("[ONB-COORD] finish(): closing line finished — phase = .done")
         phase = .done
     }
 }

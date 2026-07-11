@@ -141,6 +141,7 @@ struct NewSessionView: View {
                 startTypewriter()
             }
         }
+        .withProfileButton()
     }
 
     // MARK: - Full-screen mode selection (GameBackground + animation)
@@ -546,7 +547,7 @@ struct NewSessionView: View {
             FlowLayout(hSpacing: 10, vSpacing: 10) {
                 ForEach(predefinedTopics, id: \.self) { topic in
                     Button(action: { topicText = topic }) {
-                        Text(topic)
+                        Text(L(topic))
                             .font(.system(size: 15, weight: .medium, design: .rounded))
                             .foregroundColor(topicText == topic ? .black : AppColors.textPrimary)
                             .padding(.horizontal, 16)

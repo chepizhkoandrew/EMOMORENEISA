@@ -3,6 +3,7 @@ import SwiftUI
 struct ResultsView: View {
     @EnvironmentObject var engine: GameEngine
     @State private var appear = false
+    @State private var showStats = false
     @AppStorage("stats.verbGamesPlayed") private var verbGamesPlayed: Int = 0
 
     private var correct: Int { engine.round?.correctCells.count ?? 0 }
@@ -66,6 +67,10 @@ struct ResultsView: View {
             appear = true
             verbGamesPlayed += 1
         }
+        .sheet(isPresented: $showStats) {
+            VerbStatsView()
+        }
+        .withProfileButton()
     }
 
     // MARK: - Score Header
@@ -197,6 +202,20 @@ struct ResultsView: View {
                         .stroke(Color.white.opacity(0.14), lineWidth: 1)
                 )
                 .clipShape(RoundedRectangle(cornerRadius: 16))
+            }
+
+            Button {
+                showStats = true
+            } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: "chart.bar.fill")
+                        .font(.system(size: 13, weight: .semibold))
+                    Text(L("VIEW STATS"))
+                        .font(.system(size: 13, weight: .bold, design: .monospaced))
+                }
+                .foregroundColor(.white.opacity(0.55))
+                .padding(.vertical, 12)
+                .frame(maxWidth: .infinity)
             }
         }
     }

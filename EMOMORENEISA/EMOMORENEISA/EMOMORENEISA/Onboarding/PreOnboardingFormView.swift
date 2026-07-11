@@ -2,15 +2,18 @@ import SwiftUI
 
 // Phase A of the onboarding quiz — a silent 3-step form (no audio) that
 // collects the three inputs the voice quiz needs before it can start:
-// name, pronoun, and quiz language. Each field lives on its own dedicated
-// screen so the flow reads calm and tidy. Continue on the final screen
-// fires `onContinue`.
+// quiz language, name, and pronoun. Language comes first because the
+// pronoun step's labels are bilingual once a Ukrainian quiz is chosen
+// (see `pronounLabel`) — asking it last would render pronoun options in
+// the wrong/default language for that entire step. Each field lives on
+// its own dedicated screen so the flow reads calm and tidy. Continue on
+// the final screen fires `onContinue`.
 
 struct PreOnboardingFormView: View {
     @Bindable var store: OnboardingStore
     var onContinue: () -> Void
 
-    // 0 = name, 1 = pronoun, 2 = language
+    // 0 = language, 1 = name, 2 = pronoun
     @State private var step: Int = 0
     private let totalSteps: Int = 3
     @FocusState private var nameFieldFocused: Bool
@@ -33,20 +36,20 @@ struct PreOnboardingFormView: View {
 
                 Spacer(minLength: 20)
 
-                VStack(alignment: step == 0 ? .center : .leading, spacing: 24) {
+                VStack(alignment: step == 1 ? .center : .leading, spacing: 24) {
                     stepHeader
 
                     Group {
                         switch step {
-                        case 0: nameField
-                        case 1: pronounPicker
-                        default: languagePicker
+                        case 0: languagePicker
+                        case 1: nameField
+                        default: pronounPicker
                         }
                     }
                     .transition(.opacity.combined(with: .move(edge: .trailing)))
                 }
                 .padding(.horizontal, 24)
-                .frame(maxWidth: .infinity, alignment: step == 0 ? .center : .leading)
+                .frame(maxWidth: .infinity, alignment: step == 1 ? .center : .leading)
 
                 Spacer(minLength: 20)
 
@@ -119,35 +122,40 @@ struct PreOnboardingFormView: View {
     private var stepHeader: some View {
         switch step {
         case 0:
-            headerBlock(title: "¡Hola!",
-                        subtitle: L("First — what should I call you?"),
-                        centered: true)
+            // Language hasn't been picked yet at this point, so this one
+            // header still follows the app's global UI language.
+            headerBlock(title: L("Your language"), subtitle: nil)
         case 1:
-            headerBlock(title: L("Nice to meet you!"),
-                        subtitle: L("How should I refer to you?"))
+            headerBlock(title: "¡Hola!",
+                        subtitle: quizText(en: "First — what should I call you?",
+                                            uk: "Перш за все — як тебе звати?"),
+                        centered: true)
         default:
-            headerBlock(title: L("Your language"),
-                        subtitle: L("Language choice"))
+            headerBlock(title: quizText(en: "Nice to meet you!", uk: "Приємно познайомитись!"),
+                        subtitle: quizText(en: "How should I refer to you?",
+                                           uk: "Як мені до тебе звертатися?"))
         }
     }
 
-    private func headerBlock(title: String, subtitle: String, centered: Bool = false) -> some View {
+    private func headerBlock(title: String, subtitle: String?, centered: Bool = false) -> some View {
         VStack(alignment: centered ? .center : .leading, spacing: 8) {
             Text(title)
                 .font(.system(size: 32, weight: .bold, design: .rounded))
                 .foregroundColor(.yellow)
-            Text(subtitle)
-                .font(.system(size: 17, weight: .regular, design: .rounded))
-                .foregroundColor(.white.opacity(0.85))
-                .multilineTextAlignment(centered ? .center : .leading)
+            if let subtitle {
+                Text(subtitle)
+                    .font(.system(size: 17, weight: .regular, design: .rounded))
+                    .foregroundColor(.white.opacity(0.85))
+                    .multilineTextAlignment(centered ? .center : .leading)
+            }
         }
         .padding(.top, 4)
     }
 
-    // MARK: - Step 1: name
+    // MARK: - Step 2: name
 
     private var nameField: some View {
-        TextField("", text: $store.name, prompt: Text(L("First name")).foregroundColor(AppColors.textTertiary))
+        TextField("", text: $store.name, prompt: Text(quizText(en: "First name", uk: "Ім'я")).foregroundColor(AppColors.textTertiary))
             .focused($nameFieldFocused)
             .textInputAutocapitalization(.words)
             .autocorrectionDisabled(true)
@@ -161,11 +169,11 @@ struct PreOnboardingFormView: View {
             .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 
-    // MARK: - Step 2: pronoun
+    // MARK: - Step 3: pronoun
 
     private var pronounPicker: some View {
         VStack(alignment: .leading, spacing: 10) {
-            fieldLabel(L("Your pronoun"))
+            fieldLabel(quizText(en: "Your pronoun", uk: "Твій займенник"))
             VStack(spacing: 6) {
                 ForEach(UserPronoun.allCases) { p in
                     Button {
@@ -206,7 +214,7 @@ struct PreOnboardingFormView: View {
         }
     }
 
-    // MARK: - Step 3: language
+    // MARK: - Step 1: language
 
     private var languagePicker: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -273,14 +281,16 @@ struct PreOnboardingFormView: View {
     }
 
     private var continueLabel: String {
-        step == totalSteps - 1 ? L("Start the quiz") : L("Continue")
+        step == totalSteps - 1
+            ? quizText(en: "Start the quiz", uk: "Почати квіз")
+            : quizText(en: "Continue", uk: "Продовжити")
     }
 
     private var isCurrentStepValid: Bool {
         switch step {
-        case 0: return !store.name.trimmingCharacters(in: .whitespaces).isEmpty
-        case 1: return store.pronoun != nil
-        default: return true
+        case 0: return true
+        case 1: return !store.name.trimmingCharacters(in: .whitespaces).isEmpty
+        default: return store.pronoun != nil
         }
     }
 
@@ -305,5 +315,15 @@ struct PreOnboardingFormView: View {
         case .en: return p.displayLabel
         case .uk: return "\(p.ukLabel) · \(p.displayLabel)"
         }
+    }
+
+    /// Text keyed to the quiz language the user just picked in step 0 — NOT
+    /// `L()`'s global app-UI language, which may still be English even when
+    /// Ukrainian was chosen for this quiz. Only `pronounLabel` had this right
+    /// before; the name/pronoun step headers were still using `L()` and so
+    /// silently stayed in English/Spanish regardless of the quiz-language
+    /// choice.
+    private func quizText(en: String, uk: String) -> String {
+        store.quizLanguage == .uk ? uk : en
     }
 }

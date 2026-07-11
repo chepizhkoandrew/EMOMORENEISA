@@ -264,7 +264,7 @@ final class MemoryCardService {
     /// never blocks the passive session.
     private func emitEvent(_ kind: MemoryEventKind, for card: MemoryCard) {
         glog("🧠 MEM", "event=\(kind.rawValue) card=\(card.id) exposure=\(card.exposureCount)")
-        let snapshot = RemoteMemoryCard(card: card, event: kind.rawValue)
+        let snapshot = RemoteMemoryCard(card: card, event: kind.rawValue, userId: AuthState.shared.userId)
         Task.detached {
             await SupabaseSyncService.shared.upsertMemoryCard(snapshot)
         }

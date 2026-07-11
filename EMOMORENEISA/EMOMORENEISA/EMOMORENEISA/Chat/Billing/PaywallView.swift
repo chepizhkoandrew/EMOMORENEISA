@@ -171,8 +171,10 @@ struct PaywallView: View {
             VStack(spacing: 6) {
                 costRow(icon: "bubble.left.and.bubble.right.fill", label: L("Chat reply"), cost: L("~5 treats"))
                 costRow(icon: "speaker.wave.2.fill", label: L("Voice line"), cost: L("~2 treats"))
-                costRow(icon: "camera.fill", label: L("Street View photo"), cost: L("20 free/day, then ~9"))
-                costRow(icon: "repeat", label: L("Loro drill"), cost: L("~3 treats"))
+                costRow(icon: "camera.fill", label: L("Street View photo chat"), cost: L("~9 treats"))
+                costRow(icon: "tag.fill", label: L("Street View photo labels"), cost: L("~6 treats"))
+                costRow(icon: "plus.circle.fill", label: L("Add to Memorise"), cost: L("~3 treats"))
+                costRow(icon: "checkmark.bubble.fill", label: L("Verb check"), cost: L("~2 treats"))
             }
         }
         .padding()

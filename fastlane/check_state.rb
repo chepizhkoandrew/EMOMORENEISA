@@ -6,7 +6,7 @@ require "jwt"
 
 KEY_PATH  = "/Users/andriichepizhko/Downloads/IOSSPANISHGAME/appstore/keys/AuthKey_V86ZAHA4K5.p8"
 KEY_ID    = "V86ZAHA4K5"
-ISSUER_ID = "3ef7a3d5-c267-47e3-e053-5b8c7c11a4d1"
+ISSUER_ID = "75f5fa5e-e967-4854-a15f-e5d21f4cea40"
 APPLE_ID  = "6782026883"
 
 private_key = OpenSSL::PKey::EC.new(File.read(KEY_PATH))

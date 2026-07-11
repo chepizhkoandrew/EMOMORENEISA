@@ -11,12 +11,27 @@ final class AuthState {
     var isSignedIn: Bool { session != nil }
     var userId: UUID? { session?.user.id }
 
-    /// True when the user is signed in but has not yet completed the voice
-    /// onboarding quiz. Drives the full-screen gate from `ModeSelectorView`.
+    /// True when the user is signed in but hasn't finished onboarding —
+    /// covers BOTH the feature-tour carousel (`HomeView`) and the voice quiz
+    /// (`ModeSelectorView`'s full-screen gate). Backed by a single Supabase
+    /// column (`profiles.has_completed_onboarding`) so QA can force either
+    /// flow to replay by flipping one field and relaunching.
     var needsOnboarding: Bool {
         guard isSignedIn else { return false }
         guard let p = profile else { return false }
-        return p.onboardingProfile == nil
+        return !p.hasCompletedOnboarding
+    }
+
+    /// True until the user explicitly accepts the standalone AI-data-sharing
+    /// disclosure (AIDisclosureView) — gates every signed-in user, new or
+    /// existing, ahead of everything else (including the onboarding voice
+    /// quiz, which itself sends recordings to Gemini). Apple 5.1.1(i)/
+    /// 5.1.2(i) requires this be a dedicated in-app step, not just wording
+    /// inside the Terms/Privacy Policy.
+    var needsAIDisclosure: Bool {
+        guard isSignedIn else { return false }
+        guard let p = profile else { return false }
+        return p.aiDisclosureAcceptedAt == nil
     }
 
     static let shared = AuthState()

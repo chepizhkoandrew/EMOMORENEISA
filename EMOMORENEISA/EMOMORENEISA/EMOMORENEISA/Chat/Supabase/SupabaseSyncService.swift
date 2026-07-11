@@ -91,6 +91,39 @@ final class SupabaseSyncService {
         }
     }
 
+    // MARK: - Onboarding quiz (per-answer capture, not just the final synthesis)
+
+    func upsertOnboardingAnswer(_ answer: RemoteOnboardingAnswer) async {
+        do {
+            try await supabase
+                .from("onboarding_answers")
+                .upsert(answer, onConflict: "user_id,slot")
+                .execute()
+        } catch {
+            glog("☁️ SYNC  ", "⚠️ Failed to sync onboarding answer \(answer.slot): \(error.localizedDescription)")
+        }
+    }
+
+    // MARK: - Consent audit trail
+
+    func insertConsentLog(_ log: RemoteConsentLog) async {
+        do {
+            try await supabase.from("consent_log").insert(log).execute()
+        } catch {
+            glog("☁️ SYNC  ", "⚠️ Failed to log consent (\(log.document)): \(error.localizedDescription)")
+        }
+    }
+
+    // MARK: - Verb game (per-word attempt capture)
+
+    func upsertVerbAttempt(_ attempt: RemoteVerbAttempt) async {
+        do {
+            try await supabase.from("verb_attempts").upsert(attempt).execute()
+        } catch {
+            glog("☁️ SYNC  ", "⚠️ Failed to sync verb attempt \(attempt.id): \(error.localizedDescription)")
+        }
+    }
+
     // MARK: - Loro Memorize (stats mirror only — no audio bytes)
 
     func upsertMemoryCard(_ card: RemoteMemoryCard) async {
@@ -107,6 +140,20 @@ final class SupabaseSyncService {
                 .from("memory_cards")
                 .select()
                 .eq("device_id", value: deviceId)
+                .execute()
+                .value
+        } catch {
+            glog("☁️ SYNC  ", "⚠️ Failed to fetch memory cards: \(error.localizedDescription)")
+            return []
+        }
+    }
+
+    func fetchMemoryCards(for userId: UUID) async -> [RemoteMemoryCard] {
+        do {
+            return try await supabase
+                .from("memory_cards")
+                .select()
+                .eq("user_id", value: userId.uuidString)
                 .execute()
                 .value
         } catch {

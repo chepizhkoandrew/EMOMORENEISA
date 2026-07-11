@@ -45,7 +45,7 @@ export function probePass1Prompt({ pronoun, quizLanguage, transcripts }) {
     `Q4 (how long / how learning): ${transcripts.q4 ?? ""}`,
     `Q5 (self-rating — 3 skills separately): ${transcripts.q5 ?? ""}`,
     `Q5b (what to improve most): ${transcripts.q5b ?? ""}`,
-    `Q6 (daily routine): ${transcripts.q6 ?? ""}`,
+    `Q6 (daily routine — answered IN SPANISH, this is the learner's dedicated Spanish-speaking sample): ${transcripts.q6 ?? ""}`,
     `Q7 (person or pet warm probe): ${transcripts.q7 ?? ""}`
   ].join("\n");
 
@@ -85,7 +85,7 @@ export function probePass2Prompt({ pronoun, quizLanguage, transcripts, previousP
     `Q4: ${transcripts.q4 ?? ""}`,
     `Q5: ${transcripts.q5 ?? ""}`,
     `Q5b: ${transcripts.q5b ?? ""}`,
-    `Q6: ${transcripts.q6 ?? ""}`,
+    `Q6 (answered in Spanish): ${transcripts.q6 ?? ""}`,
     `Q7: ${transcripts.q7 ?? ""}`,
     `Q8 asked: ${previousProbe?.next_question_text ?? ""}`,
     `Q8 answer: ${transcripts.q8 ?? ""}`
@@ -127,7 +127,7 @@ export function synthesisPrompt({ pronoun, quizLanguage, transcripts, probes }) 
     `Q4 (how long / how learning): ${transcripts.q4 ?? ""}`,
     `Q5 (self-rating — 3 skills separately): ${transcripts.q5 ?? ""}`,
     `Q5b (what to improve most): ${transcripts.q5b ?? ""}`,
-    `Q6 (daily routine): ${transcripts.q6 ?? ""}`,
+    `Q6 (daily routine — answered IN SPANISH, this is the learner's ONLY dedicated Spanish-speaking sample): ${transcripts.q6 ?? ""}`,
     `Q7 (person or pet warm probe): ${transcripts.q7 ?? ""}`,
     `Q8 asked: ${probes?.pass1?.next_question_text ?? ""}`,
     `Q8 answer: ${transcripts.q8 ?? ""}`,
@@ -189,18 +189,18 @@ no leading prose):
   },
   "level_breakdown": {
     "overall_band": "<one of: A1 | A2 | B1 | B2 | C1 | C2 | unknown>",
-    "current_state": "<English, ONE short sentence describing where the learner is right now with Spanish. Anchored in what they SAID (self-rating in Q5/Q5b, how long they've been learning in Q4, and how they actually expressed themselves — vocabulary range, sentence complexity, any Spanish they used, register cues). Never invent evidence. If they only spoke in their native language and gave a self-rating, base it on the self-rating and say so briefly.>",
+    "current_state": "<English, ONE short sentence describing where the learner is right now with Spanish. Base this on exactly two sources: their self-rating in Q5/Q5b, and their actual Spanish sample in Q6 (vocabulary range, sentence complexity, verb use, register). Never invent evidence, and never pull evidence from Q1/Q7/Q8/Q9/Q10/Q11 — those are all native-language answers, not Spanish samples.>",
     "listening": {
       "band": "<A1 | A2 | B1 | B2 | C1 | C2 | unknown>",
-      "note": "<English, ONE sentence explaining the read. Prefer evidence from Q4 (how they consume Spanish — apps, shows, classes) and Q5 (self-rating of listening). If no signal, return 'unknown' and say so.>"
+      "note": "<English, ONE sentence explaining the read. This band has no direct observed sample — base it on the Q5 self-rating (and Q4's learning stack as a minor input) only. If no self-rating was given, return 'unknown' and say so.>"
     },
     "speaking": {
       "band": "<A1 | A2 | B1 | B2 | C1 | C2 | unknown>",
-      "note": "<English, ONE sentence. Weight this HEAVIER on how they actually spoke across the transcripts (any Spanish attempts, fluency, code-switching, hesitation cues in native language) than on their self-rating. Use self-rating only as a floor when there is no observed sample.>"
+      "note": "<English, ONE sentence. This is judged from exactly two sources: the Q5/Q5b self-rating, and the actual Spanish they produced in Q6 (fluency, hesitation, how far they got into the four sub-prompts — morning routine, living situation, work, free time). Weight Q6's observed sample HEAVIER than the self-rating. If Q6 is empty or clearly not attempted in Spanish, say so explicitly and fall back to the self-rating alone.>"
     },
     "grammar": {
       "band": "<A1 | A2 | B1 | B2 | C1 | C2 | unknown>",
-      "note": "<English, ONE sentence. Base this on any Spanish they produced (verb tense control, article/gender agreement, prepositions), plus their self-declared learning stack and how long they've been at it. If they never produced Spanish, mark 'unknown' and say why.>"
+      "note": "<English, ONE sentence. Judged from exactly two sources: the Q5/Q5b self-rating, and Q6's Spanish sample specifically (verb tense control, article/gender agreement, prepositions). If Q6 is empty or not in Spanish, mark 'unknown' or fall back to self-rating and say so.>"
     },
     "goals": [
       "<English, 2 to 5 bullet lines — each MUST start with '• '. Concrete, tutor-actionable improvement targets DERIVED FROM WHAT THEY SAID in Q5b (what to improve most), Q3 (why Spanish — the actual use case), and gaps you observed. Example bullets: '• Build fluency to hold 3-minute unscripted daily-routine talk in Spanish', '• Lock in preterite vs. imperfect for storytelling at work'. Do NOT invent goals the user did not ask for and did not show evidence of needing.>"
@@ -213,9 +213,15 @@ Be conservative: if a slot was not stated, return empty string / empty array /
 in whatever language they arrived in.
 
 For level_breakdown specifically:
-- OBSERVED speaking evidence outweighs SELF-RATED level. If the learner claims
-  'intermediate' but spoke only in their native language across all 11 answers,
-  their observed speaking sample is empty and the note must say so.
+- The level judgment rests on EXACTLY TWO sources: the Q5/Q5b self-assessment,
+  and the learner's own Spanish sample in Q6 (the one question they were asked
+  to answer in Spanish). Every other transcript (Q1-Q4, Q7-Q11) is in the
+  learner's native language and MUST NOT be used as speaking/grammar evidence,
+  even if a stray Spanish word shows up in one.
+- OBSERVED Q6 evidence outweighs the SELF-RATED level. If the learner claims
+  'intermediate' in Q5 but Q6 is empty, refused, or answered in their native
+  language instead of Spanish, the observed sample is empty and the note must
+  say so plainly — do not soften this into a guess.
 - 'unknown' is a valid, correct answer when signal is absent. Do NOT guess.
 - Bands map roughly: A1=greetings & isolated words, A2=short scripted
   sentences, B1=simple daily conversation with errors, B2=fluent daily
@@ -223,4 +229,4 @@ For level_breakdown specifically:
 `;
 }
 
-export const ONBOARDING_QUIZ_VERSION = 5;
+export const ONBOARDING_QUIZ_VERSION = 6;

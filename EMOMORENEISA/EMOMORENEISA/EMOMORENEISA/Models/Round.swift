@@ -13,6 +13,10 @@ enum Tense: String, CaseIterable, Identifiable {
 }
 
 struct Round {
+    /// Shared by every `VerbAttempt` recorded during this round — lets stats
+    /// count "games played" as distinct round ids, including rounds the user
+    /// abandons partway through.
+    let id: UUID
     let verbs: [Verb]
     let tense: Tense
     var cells: [GameCell]
@@ -29,7 +33,7 @@ struct Round {
             }
         }
         cells.shuffle()
-        return Round(verbs: verbs, tense: tense, cells: cells, timerSeconds: timerSeconds)
+        return Round(id: UUID(), verbs: verbs, tense: tense, cells: cells, timerSeconds: timerSeconds)
     }
 
     func retryRound() -> Round {
@@ -40,6 +44,9 @@ struct Round {
             return c
         }
         retryCells.shuffle()
-        return Round(verbs: verbs, tense: tense, cells: retryCells, timerSeconds: timerSeconds)
+        // A fresh round id: retrying missed cells is its own "game played" —
+        // consistent with `repeatRound()`/`startPlaying()` also minting a
+        // new id for every new Round.
+        return Round(id: UUID(), verbs: verbs, tense: tense, cells: retryCells, timerSeconds: timerSeconds)
     }
 }

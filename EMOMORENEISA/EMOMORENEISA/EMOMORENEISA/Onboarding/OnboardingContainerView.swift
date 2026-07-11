@@ -16,6 +16,8 @@ struct OnboardingContainerView: View {
     @State private var coordinator: OnboardingCoordinator? = nil
     @State private var phase: Phase = .preForm
     @State private var persistError: String? = nil
+    @State private var showOfflineAlert = false
+    private let network = NetworkMonitor.shared
 
     enum Phase { case preForm, quiz, persisting }
 
@@ -24,12 +26,30 @@ struct OnboardingContainerView: View {
             switch phase {
             case .preForm:
                 PreOnboardingFormView(store: store) {
+                    // Every question from Q8 onward needs a live probe/
+                    // synthesis call — starting offline just produces silent
+                    // fallbacks and a dead-end .failed state at the very end
+                    // (see the "stuck onboarding" bug this guards against).
+                    guard network.isConnected else {
+                        showOfflineAlert = true
+                        return
+                    }
                     let coord = OnboardingCoordinator(store: store)
                     coordinator = coord
                     // Seed the display name onto the profile immediately so
                     // the tutor already has it if the user drops out mid-quiz.
                     seedDisplayName()
                     phase = .quiz
+                }
+                .alert(
+                    store.quizLanguage == .uk ? "Немає інтернету" : "No internet connection",
+                    isPresented: $showOfflineAlert
+                ) {
+                    Button(store.quizLanguage == .uk ? "Гаразд" : "OK", role: .cancel) {}
+                } message: {
+                    Text(store.quizLanguage == .uk
+                         ? "Цей квіз потребує стабільного з'єднання. Перевір Wi-Fi або мобільний інтернет і спробуй ще раз."
+                         : "This quiz needs a stable connection. Check your Wi-Fi or cellular data and try again.")
                 }
             case .quiz:
                 if let coord = coordinator {
@@ -63,8 +83,11 @@ struct OnboardingContainerView: View {
             BackgroundMusicPlayer.shared.fadeOut(duration: 0.4)
         }
         .onDisappear {
-            // Restore the ambient soundtrack once onboarding is finished /
-            // dismissed so the rest of the app sounds normal again.
+            // The quiz leaves the audio session in `.playback` (set by every
+            // question/closing-line play, never reset) — restore it to the
+            // ambient/mixable state the rest of the app expects BEFORE
+            // resuming music, or the resume can silently do nothing.
+            OnboardingAudioPlayer.resetAudioSessionToAmbient()
             BackgroundMusicPlayer.shared.play()
         }
     }
@@ -92,6 +115,10 @@ struct OnboardingContainerView: View {
         if !name.isEmpty { p.displayName = name }
         if let pronoun = store.pronoun { p.userPronoun = pronoun.rawValue }
         p.onboardingProfile = ob
+        // The one moment the ENTIRE onboarding experience (tour + quiz) is
+        // truly done — this is what HomeView/ModeSelectorView check to skip
+        // straight to the menu on every future launch.
+        p.hasCompletedOnboarding = true
         // Mirror a couple of the sharper slots into the existing v2 fields so
         // the older tutor plumbing already benefits (lifeNotes / whyLearning /
         // hobbies) without waiting for the profileDigest pass.

@@ -88,6 +88,17 @@ final class OnboardingAudioPlayer: NSObject {
         continuation = nil
     }
 
+    /// Every question/closing-line play sets the session to `.playback`
+    /// (`.duckOthers`) and never resets it — unlike `AudioRecorder`, which
+    /// properly restores `.ambient`/`.mixWithOthers` after every recording.
+    /// Call this once the quiz is fully torn down (`OnboardingContainerView`
+    /// disappearing) so the background music / bubble-sound world it hands
+    /// back to isn't stuck behind a stale exclusive-playback session.
+    static func resetAudioSessionToAmbient() {
+        try? AVAudioSession.sharedInstance().setCategory(.ambient, mode: .default, options: [.mixWithOthers])
+        try? AVAudioSession.sharedInstance().setActive(true)
+    }
+
     /// Gradually fade the current playback volume to zero over `duration`
     /// seconds, then hard-stop. Used when the user interrupts the tutor
     /// mid-question by tapping the equalizer to start recording — we don't
@@ -110,6 +121,23 @@ final class OnboardingAudioPlayer: NSObject {
 
     @MainActor
     private func play(url: URL) async {
+        // Guard against overlapping playback: if a previous `play(url:)` call
+        // is still awaiting its continuation (e.g. the user interrupted a
+        // question via the "tap to answer early" path right as this call
+        // came in), force-resume it now instead of silently overwriting
+        // `continuation`/`player` below. Without this, the earlier caller's
+        // `await` would leak — hanging forever — and the delegate callback
+        // that eventually fires would resume the WRONG (newer) continuation,
+        // which reads as "the question played again" from the coordinator's
+        // point of view once its stale `await` finally unblocks.
+        if let pending = continuation {
+            print("[ONB-AUDIO] ⚠️ play(url:) called while a previous playback was still pending — force-resuming it to avoid a leak")
+            player?.stop()
+            player = nil
+            continuation = nil
+            pending.resume()
+        }
+
         // Prepare audio session for playback (recorder switches it back on start()).
         try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .default, options: [.duckOthers])
         try? AVAudioSession.sharedInstance().setActive(true)
@@ -120,10 +148,12 @@ final class OnboardingAudioPlayer: NSObject {
             p.prepareToPlay()
             player = p
             isPlaying = true
+            print("[ONB-AUDIO] ▶️ play start \(url.lastPathComponent)")
             await withCheckedContinuation { (cont: CheckedContinuation<Void, Never>) in
                 self.continuation = cont
                 p.play()
             }
+            print("[ONB-AUDIO] ⏹ play end \(url.lastPathComponent)")
         } catch {
             print("[ONB-AUDIO] play(url) error: \(error)")
         }

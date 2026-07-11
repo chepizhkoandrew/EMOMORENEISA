@@ -36,6 +36,10 @@ final class GameEngine: ObservableObject {
     @Published var timerSeconds: Double = 4.0
     var selectedTense: Tense = .present
 
+    /// Set once from `HomeView` (which has `@Environment(\.modelContext)`) —
+    /// `GameEngine` itself has no SwiftData context of its own.
+    var attemptService: VerbAttemptService?
+
     private var cellTimer: AnyCancellable?
     private var countdownTimer: AnyCancellable?
     private var retryTimer: AnyCancellable?
@@ -198,6 +202,7 @@ final class GameEngine: ObservableObject {
 
     private func markActiveCell(correct: Bool, cellIndex: Int, transcript: String = "") {
         guard var r = round, cellIndex < r.cells.count else { return }
+        let cell = r.cells[cellIndex]
         r.cells[cellIndex].state = correct ? .correct : .missed
         r.cells[cellIndex].revealed = true
         if !transcript.isEmpty {
@@ -205,12 +210,25 @@ final class GameEngine: ObservableObject {
         }
         round = r
         lastResult = LastResult(
-            pronoun: r.cells[cellIndex].pronoun.displayLabel,
-            conjugation: r.cells[cellIndex].expectedConjugation,
+            pronoun: cell.pronoun.displayLabel,
+            conjugation: cell.expectedConjugation,
             userTranscript: transcript,
             correct: correct
         )
         glog("⚙️ ENGINE", "Cell \(cellIndex + 1) → \(correct ? "✅ correct" : "❌ missed") | heard: '\(transcript)'")
+
+        // Fires for every word regardless of whether the round is ever
+        // finished — the only guaranteed hook, since "STOP" bypasses
+        // ResultsView entirely (see `newRound()`).
+        attemptService?.record(
+            roundId: r.id,
+            verb: cell.verb,
+            pronoun: cell.pronoun,
+            tense: r.tense,
+            expectedConjugation: cell.expectedConjugation,
+            userTranscript: transcript,
+            correct: correct
+        )
     }
 
     private func advanceCell() {

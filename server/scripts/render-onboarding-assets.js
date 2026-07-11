@@ -20,7 +20,7 @@
 // Cloud service account for Chirp3 HD).
 
 import crypto from "node:crypto";
-import { writeFileSync, mkdirSync, existsSync, symlinkSync, unlinkSync, statSync } from "node:fs";
+import { writeFileSync, mkdirSync, existsSync, symlinkSync, unlinkSync, statSync, readFileSync } from "node:fs";
 import { dirname, join, resolve, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { getVoice, activeVoiceTag } from "../src/voicecache.js";
@@ -45,7 +45,7 @@ const BANK = {
       q4:  "How long have you been learning Spanish? Do you go to a school, use other apps, or are you just starting out and not sure where to begin?",
       q5:  "How would you rate your Spanish right now — your listening, your speaking, and your reading, each on its own?",
       q5b: "And what would you like to improve most — learning new words and grammar, or speaking without fear?",
-      q6:  "Tell me one sentence about your daily routine — what do you do in the morning, do you live alone or with someone, where do you work, and what do you like doing in your free time?",
+      q6:  "Quick thing — try answering this one in Spanish, as best as you can, nice and slow. Tell me one sentence about your daily routine: what you do in the morning, if you live alone or with someone, where you work, and what you like doing in your free time.",
       q7:  "Tell me one small, totally random thing about yourself — a pet, a weird hobby, your best friend's name — whatever pops into your head first.",
       q10: "Imagine you already speak Spanish fluently — what changes in your life?",
       q11: "And the last one — the hardest. Listen carefully and don't take it the wrong way… who do you like more, dogs or cats? Dogs, right? Tell me you like dogs more.",
@@ -59,9 +59,9 @@ const BANK = {
       q2:  "Чим ти займаєшся в житті — працюєш, вчишся, ростиш дітей?",
       q3:  "Чому ти хочеш вивчити іспанську? Для роботи? Щоб спілкуватися з людьми — з кимось конкретно? Чи просто для задоволення, чи для навчання?",
       q4:  "Як довго ти вчиш іспанську? Ходиш до школи, користуєшся іншими додатками, чи це самий початок і ти ще не знаєш, з чого стартувати?",
-      q5:  "Як ти оцінюєш свою іспанську зараз — окремо аудіювання, говоріння і читання, кожне саме по собі?",
+      q5:  "Як ти оцінюєш свою іспанську зараз? Окремо - розуміння, граматику, та спілкування.",
       q5b: "А що ти хотів би покращити найбільше — вивчити нові слова й граматику, чи почати говорити без страху?",
-      q6:  "Розкажи одним реченням про свій звичайний день — що робиш зранку, живеш сам чи з кимось, де працюєш і чим любиш займатися у вільний час?",
+      q6:  "Швидке прохання — спробуй відповісти на це іспанською, наскільки зможеш, повільно і спокійно. Розкажи одним реченням про свій звичайний день: що робиш зранку, живеш сам чи з кимось, де працюєш і чим любиш займатися у вільний час.",
       q7:  "Розкажи щось маленьке й геть випадкове про себе — про домашнього улюбленця, дивне хобі, ім'я найкращого друга — що першим спаде на думку.",
       q10: "Уяви, що ти вже вільно говориш іспанською — що зміниться у твоєму житті?",
       q11: "І останнє — найскладніше. Слухай уважно і не зрозумій мене неправильно… кого ти любиш більше, собак чи котів? Собак, правда ж? Скажи, що любиш собак більше.",
@@ -73,9 +73,9 @@ const BANK = {
       q2:  "Чим ти займаєшся в житті — працюєш, вчишся, ростиш дітей?",       // neutral
       q3:  "Чому ти хочеш вивчити іспанську? Для роботи? Щоб спілкуватися з людьми — з кимось конкретно? Чи просто для задоволення, чи для навчання?", // neutral
       q4:  "Як довго ти вчиш іспанську? Ходиш до школи, користуєшся іншими додатками, чи це самий початок і ти ще не знаєш, з чого стартувати?",       // neutral
-      q5:  "Як ти оцінюєш свою іспанську зараз — окремо аудіювання, говоріння і читання, кожне саме по собі?", // neutral
+      q5:  "Як ти оцінюєш свою іспанську зараз? Окремо - розуміння, граматику, та спілкування.", // neutral
       q5b: "А що ти хотіла б покращити найбільше — вивчити нові слова й граматику, чи почати говорити без страху?",
-      q6:  "Розкажи одним реченням про свій звичайний день — що робиш зранку, живеш сама чи з кимось, де працюєш і чим любиш займатися у вільний час?",
+      q6:  "Швидке прохання — спробуй відповісти на це іспанською, наскільки зможеш, повільно і спокійно. Розкажи одним реченням про свій звичайний день: що робиш зранку, живеш сама чи з кимось, де працюєш і чим любиш займатися у вільний час.",
       q7:  "Розкажи щось маленьке й геть випадкове про себе — про домашнього улюбленця, дивне хобі, ім'я найкращої подруги — що першим спаде на думку.",
       q10: "Уяви, що ти вже вільно говориш іспанською — що зміниться у твоєму житті?", // neutral
       q11: "І останнє — найскладніше. Слухай уважно і не зрозумій мене неправильно… кого ти любиш більше, собак чи котів? Собак, правда ж? Скажи, що любиш собак більше.", // neutral
@@ -87,9 +87,9 @@ const BANK = {
       q2:  "Чим ти займаєшся в житті — працюєш, вчишся, ростиш дітей?",       // neutral
       q3:  "Чому ти хочеш вивчити іспанську? Для роботи? Щоб спілкуватися з людьми — з кимось конкретно? Чи просто для задоволення, чи для навчання?", // neutral
       q4:  "Як довго ти вчиш іспанську? Ходиш до школи, користуєшся іншими додатками, чи це самий початок і ти ще не знаєш, з чого стартувати?",       // neutral
-      q5:  "Як ти оцінюєш свою іспанську зараз — окремо аудіювання, говоріння і читання, кожне саме по собі?", // neutral
+      q5:  "Як ти оцінюєш свою іспанську зараз? Окремо - розуміння, граматику, та спілкування.", // neutral
       q5b: "А що хочеться покращити найбільше — вивчити нові слова й граматику, чи почати говорити без страху?",
-      q6:  "Розкажи одним реченням про свій звичайний день — що робиш зранку, живеш одне чи з кимось, де працюєш і чим любиш займатися у вільний час?",
+      q6:  "Швидке прохання — спробуй відповісти на це іспанською, наскільки зможеш, повільно і спокійно. Розкажи одним реченням про свій звичайний день: що робиш зранку, живеш одне чи з кимось, де працюєш і чим любиш займатися у вільний час.",
       q7:  "Розкажи щось маленьке й геть випадкове про себе — про домашнього улюбленця, дивне хобі, ім'я найкращого друга — що першим спаде на думку.",
       q10: "Уяви, що ти вже вільно говориш іспанською — що зміниться у твоєму житті?", // neutral
       q11: "І останнє — найскладніше. Слухай уважно і не зрозумій мене неправильно… кого ти любиш більше, собак чи котів? Собак, правда ж? Скажи, що любиш собак більше.", // neutral
@@ -105,6 +105,7 @@ const args = process.argv.slice(2);
 const DRY = args.includes("--dry");
 const ONLY_LANG = args.find(a => a.startsWith("--lang="))?.split("=")[1];
 const ONLY_GENDER = args.find(a => a.startsWith("--gender="))?.split("=")[1];
+const ONLY_SLOTS = args.find(a => a.startsWith("--slot="))?.split("=")[1]?.split(",");
 
 function sha(buf) { return crypto.createHash("sha256").update(buf).digest("hex").slice(0, 32); }
 
@@ -132,14 +133,28 @@ async function main() {
       }
       const dir = join(OUT_DIR, lang, gender);
       mkdirSync(dir, { recursive: true });
-      const manifest = { lang, gender, voiceTag, slots: {} };
+      // Filenames must be globally unique across the whole Assets tree —
+      // Xcode's synchronized group flattens all resources into the bundle
+      // root, so "q6.aac" in two different lang/gender folders collide
+      // ("Multiple commands produce..."). The lang/gender subfolders are
+      // kept purely for human browsing on disk.
+      const tag = `${lang}_${gender}`;
+      const manifestPath = join(dir, `manifest_${tag}.json`);
+      // Slot-filtered runs (--slot=) must not clobber untouched slots' entries —
+      // start from the existing manifest (if any) and only overwrite the
+      // requested slot(s), rather than rebuilding from scratch every time.
+      const existingManifest = existsSync(manifestPath)
+        ? JSON.parse(readFileSync(manifestPath, "utf8")) : null;
+      const manifest = { lang, gender, voiceTag, slots: { ...(existingManifest?.slots ?? {}) } };
 
-      for (const slot of SLOTS) {
+      const slotsToRender = ONLY_SLOTS ? SLOTS.filter(s => ONLY_SLOTS.includes(s)) : SLOTS;
+      for (const slot of slotsToRender) {
         const text = BANK[lang][gender][slot];
         if (!text) throw new Error(`missing ${lang}/${gender}/${slot}`);
-        const outPath = join(dir, `${slot}.aac`);
+        const fileName = `${slot}_${tag}.aac`;
+        const outPath = join(dir, fileName);
         console.log(`  ${lang}/${gender}/${slot}: ${text.slice(0, 60)}${text.length > 60 ? "…" : ""}`);
-        if (DRY) { manifest.slots[slot] = { path: `${slot}.aac`, sha: "dry" }; continue; }
+        if (DRY) { manifest.slots[slot] = { path: fileName, sha: "dry" }; continue; }
 
         const buf = await renderText(text);
         const hash = sha(buf);
@@ -149,7 +164,7 @@ async function main() {
         const rel = relative(dir, sharedPath);
         try { symlinkSync(rel, outPath); }
         catch (_) { writeFileSync(outPath, buf); }
-        manifest.slots[slot] = { path: `${slot}.aac`, sha: hash, bytes: buf.length };
+        manifest.slots[slot] = { path: fileName, sha: hash, bytes: buf.length };
       }
       writeFileSync(join(dir, "manifest.json"), JSON.stringify(manifest, null, 2));
       console.log(`  → wrote manifest ${lang}/${gender}/manifest.json`);
