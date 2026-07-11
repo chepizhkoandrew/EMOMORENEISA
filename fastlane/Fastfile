@@ -1313,7 +1313,7 @@ platform :ios do
     # 5. Set What's New text
     locs_resp = asc_get.call("/appStoreVersions/#{version_id}/appStoreVersionLocalizations")
     en_loc = (locs_resp["data"] || []).find { |l| l.dig("attributes", "locale") == "en-US" }
-    whats_new = "Full-screen Profile and Paywall screens with back navigation. Bug fixes and performance improvements."
+    whats_new = "Added a dedicated in-app screen (shown right after sign-in, before any AI feature) that discloses exactly what data is sent to which third-party AI service and requires explicit consent before anything is shared. Corrected in-app pricing information to accurately reflect what each feature costs. Bug fixes and performance improvements."
     if en_loc
       asc_patch.call("/appStoreVersionLocalizations/#{en_loc['id']}", {
         data: { type: "appStoreVersionLocalizations", id: en_loc["id"], attributes: { whatsNew: whats_new } }
