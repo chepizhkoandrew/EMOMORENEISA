@@ -1413,4 +1413,93 @@ platform :ios do
     end
   end
 
+  desc "Patch App Review notes on the current app version to match the corrected billing/AI-disclosure language"
+  lane :fix_review_notes do
+    require "net/http"
+    require "uri"
+    require "json"
+    require "openssl"
+    require "jwt"
+
+    private_key = OpenSSL::PKey::EC.new(File.read(KEY_PATH))
+    now   = Time.now.to_i
+    token = JWT.encode(
+      { iss: ISSUER_ID, iat: now, exp: now + 1200, aud: "appstoreconnect-v1" },
+      private_key, "ES256", { kid: KEY_ID }
+    )
+    base    = "https://api.appstoreconnect.apple.com/v1"
+    headers = { "Authorization" => "Bearer #{token}", "Content-Type" => "application/json" }
+
+    asc_get = lambda do |path|
+      uri  = URI("#{base}#{path}")
+      req  = Net::HTTP::Get.new(uri)
+      headers.each { |k, v| req[k] = v }
+      resp = Net::HTTP.start(uri.hostname, uri.port, use_ssl: true) { |http| http.request(req) }
+      JSON.parse(resp.body)
+    end
+    asc_patch = lambda do |path, body|
+      uri  = URI("#{base}#{path}")
+      req  = Net::HTTP::Patch.new(uri)
+      headers.each { |k, v| req[k] = v }
+      req.body = JSON.generate(body)
+      resp = Net::HTTP.start(uri.hostname, uri.port, use_ssl: true) { |http| http.request(req) }
+      parsed = begin; JSON.parse(resp.body); rescue; {}; end
+      [resp.code.to_i, parsed]
+    end
+    asc_post = lambda do |path, body|
+      uri  = URI("#{base}#{path}")
+      req  = Net::HTTP::Post.new(uri)
+      headers.each { |k, v| req[k] = v }
+      req.body = JSON.generate(body)
+      resp = Net::HTTP.start(uri.hostname, uri.port, use_ssl: true) { |http| http.request(req) }
+      parsed = begin; JSON.parse(resp.body); rescue; {}; end
+      [resp.code.to_i, parsed]
+    end
+
+    notes = "ACCOUNT: Sign in with Apple (or Google) is required to reach the app - use the built-in Sign in with Apple button with any Apple ID. No demo account needed; creating an account is free.\n\n" \
+            "AI DISCLOSURE: Immediately after sign-in, every user (new and returning) sees a dedicated screen explaining exactly what data is sent to which third-party AI service, before anything is sent: voice recordings -> OpenAI (transcription only); chat messages and Street View photos -> OpenAI; the tutor's spoken replies -> mainly Google's text-to-speech, with OpenAI used only as an automatic backup if Google's service is briefly unavailable; onboarding-quiz answers -> Google Gemini. The user must tap 'I Understand & Continue' before any of this happens. This is separate from, and in addition to, the Privacy Policy.\n\n" \
+            "BUSINESS MODEL / IN-APP PURCHASES: Every new account automatically receives a one-time free grant of \"treats\" (our in-app virtual credit) so every AI feature can be fully tested without paying. There is no recurring free daily allowance for anything - treats are required for: AI tutor chat replies (~5 treats), spoken/voice replies (~2 treats), asking the tutor about a Street View photo (~9 treats), identifying/labelling objects in a Street View photo (~6 treats), adding a word or phrase to the Memorise queue which generates its repeat-audio and picture (~3 treats), and checking a spoken answer in the Verbs & Times game (~2 treats). Signing in, reviewing past sessions, and reviewing already-learned words in Memorise are free and not gated by treats. ENFORCEMENT: the server checks the treat balance BEFORE calling any AI provider - if insufficient, the action is blocked outright (no AI request is made, so nothing is charged for a request that didn't happen) and the app shows an inline message ('You're out of treats. Top up to keep going.') directing the user to purchase more. Additional treats can be purchased from Profile -> tap the treats balance -> \"Get Treats\" screen, which sells three CONSUMABLE (non-subscription) treat packs via StoreKit In-App Purchase only - no external purchase link, no web checkout. That screen explicitly states \"Treats never expire. One-time purchase - no subscription,\" and tapping \"Full pricing details\" there opens a complete breakdown of exactly what each action costs. The same screen also has an optional promo-code field: codes only ever grant FREE bonus treats (a marketing gift, same category as the automatic free-trial grant) - no money changes hands outside Apple's IAP through that field. Full legal detail mirroring all of the above, including the exact per-feature costs, is in Terms & Conditions section 4 (\"Treats, Billing & Payments\") at https://professormadrid.com/terms.\n\n" \
+            "This submission addresses all issues raised in the previous review:\n\n" \
+            "1) Guideline 2.1(b) - App Completeness: The three in-app purchase products (Starter Pack, Plus Pack, Pro Pack) are attached to this submission.\n\n" \
+            "2) Guideline 5.1.1(iv) - Privacy: The app no longer shows a custom pre-permission screen before the microphone permission request; it now calls the system dialog directly.\n\n" \
+            "3) Guideline 5.1.1(i) / 5.1.2(i) - Privacy: Every signed-in user (new and existing) must pass through the AI disclosure screen described above and tap 'I Understand & Continue' before any AI feature is reachable. This is enforced in-app, not just referenced via a Privacy Policy link."
+
+    UI.message("Finding current app version...")
+    all_v = asc_get.call("/apps/#{APPLE_ID}/appStoreVersions?filter%5Bplatform%5D=IOS&limit=10")
+    version = (all_v["data"] || []).max_by { |v| v.dig("attributes", "versionString").to_s }
+    unless version
+      UI.error("No app version found.")
+      next
+    end
+    version_id = version["id"]
+    UI.message("Version #{version.dig('attributes', 'versionString')} (state: #{version.dig('attributes', 'appStoreState')}, id: #{version_id})")
+
+    detail_resp = asc_get.call("/appStoreVersions/#{version_id}/appStoreReviewDetail")
+    detail_id = detail_resp.dig("data", "id")
+
+    if detail_id
+      UI.message("Patching existing appStoreReviewDetail #{detail_id}...")
+      code, resp = asc_patch.call("/appStoreReviewDetails/#{detail_id}", {
+        data: { type: "appStoreReviewDetails", id: detail_id, attributes: { notes: notes } }
+      })
+    else
+      UI.message("No appStoreReviewDetail yet — creating one...")
+      code, resp = asc_post.call("/appStoreReviewDetails", {
+        data: {
+          type: "appStoreReviewDetails",
+          attributes: { notes: notes },
+          relationships: { appStoreVersion: { data: { type: "appStoreVersions", id: version_id } } }
+        }
+      })
+    end
+
+    case code
+    when 200, 201
+      UI.success("✅  Review notes updated on version #{version.dig('attributes', 'versionString')}")
+    else
+      errs = (resp["errors"] || []).map { |e| e["detail"] || e["title"] }.join("; ")
+      UI.error("❌  Failed: HTTP #{code}: #{errs}")
+    end
+  end
+
 end
