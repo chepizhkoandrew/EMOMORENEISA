@@ -294,8 +294,8 @@ struct PaywallView: View {
         do {
             let result = try await ProxyClient.shared.redeemCoupon(code: code)
             WalletManager.shared.apply(result.walletState)
-            couponState = .success(result.creditedTreats)
             couponCode = ""
+            couponState = .success(result.creditedTreats)
             AnalyticsService.shared.track(.couponRedeemed(treats: result.creditedTreats))
         } catch ProxyError.http(_, let message) {
             couponState = .failure(couponErrorMessage(for: message))

@@ -9,6 +9,21 @@ KEY_ID    = "V86ZAHA4K5"
 ISSUER_ID = "75f5fa5e-e967-4854-a15f-e5d21f4cea40"
 KEY_PATH  = File.expand_path("../appstore/keys/AuthKey_V86ZAHA4K5.p8", __dir__)
 
+# Single source of truth for the App Review notes on this submission — used by
+# both the `metadata` lane (deliver) and the `fix_review_notes` lane (direct API
+# patch), so the two never drift out of sync again the way they did before.
+REVIEW_NOTES_V1_2 =
+  "ACCOUNT: Sign in with Apple (or Google) is required to reach the app - use the built-in Sign in with Apple button with any Apple ID. No demo account needed; creating an account is free.\n\n" \
+  "AI DISCLOSURE: Immediately after sign-in, every user (new and returning) sees a dedicated screen naming exactly which third-party AI service each data type goes to before anything is sent: voice recordings -> OpenAI (transcription only); chat messages and Street View photos -> OpenAI; spoken replies -> mainly Google TTS, OpenAI only as an automatic backup; onboarding-quiz answers -> Google Gemini. The user must tap 'I Understand & Continue' before any of this happens - separate from, and in addition to, the Privacy Policy.\n\n" \
+  "BUSINESS MODEL: Every new account gets a one-time free grant of \"treats\" (in-app credit) so every AI feature can be tested without paying - there is no recurring free allowance. Treats are required for chat (~5), voice (~2), Street View photo chat (~9) and labelling (~6), adding to Memorise (~3), and Verbs & Times checks (~2); signing in and reviewing past content are free. The server checks the balance BEFORE calling any AI provider and blocks the action outright if insufficient (no charge for a request that didn't happen). Treats are sold only via three CONSUMABLE StoreKit IAPs - no external purchase link. Full costs: Profile -> treats balance -> Get Treats -> Full pricing details, and Terms & Conditions section 4 at https://professormadrid.com/terms.\n\n" \
+  "PROMO CODES (answering \"What does entering a coupon code unlock?\"): a valid code credits a fixed, pre-set number of free treats only - never a feature, discount, or IAP price change - exactly like the automatic free-trial grant every account gets. We create and distribute every code ourselves for promotional purposes only; codes are never sold, resold, or exchanged for value. Each account can redeem a given code once; a repeat attempt is rejected. See Terms & Conditions section 4.8. Test code: APPLEREVIEW50 (Profile -> treats balance -> Get Treats -> \"Have a coupon code?\" -> enter APPLEREVIEW50 -> Apply); credits 50 treats, reusable across reviewer accounts.\n\n" \
+  "IN-APP PURCHASE SUBMISSION (Guideline 2.1(b)): none of our three consumable products have ever been approved before, and the In-App Purchases page offered no submit action for them (\"Ready to Submit\" with no button). Per the guidance on that page, we are including all three directly in this version's \"In-App Purchases and Subscriptions\" section before submitting, since a first-ever consumable IAP must ship together with a version. Question for App Review: if this still isn't the correct way to move them out of \"Ready to Submit\", please tell us exactly what step you need from us - we want to resolve this the way you intend, not just resubmit the same thing again.\n\n" \
+  "This submission addresses every issue raised in the previous reviews:\n\n" \
+  "1) Guideline 2.1(b): the three IAPs are included with this version (see above).\n\n" \
+  "2) Guideline 2.1 (coupon question): answered above under PROMO CODES.\n\n" \
+  "3) Guideline 5.1.1(iv): no custom pre-permission screen before the microphone request; the system dialog is called directly.\n\n" \
+  "4) Guideline 5.1.1(i) / 5.1.2(i): every signed-in user must pass the AI disclosure screen above and tap 'I Understand & Continue' before any AI feature is reachable, enforced in-app."
+
 api_key = nil
 
 before_all do
@@ -115,9 +130,7 @@ platform :ios do
         email_address:      "support-professormadrid@priroda.tech",
         demo_user:          "",
         demo_password:      "",
-        notes:              "ACCOUNT: Sign in with Apple (or Google) is required to reach the app - use the built-in Sign in with Apple button with any Apple ID. No demo account needed; creating an account is free.\n\n" \
-                             "AI DISCLOSURE: Immediately after sign-in, every user (new and returning) sees a dedicated screen explaining exactly what data is sent to which third-party AI service, before anything is sent: voice recordings -> OpenAI (transcription only); chat messages and Street View photos -> OpenAI; the tutor's spoken replies -> mainly Google's text-to-speech, with OpenAI used only as an automatic backup if Google's service is briefly unavailable; onboarding-quiz answers -> Google Gemini. The user must tap 'I Understand & Continue' before any of this happens. This is separate from, and in addition to, the Privacy Policy.\n\n" \
-                             "BUSINESS MODEL / IN-APP PURCHASES: Every new account automatically receives a one-time free grant of \"treats\" (our in-app virtual credit) so every AI feature can be fully tested without paying. There is no recurring free daily allowance for anything - treats are required for: AI tutor chat replies (~5 treats), spoken/voice replies (~2 treats), asking the tutor about a Street View photo (~9 treats), identifying/labelling objects in a Street View photo (~6 treats), adding a word or phrase to the Memorise queue which generates its repeat-audio and picture (~3 treats), and checking a spoken answer in the Verbs & Times game (~2 treats). Signing in, reviewing past sessions, and reviewing already-learned words in Memorise are free and not gated by treats. ENFORCEMENT: the server checks the treat balance BEFORE calling any AI provider - if insufficient, the action is blocked outright (no AI request is made, so nothing is charged for a request that didn't happen) and the app shows an inline message ('You're out of treats. Top up to keep going.') directing the user to purchase more. Additional treats can be purchased from Profile -> tap the treats balance -> \"Get Treats\" screen, which sells three CONSUMABLE (non-subscription) treat packs via StoreKit In-App Purchase only - no external purchase link, no web checkout. That screen explicitly states \"Treats never expire. One-time purchase - no subscription,\" and tapping \"Full pricing details\" there opens a complete breakdown of exactly what each action costs. The same screen also has an optional promo-code field: codes only ever grant FREE bonus treats (a marketing gift, same category as the automatic free-trial grant) - no money changes hands outside Apple's IAP through that field. Full legal detail mirroring all of the above, including the exact per-feature costs, is in Terms & Conditions section 4 (\"Treats, Billing & Payments\") at https://professormadrid.com/terms."
+        notes:              REVIEW_NOTES_V1_2
       }
     )
   end
@@ -1212,9 +1225,16 @@ platform :ios do
     all_builds.each do |b|
       UI.message("  build #{b.dig('attributes','version').to_s.rjust(3)} state=#{b.dig('attributes','processingState')} expired=#{b.dig('attributes','expired')} id=#{b['id']}")
     end
-    build = all_builds.find { |b| b.dig("attributes", "processingState") == "VALID" && !b.dig("attributes", "expired") }
+    # Only consider builds whose pre-release version string is "1.1" — a build
+    # archived while MARKETING_VERSION was briefly bumped to 1.2 (build 91)
+    # would fail to link to the v1.1 appStoreVersion with a version mismatch.
+    build = all_builds.find { |b|
+      next false unless b.dig("attributes", "processingState") == "VALID" && !b.dig("attributes", "expired")
+      prv = asc_get.call("/builds/#{b['id']}/preReleaseVersion") rescue {}
+      prv.dig("data", "attributes", "version") == "1.1"
+    }
     unless build
-      UI.error("No valid non-expired build found. Run: bundle exec fastlane beta")
+      UI.error("No valid non-expired build tagged version 1.1 found. Run: bundle exec fastlane beta")
       next
     end
     build_id  = build["id"]
@@ -1250,12 +1270,22 @@ platform :ios do
       sleep 3
     end
 
-    # 4. Check if v1.1 already exists in a submittable state
+    # 4. Reuse v1.1 rather than creating v1.2.
+    #
+    # We tried creating a fresh v1.2 specifically to get an editable,
+    # not-yet-submitted version to bundle the first-ever consumable IAP
+    # submission with (Apple requires this — see the inAppPurchaseSubmissions
+    # step below). That failed with a hard platform rule, confirmed twice:
+    # "You cannot create a new version of the App in the current state" — Apple
+    # only allows ONE unreleased version in preparation per platform, and since
+    # no version of this app has ever shipped, v1.1 occupies that only slot.
+    # It can't be deleted either (blocked once any build is uploaded for the
+    # platform). Good news: v1.1 itself reverted to DEVELOPER_REJECTED on its
+    # own, which IS an editable/unsubmitted state — it satisfies the exact same
+    # precondition a new version would have, so we just reuse it.
     all_v = asc_get.call("/apps/#{APPLE_ID}/appStoreVersions?filter%5Bplatform%5D=IOS&limit=10")
     submittable_states = %w[PREPARE_FOR_SUBMISSION WAITING_FOR_REVIEW REJECTED DEVELOPER_REJECTED]
 
-    # Prefer v1.1 if it already exists in a submittable state; otherwise fall
-    # back to any other submittable version (e.g. v1.0 in DEVELOPER_REJECTED).
     existing_version = (all_v["data"] || []).find { |v|
       v.dig("attributes", "versionString") == "1.1" &&
       submittable_states.include?(v.dig("attributes", "appStoreState"))
@@ -1264,34 +1294,17 @@ platform :ios do
       submittable_states.include?(v.dig("attributes", "appStoreState"))
     }
 
-    if existing_version
-      v_str     = existing_version.dig("attributes", "versionString")
-      v_state   = existing_version.dig("attributes", "appStoreState")
-      version_id = existing_version["id"]
-      UI.success("Using existing version #{v_str} (state: #{v_state}, id: #{version_id})")
-    else
-      UI.message("Creating App Store version 1.1...")
-      code, v_resp = asc_post.call("/appStoreVersions", {
-        data: {
-          type: "appStoreVersions",
-          attributes: { platform: "IOS", versionString: "1.1", releaseType: "MANUAL" },
-          relationships: {
-            app:   { data: { type: "apps",   id: APPLE_ID } },
-            build: { data: { type: "builds", id: build_id } }
-          }
-        }
-      })
-      unless [200, 201].include?(code)
-        errs = (v_resp["errors"] || []).map { |e| e["detail"] || e["title"] }.join("; ")
-        UI.error("Failed to create v1.1: HTTP #{code}: #{errs}")
-        next
-      end
-      version_id = v_resp.dig("data", "id")
-      UI.success("Created v1.1 (id: #{version_id})")
+    unless existing_version
+      UI.error("No existing app version in a submittable state, and a new one cannot be created while v1.1 is unreleased. Nothing to do.")
+      next
     end
+    v_str      = existing_version.dig("attributes", "versionString")
+    v_state    = existing_version.dig("attributes", "appStoreState")
+    version_id = existing_version["id"]
+    UI.success("Using existing version #{v_str} (state: #{v_state}, id: #{version_id})")
 
-    # 5. Link build to v1.1
-    UI.message("Linking build #{build_num} to v1.1...")
+    # 5. Link build to v#{v_str}
+    UI.message("Linking build #{build_num} to v#{v_str}...")
     code, link_resp = asc_patch.call("/appStoreVersions/#{version_id}", {
       data: {
         type: "appStoreVersions", id: version_id,
@@ -1348,8 +1361,8 @@ platform :ios do
     UI.success("Created submission #{submission_id}")
     sleep 2
 
-    # 8. Add v1.1 to submission
-    UI.message("Adding v1.1 to submission...")
+    # 8. Add v#{v_str} to submission
+    UI.message("Adding v#{v_str} to submission...")
     code, item_resp = asc_post.call("/reviewSubmissionItems", {
       data: {
         type: "reviewSubmissionItems",
@@ -1360,40 +1373,63 @@ platform :ios do
       }
     })
     case code
-    when 200, 201 then UI.success("  ✅  v1.1 added (item: #{item_resp.dig('data','id')})")
-    when 409      then UI.message("  ⚠️   v1.1 already in submission")
+    when 200, 201 then UI.success("  ✅  v#{v_str} added (item: #{item_resp.dig('data','id')})")
+    when 409      then UI.message("  ⚠️   v#{v_str} already in submission")
     else
       errs = (item_resp["errors"] || []).map { |e| e["detail"] || e["title"] }.join("; ")
-      UI.error("  ❌  v1.1 HTTP #{code}: #{errs}")
+      UI.error("  ❌  v#{v_str} HTTP #{code}: #{errs}")
     end
 
-    # 9. Add each READY_TO_SUBMIT IAP to submission
-    UI.message("Adding IAPs to submission...")
+    # 9. Submit each READY_TO_SUBMIT IAP for review via inAppPurchaseSubmissions.
+    #
+    # NOT via reviewSubmissionItems — confirmed via Apple's own API error that
+    # IAPs aren't a valid relationship there ("ENTITY_ERROR.RELATIONSHIP.UNKNOWN").
+    # The real, separate mechanism is POST /inAppPurchaseSubmissions with only an
+    # inAppPurchaseV2 relationship (type "inAppPurchases" despite the "V2" name).
+    # For the FIRST-ever consumable IAP submission, Apple additionally requires an
+    # unsubmitted app version review already open (step 8, just above, before we
+    # patch submitted:true below) — confirmed via the exact error message
+    # STATE_ERROR.FIRST_CONSUMABLE_MUST_BE_SUBMITTED_ON_VERSION.
+    UI.message("Submitting IAPs for review...")
     our_iaps.each do |iap|
       pid    = iap.dig("attributes", "productId")
       iap_id = iap["id"]
       next if %w[WAITING_FOR_REVIEW IN_REVIEW APPROVED READY_FOR_SALE].include?(iap.dig("attributes", "state"))
-      code, item_resp = asc_post.call("/reviewSubmissionItems", {
+      code, item_resp = asc_post.call("/inAppPurchaseSubmissions", {
         data: {
-          type: "reviewSubmissionItems",
+          type: "inAppPurchaseSubmissions",
           relationships: {
-            reviewSubmission: { data: { type: "reviewSubmissions", id: submission_id } },
-            inAppPurchaseV2:  { data: { type: "inAppPurchasesV2",  id: iap_id } }
+            inAppPurchaseV2: { data: { type: "inAppPurchases", id: iap_id } }
           }
         }
       })
       case code
-      when 200, 201 then UI.success("  ✅  #{pid} added")
-      when 409      then UI.message("  ⚠️   #{pid} already in submission")
+      when 200, 201 then UI.success("  ✅  #{pid} submitted")
+      when 409      then UI.message("  ⚠️   #{pid} HTTP 409: #{(item_resp['errors'] || []).map { |e| e['detail'] || e['title'] }.join('; ')}")
       else
         errs = (item_resp["errors"] || []).map { |e| e["detail"] || e["title"] }.join("; ")
         UI.error("  ❌  #{pid} HTTP #{code}: #{errs}")
       end
     end
 
-    # 10. Verify items and submit
+    # 10. Verify the version item actually persisted, then confirm each IAP's
+    # own submission state moved off READY_TO_SUBMIT before finalizing.
     items = asc_get.call("/reviewSubmissions/#{submission_id}/items")["data"] || []
-    UI.message("Submission has #{items.size} item(s). Submitting for review...")
+    UI.message("Submission has #{items.size} item(s) (expect 1, the app version — IAPs submit separately).")
+    if items.empty?
+      UI.error("❌  App version item missing from submission — aborting submit.")
+      next
+    end
+
+    iap_check = asc_get.call("/apps/#{APPLE_ID}/inAppPurchasesV2?limit=50")
+    still_stuck = (iap_check["data"] || []).select { |i|
+      known_ids.include?(i.dig("attributes", "productId")) && i.dig("attributes", "state") == "READY_TO_SUBMIT"
+    }
+    if still_stuck.any?
+      UI.error("❌  Still stuck at READY_TO_SUBMIT: #{still_stuck.map { |i| i.dig('attributes','productId') }.join(', ')} — aborting submit so this isn't sent to Apple incomplete.")
+      next
+    end
+    UI.message("All IAPs moved off READY_TO_SUBMIT. Submitting version for review...")
 
     code, final_resp = asc_patch.call("/reviewSubmissions/#{submission_id}", {
       data: {
@@ -1404,7 +1440,7 @@ platform :ios do
     })
     case code
     when 200, 201
-      UI.success("🎉  Submitted v1.1 (build #{build_num}) + #{our_iaps.size} IAPs for App Store review!")
+      UI.success("🎉  Submitted v#{v_str} (build #{build_num}) + #{our_iaps.size} IAPs for App Store review!")
       UI.success("    Submission ID: #{submission_id}")
     else
       errs = (final_resp["errors"] || []).map { |e| e["detail"] || e["title"] }.join("; ")
@@ -1456,13 +1492,7 @@ platform :ios do
       [resp.code.to_i, parsed]
     end
 
-    notes = "ACCOUNT: Sign in with Apple (or Google) is required to reach the app - use the built-in Sign in with Apple button with any Apple ID. No demo account needed; creating an account is free.\n\n" \
-            "AI DISCLOSURE: Immediately after sign-in, every user (new and returning) sees a dedicated screen explaining exactly what data is sent to which third-party AI service, before anything is sent: voice recordings -> OpenAI (transcription only); chat messages and Street View photos -> OpenAI; the tutor's spoken replies -> mainly Google's text-to-speech, with OpenAI used only as an automatic backup if Google's service is briefly unavailable; onboarding-quiz answers -> Google Gemini. The user must tap 'I Understand & Continue' before any of this happens. This is separate from, and in addition to, the Privacy Policy.\n\n" \
-            "BUSINESS MODEL / IN-APP PURCHASES: Every new account automatically receives a one-time free grant of \"treats\" (our in-app virtual credit) so every AI feature can be fully tested without paying. There is no recurring free daily allowance for anything - treats are required for: AI tutor chat replies (~5 treats), spoken/voice replies (~2 treats), asking the tutor about a Street View photo (~9 treats), identifying/labelling objects in a Street View photo (~6 treats), adding a word or phrase to the Memorise queue which generates its repeat-audio and picture (~3 treats), and checking a spoken answer in the Verbs & Times game (~2 treats). Signing in, reviewing past sessions, and reviewing already-learned words in Memorise are free and not gated by treats. ENFORCEMENT: the server checks the treat balance BEFORE calling any AI provider - if insufficient, the action is blocked outright (no AI request is made, so nothing is charged for a request that didn't happen) and the app shows an inline message ('You're out of treats. Top up to keep going.') directing the user to purchase more. Additional treats can be purchased from Profile -> tap the treats balance -> \"Get Treats\" screen, which sells three CONSUMABLE (non-subscription) treat packs via StoreKit In-App Purchase only - no external purchase link, no web checkout. That screen explicitly states \"Treats never expire. One-time purchase - no subscription,\" and tapping \"Full pricing details\" there opens a complete breakdown of exactly what each action costs. The same screen also has an optional promo-code field: codes only ever grant FREE bonus treats (a marketing gift, same category as the automatic free-trial grant) - no money changes hands outside Apple's IAP through that field. Full legal detail mirroring all of the above, including the exact per-feature costs, is in Terms & Conditions section 4 (\"Treats, Billing & Payments\") at https://professormadrid.com/terms.\n\n" \
-            "This submission addresses all issues raised in the previous review:\n\n" \
-            "1) Guideline 2.1(b) - App Completeness: The three in-app purchase products (Starter Pack, Plus Pack, Pro Pack) are attached to this submission.\n\n" \
-            "2) Guideline 5.1.1(iv) - Privacy: The app no longer shows a custom pre-permission screen before the microphone permission request; it now calls the system dialog directly.\n\n" \
-            "3) Guideline 5.1.1(i) / 5.1.2(i) - Privacy: Every signed-in user (new and existing) must pass through the AI disclosure screen described above and tap 'I Understand & Continue' before any AI feature is reachable. This is enforced in-app, not just referenced via a Privacy Policy link."
+    notes = REVIEW_NOTES_V1_2
 
     UI.message("Finding current app version...")
     all_v = asc_get.call("/apps/#{APPLE_ID}/appStoreVersions?filter%5Bplatform%5D=IOS&limit=10")

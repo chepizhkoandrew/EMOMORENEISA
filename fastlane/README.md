@@ -151,6 +151,14 @@ Check current state of versions and IAPs
 
 Create v1.1, cancel old submissions, attach latest build + all 3 IAPs, and submit for App Store review
 
+### ios fix_review_notes
+
+```sh
+[bundle exec] fastlane ios fix_review_notes
+```
+
+Patch App Review notes on the current app version to match the corrected billing/AI-disclosure language
+
 ----
 
 This README.md is auto-generated and will be re-generated every time [_fastlane_](https://fastlane.tools) is run.
