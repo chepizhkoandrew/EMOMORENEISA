@@ -102,6 +102,8 @@ struct SessionListView: View {
                     .font(.system(size: 15, weight: .bold, design: .rounded))
                     .foregroundColor(.black)
                     .fixedSize()
+                    .contentTransition(.numericText(value: Double(wallet.balanceTreats)))
+                    .animation(.snappy(duration: 0.6), value: wallet.balanceTreats)
             }
             .padding(.horizontal, 10)
             .padding(.vertical, 5)

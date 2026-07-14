@@ -5,6 +5,7 @@ struct PaywallView: View {
     @State private var store = StoreManager.shared
     @State private var wallet = WalletManager.shared
     @State private var showInfo = false
+    @State private var treatsBump = false
 
     var body: some View {
         ZStack(alignment: .top) {
@@ -39,6 +40,19 @@ struct PaywallView: View {
                             Text(L("%@ treats", wallet.balanceTreats.formatted()))
                                 .font(.title.bold())
                                 .foregroundStyle(.white)
+                                .contentTransition(.numericText(value: Double(wallet.balanceTreats)))
+                                .animation(.snappy(duration: 0.6), value: wallet.balanceTreats)
+                                .scaleEffect(treatsBump ? 1.18 : 1.0)
+                                .shadow(color: .green.opacity(treatsBump ? 0.7 : 0), radius: treatsBump ? 16 : 0)
+                                .animation(.spring(response: 0.4, dampingFraction: 0.5), value: treatsBump)
+                                .onChange(of: wallet.balanceTreats) { oldValue, newValue in
+                                    guard newValue > oldValue else { return }
+                                    treatsBump = true
+                                    Task {
+                                        try? await Task.sleep(for: .seconds(0.45))
+                                        treatsBump = false
+                                    }
+                                }
                             Text(L("Pick a pack to keep your lessons going."))
                                 .font(.subheadline)
                                 .foregroundStyle(AppColors.textSecondary)

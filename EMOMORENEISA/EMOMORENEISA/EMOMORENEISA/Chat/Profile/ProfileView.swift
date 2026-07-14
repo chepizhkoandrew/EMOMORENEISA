@@ -135,6 +135,8 @@ struct ProfileView: View {
                     Text(L("%d treats", wallet.balanceTreats))
                         .font(.system(size: 20, weight: .bold, design: .rounded))
                         .foregroundColor(AppColors.textPrimary)
+                        .contentTransition(.numericText(value: Double(wallet.balanceTreats)))
+                        .animation(.snappy(duration: 0.6), value: wallet.balanceTreats)
                     Text(L("Tap to top up"))
                         .font(.system(size: 13, weight: .regular, design: .rounded))
                         .foregroundColor(AppColors.textTertiary)
