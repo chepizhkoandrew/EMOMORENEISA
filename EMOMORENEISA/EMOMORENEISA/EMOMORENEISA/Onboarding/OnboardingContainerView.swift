@@ -75,6 +75,15 @@ struct OnboardingContainerView: View {
             }
         }
         .onAppear {
+            // Apple's Sign in with Apple guidelines (and App Review) require
+            // reusing the name Authentication Services already supplied
+            // instead of asking the user to type it again — pre-fill it here
+            // so PreOnboardingFormView can skip that step entirely.
+            if store.name.trimmingCharacters(in: .whitespaces).isEmpty,
+               let existing = authState.profile?.displayName,
+               !existing.trimmingCharacters(in: .whitespaces).isEmpty {
+                store.name = existing
+            }
             // The onboarding submodule is a fully isolated audio scene:
             // silence the intro-slide voice manager and fade out the ambient
             // background music so nothing competes with Professor Madrid's

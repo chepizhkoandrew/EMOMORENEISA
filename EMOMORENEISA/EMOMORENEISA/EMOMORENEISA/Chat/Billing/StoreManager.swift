@@ -71,11 +71,13 @@ final class StoreManager {
                     return false
                 }
                 let credited = await creditOnServer(jws: verification.jwsRepresentation)
-                await transaction.finish()
                 if credited {
+                    await transaction.finish()
                     let treats = pack(for: product.id)?.treats ?? 0
                     AnalyticsService.shared.track(.purchaseCompleted(productId: product.id, treats: treats))
                 }
+                // Leave unfinished on failure — restoreUnfinished()/listenForTransactions()
+                // will retry crediting and finish it once the server accepts it.
                 return credited
             case .userCancelled:
                 AnalyticsService.shared.track(.purchaseCancelled(productId: product.id))

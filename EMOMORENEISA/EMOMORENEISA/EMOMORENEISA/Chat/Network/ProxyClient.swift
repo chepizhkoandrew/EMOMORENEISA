@@ -241,11 +241,6 @@ final class ProxyClient {
         try walletState(from: await postJSON(path: "/v1/topup", body: ["signedTransaction": signedTransaction]))
     }
 
-    struct CouponResult {
-        let walletState: WalletState
-        let creditedTreats: Int
-    }
-
     func deleteAccount() async throws {
         _ = try await postJSON(path: "/v1/delete-account", body: [:])
     }
@@ -259,14 +254,6 @@ final class ProxyClient {
         let b64 = json["base64"] as? String,
         let data = Data(base64Encoded: b64) else { return nil }
         return (data, (json["mime"] as? String) ?? "image/jpeg")
-    }
-
-    // Redeems a coupon code. Throws ProxyError.http on invalid/expired/already-used codes.
-    func redeemCoupon(code: String) async throws -> CouponResult {
-        let json = try await postJSON(path: "/v1/coupon/redeem", body: ["code": code])
-        let state = walletState(from: json)
-        let credited = (json["creditedTreats"] as? NSNumber)?.intValue ?? 0
-        return CouponResult(walletState: state, creditedTreats: credited)
     }
 
     // MARK: - Onboarding (utility class, not billed)

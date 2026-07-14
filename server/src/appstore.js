@@ -9,9 +9,6 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const APPLE_ROOT = new X509Certificate(
   readFileSync(join(__dirname, "..", "certs", "AppleRootCA-G3.cer"))
 );
-const APPLE_ROOT_FINGERPRINT =
-  "63:34:3A:BF:B8:9A:6A:03:EB:B5:7E:9B:3F:5F:A7:BE:7C:4F:5C:75:6F:30:17:B3:A8:C4:88:C3:65:3E:91:79";
-
 function b64urlToBuffer(s) {
   return Buffer.from(s.replace(/-/g, "+").replace(/_/g, "/"), "base64");
 }
@@ -34,19 +31,21 @@ export function verifyStoreKitJWS(jws) {
   if (!Array.isArray(header.x5c) || header.x5c.length < 2) throw new Error("missing_x5c");
 
   const leaf = certFromX5cEntry(header.x5c[0]);
-  const root = certFromX5cEntry(header.x5c[header.x5c.length - 1]);
+  const intermediate = certFromX5cEntry(header.x5c[1]);
 
-  // 1. The presented root must be Apple Root CA - G3 (pin by fingerprint).
-  if (root.fingerprint256 !== APPLE_ROOT_FINGERPRINT || root.raw.compare(APPLE_ROOT.raw) !== 0) {
+  // 1. Trust anchor: verify the intermediate chains up to OUR pinned Apple
+  // Root CA - G3, using its public key — never by requiring the 3rd x5c
+  // entry (if Apple even sends one) to be byte-identical to our pinned file.
+  // This mirrors Apple's own SignedDataVerifier reference implementation,
+  // which discards x5c's 3rd entry entirely and validates against a
+  // separately-supplied, locally-trusted root list instead.
+  if (!intermediate.checkIssued(APPLE_ROOT) || !intermediate.verify(APPLE_ROOT.publicKey)) {
     throw new Error("untrusted_root");
   }
 
-  // 2. Each cert in the chain must be issued by the next one.
-  for (let i = 0; i < header.x5c.length - 1; i++) {
-    const child = certFromX5cEntry(header.x5c[i]);
-    const issuer = certFromX5cEntry(header.x5c[i + 1]);
-    if (child.checkIssued(issuer) === false) throw new Error(`broken_chain_${i}`);
-    if (!child.verify(issuer.publicKey)) throw new Error(`bad_signature_${i}`);
+  // 2. Leaf must be issued by the intermediate.
+  if (!leaf.checkIssued(intermediate) || !leaf.verify(intermediate.publicKey)) {
+    throw new Error("broken_chain");
   }
 
   // 3. Validity window of the leaf.

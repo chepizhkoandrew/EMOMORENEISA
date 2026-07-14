@@ -12,7 +12,6 @@ enum AppEvent {
     case purchaseStarted(productId: String)
     case purchaseCompleted(productId: String, treats: Int)
     case purchaseCancelled(productId: String)
-    case couponRedeemed(treats: Int)
     case parrotSessionStarted
     case srsSessionStarted(cardCount: Int)
     case srsSessionCompleted(cardCount: Int, archived: Int)
@@ -30,7 +29,6 @@ enum AppEvent {
         case .purchaseStarted:       return "purchase_started"
         case .purchaseCompleted:     return "purchase_completed"
         case .purchaseCancelled:     return "purchase_cancelled"
-        case .couponRedeemed:        return "coupon_redeemed"
         case .parrotSessionStarted:  return "parrot_session_started"
         case .srsSessionStarted:     return "srs_session_started"
         case .srsSessionCompleted:   return "srs_session_completed"
@@ -49,7 +47,6 @@ enum AppEvent {
         case .purchaseStarted(let pid):                   return ["product_id": pid]
         case .purchaseCompleted(let pid, let treats):     return ["product_id": pid, "treats": "\(treats)"]
         case .purchaseCancelled(let pid):                 return ["product_id": pid]
-        case .couponRedeemed(let treats):                 return ["treats": "\(treats)"]
         case .srsSessionStarted(let n):                   return ["card_count": "\(n)"]
         case .srsSessionCompleted(let n, let archived):   return ["card_count": "\(n)", "archived": "\(archived)"]
         }

@@ -21,15 +21,6 @@ let ukBillingStrings: [String: String] = [
     "Verb check": "Перевірка дієслова",
     "~3 treats": "~3 смаколики",
     "~9 treats": "~9 смаколиків",
-    "Have a coupon code?": "Є промокод?",
-    "Enter code": "Введи код",
-    "Apply": "Застосувати",
-    "%@ treats added to your balance!": "%@ смаколиків додано на баланс!",
-    "This coupon code is not valid.": "Цей промокод недійсний.",
-    "This coupon has expired.": "У цього промокоду вийшов термін дії.",
-    "This coupon has reached its usage limit.": "Цей промокод вичерпав ліміт використань.",
-    "You've already redeemed this coupon.": "Цей промокод уже активовано.",
-    "Something went wrong. Please try again.": "Щось пішло не так. Спробуй ще раз.",
 
     // BillingInfoView
     "A full AI answer from your tutor.": "Повна відповідь від твого AI-репетитора.",

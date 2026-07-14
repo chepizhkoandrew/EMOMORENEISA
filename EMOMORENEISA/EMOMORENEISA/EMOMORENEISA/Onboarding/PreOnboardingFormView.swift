@@ -1,11 +1,13 @@
 import SwiftUI
 
-// Phase A of the onboarding quiz — a silent 3-step form (no audio) that
-// collects the three inputs the voice quiz needs before it can start:
-// quiz language, name, and pronoun. Language comes first because the
-// pronoun step's labels are bilingual once a Ukrainian quiz is chosen
-// (see `pronounLabel`) — asking it last would render pronoun options in
-// the wrong/default language for that entire step. Each field lives on
+// Phase A of the onboarding quiz — a silent form (no audio) that collects
+// the inputs the voice quiz needs before it can start: quiz language, name,
+// and pronoun. The name step is skipped when Sign in with Apple already
+// supplied one (see `stepSequence`) — Apple's Sign in with Apple guidelines
+// require reusing that value rather than asking again. Language comes first
+// because the pronoun step's labels are bilingual once a Ukrainian quiz is
+// chosen (see `pronounLabel`) — asking it last would render pronoun options
+// in the wrong/default language for that entire step. Each field lives on
 // its own dedicated screen so the flow reads calm and tidy. Continue on
 // the final screen fires `onContinue`.
 
@@ -13,10 +15,21 @@ struct PreOnboardingFormView: View {
     @Bindable var store: OnboardingStore
     var onContinue: () -> Void
 
-    // 0 = language, 1 = name, 2 = pronoun
     @State private var step: Int = 0
-    private let totalSteps: Int = 3
     @FocusState private var nameFieldFocused: Bool
+
+    private enum FormStep { case language, name, pronoun }
+
+    // Sign in with Apple already supplies a name — Apple's Sign in with Apple
+    // guidelines (and App Review) require reusing it instead of asking again,
+    // so the name step is skipped entirely whenever one is already known.
+    private var stepSequence: [FormStep] {
+        store.name.trimmingCharacters(in: .whitespaces).isEmpty
+            ? [.language, .name, .pronoun]
+            : [.language, .pronoun]
+    }
+    private var totalSteps: Int { stepSequence.count }
+    private var currentFormStep: FormStep { stepSequence[min(step, stepSequence.count - 1)] }
 
     var body: some View {
         ZStack {
@@ -36,20 +49,20 @@ struct PreOnboardingFormView: View {
 
                 Spacer(minLength: 20)
 
-                VStack(alignment: step == 1 ? .center : .leading, spacing: 24) {
+                VStack(alignment: currentFormStep == .name ? .center : .leading, spacing: 24) {
                     stepHeader
 
                     Group {
-                        switch step {
-                        case 0: languagePicker
-                        case 1: nameField
-                        default: pronounPicker
+                        switch currentFormStep {
+                        case .language: languagePicker
+                        case .name: nameField
+                        case .pronoun: pronounPicker
                         }
                     }
                     .transition(.opacity.combined(with: .move(edge: .trailing)))
                 }
                 .padding(.horizontal, 24)
-                .frame(maxWidth: .infinity, alignment: step == 1 ? .center : .leading)
+                .frame(maxWidth: .infinity, alignment: currentFormStep == .name ? .center : .leading)
 
                 Spacer(minLength: 20)
 
@@ -120,17 +133,17 @@ struct PreOnboardingFormView: View {
 
     @ViewBuilder
     private var stepHeader: some View {
-        switch step {
-        case 0:
+        switch currentFormStep {
+        case .language:
             // Language hasn't been picked yet at this point, so this one
             // header still follows the app's global UI language.
             headerBlock(title: L("Your language"), subtitle: nil)
-        case 1:
+        case .name:
             headerBlock(title: "¡Hola!",
                         subtitle: quizText(en: "First — what should I call you?",
                                             uk: "Перш за все — як тебе звати?"),
                         centered: true)
-        default:
+        case .pronoun:
             headerBlock(title: quizText(en: "Nice to meet you!", uk: "Приємно познайомитись!"),
                         subtitle: quizText(en: "How should I refer to you?",
                                            uk: "Як мені до тебе звертатися?"))
@@ -287,10 +300,10 @@ struct PreOnboardingFormView: View {
     }
 
     private var isCurrentStepValid: Bool {
-        switch step {
-        case 0: return true
-        case 1: return !store.name.trimmingCharacters(in: .whitespaces).isEmpty
-        default: return store.pronoun != nil
+        switch currentFormStep {
+        case .language: return true
+        case .name: return !store.name.trimmingCharacters(in: .whitespaces).isEmpty
+        case .pronoun: return store.pronoun != nil
         }
     }
 

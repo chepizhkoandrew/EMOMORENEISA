@@ -611,41 +611,6 @@ app.post("/v1/topup", requireUser, async (req, res) => {
   res.json({ ...walletPayload(req.user.id, wallet), duplicate: Boolean(result.duplicate), creditedTreats: result.duplicate ? 0 : pack.totalTreats });
 });
 
-// Redeem a coupon code. The RPC validates the code, prevents double-redemption,
-// increments the use counter, and credits the wallet atomically.
-app.post("/v1/coupon/redeem", requireUser, async (req, res) => {
-  const { code } = req.body || {};
-  if (!code || typeof code !== "string" || !code.trim()) {
-    return res.status(400).json({ error: "missing_code" });
-  }
-
-  const sb = supabase();
-  if (!sb) return res.status(503).json({ error: "wallet_not_configured" });
-
-  const { data, error } = await sb.rpc("redeem_coupon", {
-    p_user_id: req.user.id,
-    p_code: code.trim().toUpperCase()
-  });
-
-  if (error) return res.status(502).json({ error: "redeem_failed", detail: error.message });
-
-  if (!data.ok) {
-    const statusMap = {
-      not_found: 404,
-      inactive: 404,
-      expired: 410,
-      max_uses: 410,
-      already_redeemed: 409
-    };
-    return res.status(statusMap[data.error] || 400).json({ error: data.error });
-  }
-
-  const wallet = await getWallet(req.user.id);
-  res.json({
-    ...walletPayload(req.user.id, wallet),
-    creditedTreats: Number(data.treats_credited)
-  });
-});
 
 // Permanently delete the authenticated user's account and all associated data.
 // Anonymises topups for financial audit trail, deletes everything else.

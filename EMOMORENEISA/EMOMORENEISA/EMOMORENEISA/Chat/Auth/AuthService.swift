@@ -12,7 +12,7 @@ final class AuthService {
     /// corresponding page at professormadrid.com whenever its wording
     /// changes — this is what ties a `consent_log` row to a specific
     /// version of the document the user actually saw.
-    static let termsVersion = "2026-07-13"
+    static let termsVersion = "2026-07-14"
     static let privacyVersion = "2026-07-03"
     static let aiDisclosureVersion = "2026-07-11"
 
