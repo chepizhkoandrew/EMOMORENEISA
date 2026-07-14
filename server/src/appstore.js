@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
-import { createPublicKey, createVerify, X509Certificate } from "node:crypto";
+import { createVerify, X509Certificate } from "node:crypto";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -55,13 +55,19 @@ export function verifyStoreKitJWS(jws) {
   }
 
   // 4. Verify the JWS signature with the leaf public key (ES256 = P1363 r||s).
+  //
+  // leaf.publicKey is used directly — wrapping it in createPublicKey() (as a
+  // prior version of this code did) throws ERR_CRYPTO_INVALID_KEY_OBJECT_TYPE
+  // ("Invalid key object type public, expected private"), since
+  // createPublicKey() expects either a raw PEM/DER/JWK or a PRIVATE KeyObject
+  // to derive a public key from — not an already-public KeyObject. This was
+  // the actual bug causing every real purchase to fail verification.
   const signingInput = `${headerB64}.${payloadB64}`;
-  const leafPub = createPublicKey(leaf.publicKey);
   const verifier = createVerify("SHA256");
   verifier.update(signingInput);
   verifier.end();
   const ok = verifier.verify(
-    { key: leafPub, dsaEncoding: "ieee-p1363" },
+    { key: leaf.publicKey, dsaEncoding: "ieee-p1363" },
     b64urlToBuffer(sigB64)
   );
   if (!ok) throw new Error("bad_jws_signature");
