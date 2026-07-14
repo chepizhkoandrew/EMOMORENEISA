@@ -575,25 +575,36 @@ Reply with exactly one word: CORRECT or WRONG`;
 app.post("/v1/topup", requireUser, async (req, res) => {
   const { signedTransaction } = req.body || {};
   if (!signedTransaction || typeof signedTransaction !== "string") {
+    console.warn(`[TOPUP] user=${req.user.id} rejected: missing_signed_transaction`);
     return res.status(400).json({ error: "missing_signed_transaction" });
   }
+  console.log(`[TOPUP] user=${req.user.id} received JWS, len=${signedTransaction.length}, segments=${signedTransaction.split(".").length}`);
 
   let payload;
   try {
     payload = verifyStoreKitJWS(signedTransaction);
   } catch (e) {
+    console.error(`[TOPUP] user=${req.user.id} verification FAILED: ${e.message}`);
     return res.status(400).json({ error: "invalid_transaction", detail: e.message });
   }
+  console.log(`[TOPUP] user=${req.user.id} verified OK: productId=${payload.productId} transactionId=${payload.transactionId} bundleId=${payload.bundleId}`);
 
   if (payload.bundleId !== config.appleBundleId) {
+    console.error(`[TOPUP] user=${req.user.id} bundle_mismatch: got=${payload.bundleId} expected=${config.appleBundleId}`);
     return res.status(400).json({ error: "bundle_mismatch" });
   }
 
   const pack = config.packs[payload.productId];
-  if (!pack) return res.status(400).json({ error: "unknown_product", productId: payload.productId });
+  if (!pack) {
+    console.error(`[TOPUP] user=${req.user.id} unknown_product: ${payload.productId}`);
+    return res.status(400).json({ error: "unknown_product", productId: payload.productId });
+  }
 
   const transactionId = String(payload.transactionId || "");
-  if (!transactionId) return res.status(400).json({ error: "missing_transaction_id" });
+  if (!transactionId) {
+    console.error(`[TOPUP] user=${req.user.id} missing_transaction_id`);
+    return res.status(400).json({ error: "missing_transaction_id" });
+  }
 
   const result = await recordTopup({
     userId: req.user.id,
@@ -605,7 +616,11 @@ app.post("/v1/topup", requireUser, async (req, res) => {
     transactionId
   });
 
-  if (!result.ok) return res.status(502).json({ error: "credit_failed", detail: result.error });
+  if (!result.ok) {
+    console.error(`[TOPUP] user=${req.user.id} credit_failed: ${result.error}`);
+    return res.status(502).json({ error: "credit_failed", detail: result.error });
+  }
+  console.log(`[TOPUP] user=${req.user.id} credited productId=${payload.productId} treats=${pack.totalTreats} duplicate=${Boolean(result.duplicate)}`);
 
   const wallet = await getWallet(req.user.id);
   res.json({ ...walletPayload(req.user.id, wallet), duplicate: Boolean(result.duplicate), creditedTreats: result.duplicate ? 0 : pack.totalTreats });
