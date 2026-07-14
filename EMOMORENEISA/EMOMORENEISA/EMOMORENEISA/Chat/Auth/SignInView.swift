@@ -15,116 +15,130 @@ struct SignInView: View {
 
     var body: some View {
         ZStack {
-            Color.black.ignoresSafeArea()
+            GameBackground()
+            DreamParticlesView()
+                .allowsHitTesting(false)
+        }
+        .ignoresSafeArea()
+        .overlay {
+            ScrollView {
+                VStack(spacing: 0) {
+                    Spacer().frame(height: 32)
 
-            VStack(spacing: 0) {
-                Spacer()
+                    Image("professor_dog")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(height: 140)
+                        .shadow(color: .black.opacity(0.4), radius: 20, y: 10)
 
-                VStack(spacing: 8) {
-                    Text("¡Hola!")
-                        .font(.system(size: 52, weight: .black, design: .monospaced))
-                        .foregroundColor(.yellow)
-                        .shadow(color: .yellow.opacity(0.5), radius: 16)
+                    Spacer().frame(height: 12)
 
-                    Text("PROFESSOR MADRID")
-                        .font(.system(size: 13, weight: .bold, design: .monospaced))
-                        .foregroundColor(.white.opacity(0.35))
-                        .tracking(3)
-                }
+                    VStack(spacing: 8) {
+                        Text("¡Hola!")
+                            .font(.system(size: 52, weight: .black, design: .rounded))
+                            .foregroundColor(.yellow)
+                            .shadow(color: .yellow.opacity(0.5), radius: 16)
 
-                Spacer().frame(height: 48)
+                        Text("PROFESSOR MADRID")
+                            .font(.system(size: 13, weight: .bold, design: .rounded))
+                            .foregroundColor(.white.opacity(0.35))
+                            .tracking(3)
+                    }
 
-                Text(L("Log in or create an account to save your progress\nand continue your Spanish journey."))
-                    .font(.system(size: 16, weight: .regular, design: .monospaced))
-                    .foregroundColor(.white.opacity(0.6))
-                    .multilineTextAlignment(.center)
-                    .lineSpacing(6)
-                    .padding(.horizontal, 32)
+                    Spacer().frame(height: 36)
 
-                Spacer().frame(height: 48)
+                    Text(L("Log in or create an account to save your progress\nand continue your Spanish journey."))
+                        .font(.system(size: 16, weight: .medium, design: .rounded))
+                        .foregroundColor(.white.opacity(0.6))
+                        .multilineTextAlignment(.center)
+                        .lineSpacing(6)
+                        .padding(.horizontal, 32)
 
-                if isLoading {
-                    ProgressView()
-                        .tint(.yellow)
-                        .scaleEffect(1.4)
-                } else {
-                    VStack(spacing: 18) {
-                        consentCheckbox
-                            .padding(.horizontal, 32)
+                    Spacer().frame(height: 36)
 
-                        VStack(spacing: 14) {
-                            SignInWithAppleButton(.signIn) { request in
-                                let nonce = randomNonceString()
-                                currentNonce = nonce
-                                request.requestedScopes = [.fullName, .email]
-                                request.nonce = sha256(nonce)
-                            } onCompletion: { result in
-                                handleAppleSignIn(result)
-                            }
-                            .signInWithAppleButtonStyle(.white)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 52)
-                            .clipShape(RoundedRectangle(cornerRadius: 14))
-                            .padding(.horizontal, 32)
-                            .disabled(!hasAgreedToTerms)
-                            .allowsHitTesting(hasAgreedToTerms)
-                            .opacity(hasAgreedToTerms ? 1 : 0.4)
+                    if isLoading {
+                        ProgressView()
+                            .tint(.yellow)
+                            .scaleEffect(1.4)
+                    } else {
+                        VStack(spacing: 18) {
+                            consentCheckbox
+                                .padding(.horizontal, 32)
 
-                            Button(action: handleGoogleSignIn) {
-                                HStack(spacing: 12) {
-                                    Image(systemName: "g.circle.fill")
-                                        .font(.system(size: 22))
-                                        .foregroundColor(.white)
-                                    Text(L("Continue with Google"))
-                                        .font(.system(size: 16, weight: .semibold, design: .monospaced))
-                                        .foregroundColor(.white)
+                            VStack(spacing: 14) {
+                                SignInWithAppleButton(.signIn) { request in
+                                    let nonce = randomNonceString()
+                                    currentNonce = nonce
+                                    request.requestedScopes = [.fullName, .email]
+                                    request.nonce = sha256(nonce)
+                                } onCompletion: { result in
+                                    handleAppleSignIn(result)
                                 }
+                                .signInWithAppleButtonStyle(.white)
                                 .frame(maxWidth: .infinity)
-                                .padding(.vertical, 16)
-                                .background(Color.white.opacity(0.12))
-                                .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.white.opacity(0.2), lineWidth: 1))
-                                .clipShape(RoundedRectangle(cornerRadius: 14))
-                            }
-                            .padding(.horizontal, 32)
-                            .disabled(!hasAgreedToTerms)
-                            .opacity(hasAgreedToTerms ? 1 : 0.4)
+                                .frame(height: 52)
+                                .clipShape(RoundedRectangle(cornerRadius: 18))
+                                .padding(.horizontal, 32)
+                                .disabled(!hasAgreedToTerms)
+                                .allowsHitTesting(hasAgreedToTerms)
+                                .opacity(hasAgreedToTerms ? 1 : 0.4)
 
-                            if showEmailForm {
-                                emailFormSection
-                            } else {
-                                Button(action: { withAnimation { showEmailForm = true } }) {
+                                Button(action: handleGoogleSignIn) {
                                     HStack(spacing: 12) {
-                                        Image(systemName: "envelope.fill")
-                                            .font(.system(size: 18))
+                                        Image(systemName: "g.circle.fill")
+                                            .font(.system(size: 22))
                                             .foregroundColor(.white)
-                                        Text(L("Continue with Email"))
-                                            .font(.system(size: 16, weight: .semibold, design: .monospaced))
+                                        Text(L("Continue with Google"))
+                                            .font(.system(size: 16, weight: .semibold, design: .rounded))
                                             .foregroundColor(.white)
                                     }
                                     .frame(maxWidth: .infinity)
                                     .padding(.vertical, 16)
                                     .background(Color.white.opacity(0.12))
-                                    .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.white.opacity(0.2), lineWidth: 1))
-                                    .clipShape(RoundedRectangle(cornerRadius: 14))
+                                    .overlay(RoundedRectangle(cornerRadius: 18).stroke(Color.white.opacity(0.2), lineWidth: 1))
+                                    .clipShape(RoundedRectangle(cornerRadius: 18))
                                 }
                                 .padding(.horizontal, 32)
                                 .disabled(!hasAgreedToTerms)
                                 .opacity(hasAgreedToTerms ? 1 : 0.4)
+
+                                if showEmailForm {
+                                    emailFormSection
+                                } else {
+                                    Button(action: { withAnimation { showEmailForm = true } }) {
+                                        HStack(spacing: 12) {
+                                            Image(systemName: "envelope.fill")
+                                                .font(.system(size: 18))
+                                                .foregroundColor(.white)
+                                            Text(L("Continue with Email"))
+                                                .font(.system(size: 16, weight: .semibold, design: .rounded))
+                                                .foregroundColor(.white)
+                                        }
+                                        .frame(maxWidth: .infinity)
+                                        .padding(.vertical, 16)
+                                        .background(Color.white.opacity(0.12))
+                                        .overlay(RoundedRectangle(cornerRadius: 18).stroke(Color.white.opacity(0.2), lineWidth: 1))
+                                        .clipShape(RoundedRectangle(cornerRadius: 18))
+                                    }
+                                    .padding(.horizontal, 32)
+                                    .disabled(!hasAgreedToTerms)
+                                    .opacity(hasAgreedToTerms ? 1 : 0.4)
+                                }
                             }
                         }
                     }
-                }
 
-                if let error = errorMessage {
-                    Text(error)
-                        .font(.system(size: 12, weight: .regular, design: .monospaced))
-                        .foregroundColor(.red.opacity(0.8))
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 32)
-                        .padding(.top, 16)
-                }
+                    if let error = errorMessage {
+                        Text(error)
+                            .font(.system(size: 12, weight: .regular, design: .rounded))
+                            .foregroundColor(.red.opacity(0.8))
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 32)
+                            .padding(.top, 16)
+                    }
 
-                Spacer()
+                    Spacer().frame(height: 40)
+                }
             }
         }
     }
@@ -143,7 +157,7 @@ struct SignInView: View {
                 .textContentType(.emailAddress)
                 .autocapitalization(.none)
                 .disableAutocorrection(true)
-                .font(.system(size: 15, weight: .regular, design: .monospaced))
+                .font(.system(size: 15, weight: .regular, design: .rounded))
                 .foregroundColor(.white)
                 .padding(.horizontal, 16)
                 .padding(.vertical, 14)
@@ -153,7 +167,7 @@ struct SignInView: View {
 
             SecureField(L("Password"), text: $passwordInput)
                 .textContentType(.password)
-                .font(.system(size: 15, weight: .regular, design: .monospaced))
+                .font(.system(size: 15, weight: .regular, design: .rounded))
                 .foregroundColor(.white)
                 .padding(.horizontal, 16)
                 .padding(.vertical, 14)
@@ -163,7 +177,7 @@ struct SignInView: View {
 
             Button(action: isCreatingAccount ? handleEmailSignUp : handleEmailSignIn) {
                 Text(isCreatingAccount ? L("Create Account") : L("Log In"))
-                    .font(.system(size: 16, weight: .bold, design: .monospaced))
+                    .font(.system(size: 16, weight: .bold, design: .rounded))
                     .foregroundColor(.black)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 16)
@@ -175,7 +189,7 @@ struct SignInView: View {
 
             Button(action: { withAnimation { showEmailForm = false; emailInput = ""; passwordInput = ""; errorMessage = nil; isCreatingAccount = false } }) {
                 Text(L("Cancel"))
-                    .font(.system(size: 13, weight: .regular, design: .monospaced))
+                    .font(.system(size: 13, weight: .regular, design: .rounded))
                     .foregroundColor(.white.opacity(0.45))
             }
         }
@@ -211,7 +225,7 @@ struct SignInView: View {
     // name the data and the third parties before the user consents.
     private var aiDisclosureText: some View {
         Text(L("To power your lessons, your messages, voice recordings, and photos are sent to OpenAI and Google Gemini."))
-            .font(.system(size: 12, weight: .regular, design: .monospaced))
+            .font(.system(size: 12, weight: .regular, design: .rounded))
             .foregroundColor(.white.opacity(0.5))
             .multilineTextAlignment(.leading)
             .lineSpacing(3)
@@ -225,7 +239,7 @@ struct SignInView: View {
             markdown: L("I agree to the [Terms & Conditions](%@) and [Privacy Policy](%@).", terms, privacy)
         )
         return Text(text ?? AttributedString(L("I agree to the Terms & Conditions and Privacy Policy.")))
-            .font(.system(size: 13, weight: .regular, design: .monospaced))
+            .font(.system(size: 13, weight: .regular, design: .rounded))
             .foregroundColor(.white.opacity(0.65))
             .tint(.yellow)
             .multilineTextAlignment(.leading)
