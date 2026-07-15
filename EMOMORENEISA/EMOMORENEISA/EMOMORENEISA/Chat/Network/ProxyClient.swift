@@ -309,7 +309,10 @@ final class ProxyClient {
             "transcripts": transcripts
         ]
         if let probes { body["probes"] = probes }
-        let json = try await postJSON(path: "/v1/onboarding/synthesize", body: body, timeout: 45)
+        // gemini-2.5-pro runs with thinking enabled server-side and can
+        // legitimately take >45s on long transcripts — give it real headroom
+        // so the client doesn't abort a synthesis that would have succeeded.
+        let json = try await postJSON(path: "/v1/onboarding/synthesize", body: body, timeout: 90)
         let slots = (json["extractedSlots"] as? [String: Any]) ?? [:]
         let slotsData = (try? JSONSerialization.data(withJSONObject: slots)) ?? Data("{}".utf8)
 

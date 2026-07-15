@@ -448,13 +448,27 @@ final class OnboardingCoordinator {
         enterThinking(label: store.quizLanguage == .uk
             ? "Зберігаю твій профіль… майже готово."
             : "Saving your profile… almost there.")
-        guard let syn = await analyst.synthesize(transcripts: store.transcripts,
-                                                 probes: store.probes) else {
-            print("[ONB-COORD] finish(): synthesis failed — surfacing .failed")
-            phase = .failed("synthesis_failed")
-            return
+        var syn = await analyst.synthesize(transcripts: store.transcripts,
+                                           probes: store.probes)
+        if syn == nil {
+            print("[ONB-COORD] finish(): synthesis attempt 1 failed — retrying once")
+            try? await Task.sleep(nanoseconds: 1_500_000_000)
+            syn = await analyst.synthesize(transcripts: store.transcripts,
+                                           probes: store.probes)
         }
-        print("[ONB-COORD] finish(): synthesis succeeded — playing closing line")
+        if syn == nil {
+            // Last resort: NEVER dead-end the quiz on a server/network
+            // failure. Build a minimal profile locally from the raw
+            // transcripts — the tutor still gets everything the user said,
+            // and the answers are already mirrored to Supabase per-confirm,
+            // so a richer synthesis can be recomputed later. This replaces
+            // the old `.failed("synthesis_failed")` dead screen that App
+            // Review hit as "app froze on the tutorial screen".
+            print("[ONB-COORD] finish(): synthesis failed twice — using local fallback profile")
+            syn = Self.localFallbackSynthesis(store: store)
+        }
+        guard let syn else { return } // unreachable — fallback is non-nil
+        print("[ONB-COORD] finish(): synthesis ready — playing closing line")
         store.synthesis = syn
 
         // Closing line: on-the-fly TTS, warm greeting using the confirmed name.
@@ -475,5 +489,61 @@ final class OnboardingCoordinator {
         await player.playDynamic(text: closingText)
         print("[ONB-COORD] finish(): closing line finished — phase = .done")
         phase = .done
+    }
+
+    /// Offline-safe synthesis substitute: raw Q/A pairs become the tutor
+    /// cheat sheet verbatim, extracted slots carry only the confirmed name.
+    /// Used when both synthesis attempts fail so the quiz always completes.
+    static func localFallbackSynthesis(store: OnboardingStore) -> ProxyClient.OnboardingSynthesisResult {
+        let lines = flow.compactMap { slot -> String? in
+            guard let t = store.transcripts[slot]?
+                .trimmingCharacters(in: .whitespacesAndNewlines), !t.isEmpty else { return nil }
+            let question: String
+            if slot == .q8, let probe = store.probes[1] {
+                question = probe.nextQuestionText
+            } else if slot == .q9, let probe = store.probes[2] {
+                question = probe.nextQuestionText
+            } else {
+                question = OnboardingQuestionBank.text(for: slot,
+                                                       language: store.quizLanguage,
+                                                       pronoun: store.pronoun ?? .they)
+            }
+            return "Q (\(slot.rawValue)): \(question)\nA: \(t)"
+        }
+        let cheatSheet = """
+        NOTE: the onboarding synthesis service was unreachable when this profile \
+        was created, so these are the learner's raw quiz answers. Treat them as \
+        primary source material about the learner.
+
+        \(lines.joined(separator: "\n\n"))
+        """
+        var slots = OnboardingSlots()
+        slots.name = store.name.trimmingCharacters(in: .whitespaces)
+        let slotsData = (try? JSONEncoder().encode(slots)) ?? Data("{}".utf8)
+        return ProxyClient.OnboardingSynthesisResult(
+            tutorCheatSheet: cheatSheet,
+            narrativeSummary: "",
+            aboutMeUserFacing: "",
+            cityFlavor: "",
+            extractedSlotsJSON: slotsData,
+            version: 0,
+            voiceTag: "",
+            levelBreakdown: nil
+        )
+    }
+
+    /// Called from the failed-state card's retry button. `.failed` is now
+    /// reachable only from mic-start errors (synthesis always falls back),
+    /// but recover sensibly from any reason.
+    @MainActor
+    func retryAfterFailure() async {
+        guard case .failed(let reason) = phase else { return }
+        print("[ONB-COORD] retryAfterFailure(reason: \(reason))")
+        switch reason {
+        case "mic_start_failed":
+            phase = .awaitingAnswer(store.currentSlot)
+        default:
+            await start()
+        }
     }
 }

@@ -44,6 +44,10 @@ struct OnboardingView: View {
 
                 if micPermissionDenied {
                     micDeniedCard
+                } else if case .failed = coordinator.phase {
+                    failedCard
+                        .padding(.horizontal, 22)
+                        .frame(height: 240, alignment: .center)
                 } else if case .thinking = coordinator.phase {
                     thinkingCard
                         .padding(.horizontal, 22)
@@ -96,6 +100,9 @@ struct OnboardingView: View {
             stopThinkingProgress()
             typewriterTask?.cancel()
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.4) { onCompleted() }
+        case .failed:
+            stopThinkingProgress()
+            typewriterTask?.cancel()
         default:
             break
         }
@@ -535,6 +542,43 @@ struct OnboardingView: View {
     @ViewBuilder
     private var controlRow: some View {
         Color.clear.frame(height: 0)
+    }
+
+    // MARK: - Failed card
+    //
+    // Rendered whenever the coordinator lands in `.failed`. Previously this
+    // phase drew NOTHING (no card, orb disabled) — a frozen-looking screen
+    // that App Review flagged as "app froze on the tutorial screen". Always
+    // give the user a visible way forward.
+
+    private var failedCard: some View {
+        VStack(spacing: 14) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(.system(size: 36))
+                .foregroundColor(.orange)
+            Text(store.quizLanguage == .uk
+                 ? "Щось пішло не так. Спробуймо ще раз."
+                 : "Something went wrong. Let's try that again.")
+                .font(.system(size: 17, weight: .medium, design: .rounded))
+                .foregroundColor(.white)
+                .multilineTextAlignment(.center)
+            Button {
+                Task { await coordinator.retryAfterFailure() }
+            } label: {
+                Text(store.quizLanguage == .uk ? "Спробувати ще раз" : "Try again")
+                    .font(.system(size: 15, weight: .semibold, design: .rounded))
+                    .foregroundColor(.black)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 10)
+                    .background(RoundedRectangle(cornerRadius: 10).fill(Color.yellow))
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.vertical, 24)
+        .padding(.horizontal, 20)
+        .frame(maxWidth: .infinity)
+        .background(RoundedRectangle(cornerRadius: 18).fill(Color.black.opacity(0.42)))
+        .overlay(RoundedRectangle(cornerRadius: 18).stroke(Color.orange.opacity(0.4), lineWidth: 1))
     }
 
     // MARK: - Mic denied card

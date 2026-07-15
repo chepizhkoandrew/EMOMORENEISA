@@ -748,18 +748,20 @@ app.post("/v1/onboarding/synthesize", requireUser, async (req, res) => {
     probes: probes && typeof probes === "object" ? probes : null
   });
 
+  const callSynthesis = (temperature) => geminiText({
+    prompt,
+    model: config.models.onboardingSynthesis,
+    temperature,
+    // gemini-2.5-pro can't run with thinking disabled (see providers.js),
+    // so reasoning tokens now eat into this budget too — bumped up from
+    // 2048 for headroom.
+    maxOutputTokens: 4096,
+    disableThinking: false
+  });
+
   let raw;
   try {
-    raw = await geminiText({
-      prompt,
-      model: config.models.onboardingSynthesis,
-      temperature: 0.35,
-      // gemini-2.5-pro can't run with thinking disabled (see providers.js),
-      // so reasoning tokens now eat into this budget too — bumped up from
-      // 2048 for headroom.
-      maxOutputTokens: 4096,
-      disableThinking: false
-    });
+    raw = await callSynthesis(0.35);
     console.log(`[onboarding/synthesize] gemini responded, ${raw.text.length} chars, outputTokens=${raw.usage?.outputTokens}`);
   } catch (e) {
     console.error(`[onboarding/synthesize] gemini call failed: ${e.message}`);
@@ -769,8 +771,18 @@ app.post("/v1/onboarding/synthesize", requireUser, async (req, res) => {
   let parsed;
   try { parsed = JSON.parse(raw.text); }
   catch (_) {
-    console.error(`[onboarding/synthesize] JSON.parse failed, raw text (first 500 chars): ${raw.text.slice(0, 500)}`);
-    return res.status(502).json({ error: "synthesis_invalid_json" });
+    // One retry at lower temperature — mirrors callProbe. A single malformed
+    // Gemini response used to 502 straight to the client, whose old dead-end
+    // .failed screen is what App Review saw as "app froze on the tutorial".
+    console.error(`[onboarding/synthesize] JSON.parse failed, retrying once — raw text (first 500 chars): ${raw.text.slice(0, 500)}`);
+    try {
+      const retry = await callSynthesis(0.15);
+      parsed = JSON.parse(retry.text);
+      console.log(`[onboarding/synthesize] retry succeeded, ${retry.text.length} chars`);
+    } catch (e2) {
+      console.error(`[onboarding/synthesize] retry also failed: ${e2.message}`);
+      return res.status(502).json({ error: "synthesis_invalid_json" });
+    }
   }
 
   const required = ["tutor_cheat_sheet", "narrative_summary", "about_me_user_facing", "city_flavor", "extracted_slots"];

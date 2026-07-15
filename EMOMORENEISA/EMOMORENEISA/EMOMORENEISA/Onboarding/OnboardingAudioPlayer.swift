@@ -151,7 +151,37 @@ final class OnboardingAudioPlayer: NSObject {
             print("[ONB-AUDIO] ▶️ play start \(url.lastPathComponent)")
             await withCheckedContinuation { (cont: CheckedContinuation<Void, Never>) in
                 self.continuation = cont
-                p.play()
+                let started = p.play()
+                if !started {
+                    // play() can refuse to start (e.g. the audio session
+                    // failed to re-activate right after a recording). The
+                    // delegate will never fire in that case, so resume NOW —
+                    // otherwise the coordinator's `await` leaks and the whole
+                    // quiz freezes with the orb disabled.
+                    print("[ONB-AUDIO] ⚠️ AVAudioPlayer.play() returned false — resuming immediately")
+                    self.player = nil
+                    self.isPlaying = false
+                    self.continuation = nil
+                    cont.resume()
+                    return
+                }
+                // Watchdog: if neither delegate callback ever fires (session
+                // interruption, decoder stall), force-resume after the clip's
+                // duration + grace so playback can never hang the quiz.
+                let deadline = max(p.duration, 1.0) + 3.0
+                Task { @MainActor [weak self] in
+                    try? await Task.sleep(nanoseconds: UInt64(deadline * 1_000_000_000))
+                    while p.isPlaying {
+                        try? await Task.sleep(nanoseconds: 1_000_000_000)
+                    }
+                    guard let self, self.player === p, let pending = self.continuation else { return }
+                    print("[ONB-AUDIO] ⚠️ playback watchdog fired for \(url.lastPathComponent) — force-resuming")
+                    p.stop()
+                    self.player = nil
+                    self.isPlaying = false
+                    self.continuation = nil
+                    pending.resume()
+                }
             }
             print("[ONB-AUDIO] ⏹ play end \(url.lastPathComponent)")
         } catch {
