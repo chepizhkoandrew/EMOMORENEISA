@@ -1124,6 +1124,49 @@ platform :ios do
   end
 
   desc "Check current state of versions and IAPs"
+  desc "Read-only: list recent builds with processing state (plus versions/subs via check_state)"
+  lane :asc_state do
+    require "net/http"
+    require "uri"
+    require "json"
+    require "openssl"
+    require "jwt"
+
+    private_key = OpenSSL::PKey::EC.new(File.read(KEY_PATH))
+    now   = Time.now.to_i
+    token = JWT.encode(
+      { iss: ISSUER_ID, iat: now, exp: now + 1200, aud: "appstoreconnect-v1" },
+      private_key, "ES256", { kid: KEY_ID }
+    )
+    base    = "https://api.appstoreconnect.apple.com/v1"
+    asc_get = lambda do |path|
+      uri  = URI("#{base}#{path}")
+      req  = Net::HTTP::Get.new(uri)
+      req["Authorization"] = "Bearer #{token}"
+      resp = Net::HTTP.start(uri.hostname, uri.port, use_ssl: true) { |http| http.request(req) }
+      JSON.parse(resp.body)
+    end
+
+    UI.message("=== BUILDS ===")
+    builds = asc_get.call("/builds?filter%5Bapp%5D=#{APPLE_ID}&limit=8&sort=-version")
+    (builds["errors"] || []).each { |e| UI.error("  ERR #{e['title']}: #{e['detail']}") }
+    (builds["data"] || []).each do |b|
+      UI.message("  build=#{b.dig('attributes','version')} state=#{b.dig('attributes','processingState')} expired=#{b.dig('attributes','expired')}")
+    end
+    UI.message("=== REVIEW SUBMISSIONS ===")
+    (asc_get.call("/apps/#{APPLE_ID}/reviewSubmissions?limit=10")["data"] || []).each do |s|
+      UI.message("  id=#{s['id']} state=#{s.dig('attributes','state')}")
+    end
+    UI.message("=== VERSIONS ===")
+    (asc_get.call("/apps/#{APPLE_ID}/appStoreVersions?limit=5")["data"] || []).each do |v|
+      UI.message("  v#{v.dig('attributes','versionString')} state=#{v.dig('attributes','appStoreState')}")
+    end
+    UI.message("=== IAPs ===")
+    (asc_get.call("/apps/#{APPLE_ID}/inAppPurchasesV2?limit=10")["data"] || []).each do |i|
+      UI.message("  #{i.dig('attributes','productId')} state=#{i.dig('attributes','state')}")
+    end
+  end
+
   lane :check_state do
     require "net/http"
     require "uri"
