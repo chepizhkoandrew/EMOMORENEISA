@@ -226,11 +226,11 @@ struct ModeSelectorView: View {
         case .memoryCalendar:
             MemorizeContainerView().environment(authState)
         case .musicPlaceholder:
-            ComingSoonView(
-                title: L("Remember with Music"),
-                message: L("learn vocabulary through songs"),
-                systemImage: "music.note"
-            )
+            if authState.isSignedIn {
+                MusicFlowView()
+            } else {
+                SignInView().environment(authState)
+            }
         case .explainRules:
             ComingSoonView(
                 title: L("Explain Rules"),

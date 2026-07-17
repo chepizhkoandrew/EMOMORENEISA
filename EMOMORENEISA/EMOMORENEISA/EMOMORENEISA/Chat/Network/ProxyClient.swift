@@ -347,6 +347,72 @@ final class ProxyClient {
         )
     }
 
+    // MARK: - Music (song generation, billed per song length)
+
+    struct MusicSong {
+        let title: String
+        let lyrics: String
+        let genre: String
+        let durationSec: Int
+        let audioData: Data
+        let mime: String
+    }
+
+    enum MusicJobState {
+        case queued
+        case writingLyrics
+        case generating
+        case done(MusicSong)
+        case failed(message: String)
+    }
+
+    // Kicks off a generation job server-side; treats are debited immediately
+    // (refunded by the server if the pipeline fails). Returns the job id to poll.
+    func musicGenerate(
+        genre: String,
+        durationSec: Int,
+        lyrics: String,
+        description: String,
+        words: [String],
+        language: String
+    ) async throws -> (jobId: String, etaSeconds: Int) {
+        let body: [String: Any] = [
+            "genre": genre,
+            "durationSec": durationSec,
+            "lyrics": lyrics,
+            "description": description,
+            "words": words,
+            "language": language
+        ]
+        let json = try await postJSON(path: "/v1/music/generate", body: body, timeout: 30)
+        guard let jobId = json["jobId"] as? String else { throw ProxyError.decoding }
+        return (jobId, (json["etaSeconds"] as? NSNumber)?.intValue ?? 120)
+    }
+
+    func musicJob(id: String) async throws -> MusicJobState {
+        let json = try await getJSON(path: "/v1/music/job/\(id)")
+        switch json["status"] as? String {
+        case "queued": return .queued
+        case "writing_lyrics": return .writingLyrics
+        case "generating": return .generating
+        case "failed": return .failed(message: (json["error"] as? String) ?? "generation_failed")
+        case "done":
+            guard let song = json["song"] as? [String: Any],
+                  let b64 = song["audioBase64"] as? String,
+                  let data = Data(base64Encoded: b64) else { throw ProxyError.decoding }
+            return .done(MusicSong(
+                title: (song["title"] as? String) ?? "",
+                lyrics: (song["lyrics"] as? String) ?? "",
+                genre: (song["genre"] as? String) ?? "",
+                durationSec: (song["durationSec"] as? NSNumber)?.intValue ?? 0,
+                audioData: data,
+                mime: (song["mime"] as? String) ?? "audio/mpeg"
+            ))
+        default:
+            throw ProxyError.decoding
+        }
+    }
+
     func currentVoiceTag() async throws -> String {
         let json = try await getJSON(path: "/v1/voice/current")
         return (json["voiceTag"] as? String) ?? ""

@@ -31,7 +31,9 @@ struct BillingInfoView: View {
         Activity(icon: "plus.circle.fill", name: L("Add to Memorise"),
                  cost: L("~3 treats"), note: L("Generates the repeat-audio and picture for a new word or phrase.")),
         Activity(icon: "checkmark.bubble.fill", name: L("Verb check"),
-                 cost: L("~2 treats"), note: L("Checking your spoken answer in Verbs & Times."))
+                 cost: L("~2 treats"), note: L("Checking your spoken answer in Verbs & Times.")),
+        Activity(icon: "music.note", name: L("Create a song"),
+                 cost: L("~15–45 treats"), note: L("An AI song with your words — 30s, 1 or 2 minutes."))
     ]
 
     var body: some View {
