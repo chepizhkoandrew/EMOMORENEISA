@@ -38,14 +38,14 @@ struct SessionListView: View {
                             showProfile = true
                         } label: {
                             Image(systemName: "person.circle.fill")
-                                .font(.system(size: 24))
+                                .font(.system(size: 24, design: .rounded))
                                 .foregroundColor(AppColors.textSecondary)
                         }
                         Button {
                             showNewSession = true
                         } label: {
                             Image(systemName: "plus")
-                                .font(.system(size: 20, weight: .semibold))
+                                .font(.system(size: 20, weight: .semibold, design: .rounded))
                                 .foregroundColor(.yellow)
                         }
                     }
@@ -97,7 +97,7 @@ struct SessionListView: View {
         } label: {
             HStack(spacing: 5) {
                 Text("🦴")
-                    .font(.system(size: 13))
+                    .font(.system(size: 13, design: .rounded))
                 Text("\(wallet.balanceTreats)")
                     .font(.system(size: 15, weight: .bold, design: .rounded))
                     .foregroundColor(.black)
@@ -133,7 +133,7 @@ struct SessionListView: View {
     private var emptyState: some View {
         VStack(spacing: 28) {
             Image(systemName: "bubble.left.and.bubble.right")
-                .font(.system(size: 72))
+                .font(.system(size: 72, design: .rounded))
                 .foregroundColor(AppColors.textTertiary)
 
             VStack(spacing: 10) {
@@ -153,7 +153,7 @@ struct SessionListView: View {
             } label: {
                 HStack(spacing: 10) {
                     Image(systemName: "plus")
-                        .font(.system(size: 16, weight: .bold))
+                        .font(.system(size: 16, weight: .bold, design: .rounded))
                     Text(L("Start First Lesson"))
                         .font(.system(size: 17, weight: .bold, design: .rounded))
                 }
@@ -194,7 +194,7 @@ struct SessionRowView: View {
                     .fill(modeColor.opacity(0.18))
                     .frame(width: 54, height: 54)
                 Image(systemName: session.modeEnum.icon)
-                    .font(.system(size: 26))
+                    .font(.system(size: 26, design: .rounded))
                     .foregroundColor(modeColor)
             }
 
@@ -211,7 +211,7 @@ struct SessionRowView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
 
             Image(systemName: "chevron.right")
-                .font(.system(size: 14, weight: .semibold))
+                .font(.system(size: 14, weight: .semibold, design: .rounded))
                 .foregroundColor(AppColors.textTertiary.opacity(0.5))
         }
         .padding(.horizontal, 16)

@@ -320,7 +320,7 @@ struct OnboardingView: View {
                         .fill(Color.black.opacity(0.35))
                         .frame(width: 44, height: 44)
                     Image(systemName: "chevron.left")
-                        .font(.system(size: 20, weight: .bold))
+                        .font(.system(size: 20, weight: .bold, design: .rounded))
                         .foregroundColor(.white)
                 }
             }
@@ -394,7 +394,7 @@ struct OnboardingView: View {
             let s = coordinator.recordingSecondsRemaining
             HStack(spacing: 6) {
                 Image(systemName: "timer")
-                    .font(.system(size: 12, weight: .bold))
+                    .font(.system(size: 12, weight: .bold, design: .rounded))
                 Text("\(s)s")
                     .font(.system(size: 13, weight: .bold, design: .rounded))
                     .monospacedDigit()
@@ -438,13 +438,13 @@ struct OnboardingView: View {
                                  maxHeight: 52, barWidth: 4.5, spacing: 4.5)
         case .recording:
             Image(systemName: "stop.fill")
-                .font(.system(size: 30, weight: .bold))
+                .font(.system(size: 30, weight: .bold, design: .rounded))
                 .foregroundColor(.white)
         case .transcribing, .thinking:
             ProgressView().tint(.black).scaleEffect(1.3)
         default:
             Image(systemName: "mic.fill")
-                .font(.system(size: 40, weight: .bold))
+                .font(.system(size: 40, weight: .bold, design: .rounded))
                 .foregroundColor(.black)
         }
     }
@@ -494,7 +494,7 @@ struct OnboardingView: View {
             HStack(alignment: .center, spacing: 12) {
                 VStack(alignment: .leading, spacing: 4) {
                     Image(systemName: "pencil")
-                        .font(.system(size: 11, weight: .medium))
+                        .font(.system(size: 11, weight: .medium, design: .rounded))
                         .foregroundColor(.white.opacity(0.45))
                     TextEditor(text: Binding(
                         get: { coordinator.lastTranscriptPreview },
@@ -516,7 +516,7 @@ struct OnboardingView: View {
                             .frame(width: 48, height: 48)
                             .shadow(color: .black.opacity(0.3), radius: 8, y: 3)
                         Image(systemName: "chevron.right")
-                            .font(.system(size: 22, weight: .bold))
+                            .font(.system(size: 22, weight: .bold, design: .rounded))
                             .foregroundColor(.black)
                     }
                     .scaleEffect(arrowScale)
@@ -554,7 +554,7 @@ struct OnboardingView: View {
     private var failedCard: some View {
         VStack(spacing: 14) {
             Image(systemName: "exclamationmark.triangle.fill")
-                .font(.system(size: 36))
+                .font(.system(size: 36, design: .rounded))
                 .foregroundColor(.orange)
             Text(store.quizLanguage == .uk
                  ? "Щось пішло не так. Спробуймо ще раз."
@@ -586,7 +586,7 @@ struct OnboardingView: View {
     private var micDeniedCard: some View {
         VStack(spacing: 14) {
             Image(systemName: "mic.slash.fill")
-                .font(.system(size: 36))
+                .font(.system(size: 36, design: .rounded))
                 .foregroundColor(.orange)
             Text(store.quizLanguage == .uk
                  ? "Мікрофон не дозволено. Будь ласка, дозволь його в Налаштуваннях."

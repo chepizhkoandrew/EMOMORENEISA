@@ -65,7 +65,7 @@ struct VerbStatsView: View {
 
     var body: some View {
         ZStack {
-            GameBackground()
+            AppBackground()
 
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
@@ -107,7 +107,7 @@ struct VerbStatsView: View {
     private var emptyState: some View {
         VStack(spacing: 14) {
             Image(systemName: "chart.bar.xaxis")
-                .font(.system(size: 44, weight: .medium))
+                .font(.system(size: 44, weight: .medium, design: .rounded))
                 .foregroundColor(.white.opacity(0.25))
             Text(L("No rounds played yet"))
                 .font(.system(size: 16, weight: .semibold, design: .monospaced))

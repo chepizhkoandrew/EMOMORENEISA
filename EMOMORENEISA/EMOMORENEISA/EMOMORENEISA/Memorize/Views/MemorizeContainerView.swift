@@ -56,7 +56,7 @@ struct MemorizeContainerView: View {
                 showSettings = true
             } label: {
                 Image(systemName: "gearshape.fill")
-                    .font(.system(size: 18, weight: .semibold))
+                    .font(.system(size: 18, weight: .semibold, design: .rounded))
                     .foregroundColor(.yellow)
                     .padding(10)
                     .background(Color.black.opacity(0.25))
@@ -66,7 +66,7 @@ struct MemorizeContainerView: View {
                 showProfile = true
             } label: {
                 Image(systemName: "person.circle.fill")
-                    .font(.system(size: 28))
+                    .font(.system(size: 28, design: .rounded))
                     .foregroundColor(.white.opacity(0.6))
             }
         }

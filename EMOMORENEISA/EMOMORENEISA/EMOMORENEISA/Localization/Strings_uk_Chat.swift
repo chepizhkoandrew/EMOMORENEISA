@@ -25,6 +25,12 @@ let ukChatStrings: [String: String] = [
     "Street view": "Огляд вулиць",
     "Your chats": "Твої чати",
     "Talk with tutor via text and voice messages": "Спілкуйся з репетитором текстом і голосом",
+
+    // Speaking sub-menu (renamed cards)
+    "Learn from what you see": "Вчись із того, що бачиш",
+    "Your topic": "Твоя тема",
+    "Role Play": "Рольова гра",
+    "Chat with any character you imagine": "Спілкуйся з будь-яким персонажем, якого уявиш",
     "Take a picture of what you see around you": "Сфотографуй те, що бачиш навколо",
     "Browse your previous conversations": "Гортай свої попередні розмови",
     "What topic do you want to learn about?": "Про що хочеш дізнатися?",

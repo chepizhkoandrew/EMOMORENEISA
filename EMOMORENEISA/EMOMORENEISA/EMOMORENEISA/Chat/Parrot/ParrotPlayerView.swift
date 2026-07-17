@@ -113,7 +113,7 @@ struct ParrotPlayerView: View {
         case .failed(let msg):
             VStack(spacing: 16) {
                 Image(systemName: "exclamationmark.triangle.fill")
-                    .font(.system(size: 44))
+                    .font(.system(size: 44, design: .rounded))
                     .foregroundColor(.orange)
                 Text(L("Generation failed"))
                     .font(.system(size: 22, weight: .bold, design: .rounded))
@@ -261,7 +261,7 @@ struct ParrotPlayerView: View {
             Spacer()
             HStack(spacing: 10) {
                 Text("🧠")
-                    .font(.system(size: 22))
+                    .font(.system(size: 22, design: .rounded))
                 Text(L("This phrase went to Loro's memory"))
                     .font(.system(size: 15, weight: .semibold, design: .rounded))
                     .foregroundColor(.black)
@@ -332,7 +332,7 @@ struct ParrotPlayerView: View {
                     player.skipToPreviousSegment()
                 } label: {
                     Image(systemName: "backward.fill")
-                        .font(.system(size: 20, weight: .semibold))
+                        .font(.system(size: 20, weight: .semibold, design: .rounded))
                         .foregroundColor(AppColors.textSecondary)
                         .frame(width: 52, height: 52)
                         .background(AppColors.cardBackground)
@@ -344,7 +344,7 @@ struct ParrotPlayerView: View {
                     player.togglePlayPause()
                 } label: {
                     Image(systemName: player.isPlaying ? "pause.fill" : "play.fill")
-                        .font(.system(size: 28, weight: .semibold))
+                        .font(.system(size: 28, weight: .semibold, design: .rounded))
                         .foregroundColor(.black)
                         .frame(width: 72, height: 72)
                         .background(Color.yellow)
@@ -356,7 +356,7 @@ struct ParrotPlayerView: View {
                     player.skipToNextSegment()
                 } label: {
                     Image(systemName: "forward.fill")
-                        .font(.system(size: 20, weight: .semibold))
+                        .font(.system(size: 20, weight: .semibold, design: .rounded))
                         .foregroundColor(AppColors.textSecondary)
                         .frame(width: 52, height: 52)
                         .background(AppColors.cardBackground)
@@ -369,7 +369,7 @@ struct ParrotPlayerView: View {
                     player.start(phrase: phrase, loops: loops)
                 } label: {
                     Image(systemName: "arrow.counterclockwise")
-                        .font(.system(size: 18, weight: .semibold))
+                        .font(.system(size: 18, weight: .semibold, design: .rounded))
                         .foregroundColor(AppColors.textSecondary)
                         .frame(width: 52, height: 52)
                         .background(AppColors.cardBackground)

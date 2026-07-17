@@ -60,9 +60,9 @@ struct ProfileView: View {
                     Button(action: onBack) {
                         HStack(spacing: 4) {
                             Image(systemName: "chevron.left")
-                                .font(.system(size: 16, weight: .semibold))
+                                .font(.system(size: 16, weight: .semibold, design: .rounded))
                             Text(L("Back"))
-                                .font(.system(size: 17, weight: .regular))
+                                .font(.system(size: 17, weight: .regular, design: .rounded))
                         }
                         .foregroundColor(.yellow)
                     }
@@ -130,7 +130,7 @@ struct ProfileView: View {
         } label: {
             HStack(spacing: 14) {
                 Text("🦴")
-                    .font(.system(size: 28))
+                    .font(.system(size: 28, design: .rounded))
                 VStack(alignment: .leading, spacing: 2) {
                     Text(L("%d treats", wallet.balanceTreats))
                         .font(.system(size: 20, weight: .bold, design: .rounded))
@@ -419,7 +419,7 @@ struct ProfileView: View {
                 .shadow(color: .yellow.opacity(0.35), radius: 6)
             HStack(spacing: 5) {
                 Image(systemName: icon)
-                    .font(.system(size: 11))
+                    .font(.system(size: 11, design: .rounded))
                 Text(label)
                     .font(.system(size: 12, weight: .medium, design: .rounded))
             }
@@ -438,7 +438,7 @@ struct ProfileView: View {
         } label: {
             HStack(spacing: 10) {
                 Image(systemName: "rectangle.portrait.and.arrow.right")
-                    .font(.system(size: 16, weight: .semibold))
+                    .font(.system(size: 16, weight: .semibold, design: .rounded))
                 Text(L("Sign Out"))
                     .font(.system(size: 17, weight: .semibold, design: .rounded))
             }
@@ -465,7 +465,7 @@ struct ProfileView: View {
                     } else {
                         HStack(spacing: 10) {
                             Image(systemName: "trash")
-                                .font(.system(size: 15, weight: .semibold))
+                                .font(.system(size: 15, weight: .semibold, design: .rounded))
                             Text(L("Delete My Account"))
                                 .font(.system(size: 16, weight: .semibold, design: .rounded))
                         }

@@ -310,7 +310,7 @@ struct AnnotationCanvasView: View {
                     } label: {
                         HStack(spacing: 8) {
                             Image(systemName: "brain.head.profile")
-                                .font(.system(size: 14, weight: .semibold))
+                                .font(.system(size: 14, weight: .semibold, design: .rounded))
                             Text(L("Go to memory queue (%d)", memoryAddedCount))
                                 .font(.system(size: 14, weight: .semibold, design: .rounded))
                         }
@@ -364,7 +364,7 @@ struct AnnotationCanvasView: View {
                         }
                     } label: {
                         Image(systemName: "arrow.counterclockwise.circle.fill")
-                            .font(.system(size: 22))
+                            .font(.system(size: 22, design: .rounded))
                             .foregroundColor(.yellow.opacity(0.85))
                     }
                 }
@@ -403,7 +403,7 @@ struct AnnotationCanvasView: View {
                     .animation(.easeInOut(duration: 0.2), value: isActive)
 
                 Image(systemName: isActive ? "stop.fill" : "mic.fill")
-                    .font(.system(size: 16, weight: .semibold))
+                    .font(.system(size: 16, weight: .semibold, design: .rounded))
                     .foregroundColor(isActive ? .white : .white.opacity(0.7))
             }
         }
@@ -482,7 +482,7 @@ struct AnnotationCanvasView: View {
                     .rotationEffect(.degrees(pulsing ? 360 : 0))
                     .animation(.linear(duration: 1.0).repeatForever(autoreverses: false), value: pulsing)
                 Image(systemName: "viewfinder")
-                    .font(.system(size: 28, weight: .semibold))
+                    .font(.system(size: 28, weight: .semibold, design: .rounded))
                     .foregroundColor(.yellow)
             }
             Text(L("Mapping the scene…"))
@@ -499,7 +499,7 @@ struct AnnotationCanvasView: View {
     private func failedView(_ message: String) -> some View {
         VStack(spacing: 20) {
             Image(systemName: "exclamationmark.triangle.fill")
-                .font(.system(size: 44))
+                .font(.system(size: 44, design: .rounded))
                 .foregroundColor(.orange)
             Text(L("Could not map the scene"))
                 .font(.system(size: 20, weight: .bold, design: .rounded))

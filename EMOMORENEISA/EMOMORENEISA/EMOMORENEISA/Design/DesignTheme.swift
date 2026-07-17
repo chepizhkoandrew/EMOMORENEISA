@@ -3,8 +3,10 @@ import SwiftUI
 // MARK: - Chat / UI Colors
 
 enum AppColors {
-    static let backgroundTop = Color(red: 0.08, green: 0.08, blue: 0.13)
-    static let backgroundBottom = Color(red: 0.04, green: 0.05, blue: 0.10)
+    // Same gradient stops as GameColors — one canonical background color for
+    // every screen; only the amount of decoration layered on top differs.
+    static let backgroundTop = GameColors.backgroundTop
+    static let backgroundBottom = GameColors.backgroundBottom
     static let accent = Color.yellow
     static let cardBackground = Color.white.opacity(0.07)
     static let cardBorder = Color.white.opacity(0.10)
@@ -13,7 +15,7 @@ enum AppColors {
     static let textTertiary = Color.white.opacity(0.38)
     static let inputBackground = Color.white.opacity(0.08)
     static let inputBorder = Color.white.opacity(0.13)
-    static let toolbarBackground = Color(red: 0.08, green: 0.08, blue: 0.13)
+    static let toolbarBackground = GameColors.backgroundTop
 }
 
 // MARK: - Game Colors
@@ -259,7 +261,7 @@ struct BackButton: View {
                     .fill(.ultraThinMaterial)
                     .frame(width: 36, height: 36)
                 Image(systemName: "chevron.left")
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(.system(size: 14, weight: .semibold, design: .rounded))
                     .foregroundColor(.white)
             }
         }

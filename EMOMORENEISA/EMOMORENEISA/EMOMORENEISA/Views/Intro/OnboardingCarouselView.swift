@@ -104,7 +104,7 @@ struct OnboardingCarouselView: View {
                     BackgroundMusicPlayer.shared.setMuted(isMuted)
                 } label: {
                     Image(systemName: isMuted ? "speaker.slash.fill" : "speaker.wave.2.fill")
-                        .font(.system(size: 15, weight: .semibold))
+                        .font(.system(size: 15, weight: .semibold, design: .rounded))
                         .foregroundColor(.white.opacity(0.85))
                         .frame(width: 36, height: 36)
                         .background(.white.opacity(0.12))

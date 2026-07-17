@@ -137,7 +137,7 @@ struct ParrotWordGridView: View {
                     showPlayer = true
                 } label: {
                     Image(systemName: phrase.hasAudio ? "play.circle.fill" : "arrow.clockwise.circle.fill")
-                        .font(.system(size: 28))
+                        .font(.system(size: 28, design: .rounded))
                         .foregroundColor(.yellow)
                 }
 
@@ -145,7 +145,7 @@ struct ParrotWordGridView: View {
                     deletePhrase(phrase)
                 } label: {
                     Image(systemName: "trash.circle.fill")
-                        .font(.system(size: 28))
+                        .font(.system(size: 28, design: .rounded))
                         .foregroundColor(Color.white.opacity(0.35))
                 }
             }
@@ -391,7 +391,7 @@ struct ParrotReplayView: View {
                         showDeleteConfirmation = true
                     } label: {
                         Image(systemName: "trash")
-                            .font(.system(size: 18, weight: .semibold))
+                            .font(.system(size: 18, weight: .semibold, design: .rounded))
                             .foregroundColor(.red.opacity(0.8))
                             .padding(12)
                     }

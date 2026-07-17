@@ -21,7 +21,7 @@ struct MaterialTokenView: View {
                     .padding(size * 0.18)
             } else {
                 Image(systemName: stage.placeholderSymbol)
-                    .font(.system(size: size * 0.42, weight: .semibold))
+                    .font(.system(size: size * 0.42, weight: .semibold, design: .rounded))
                     .foregroundColor(stage.tokenColor)
             }
         }

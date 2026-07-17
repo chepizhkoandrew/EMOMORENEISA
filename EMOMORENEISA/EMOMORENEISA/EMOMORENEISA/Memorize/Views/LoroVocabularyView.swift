@@ -182,7 +182,7 @@ struct VocabularyReplayView: View {
                         showDeleteConfirmation = true
                     } label: {
                         Image(systemName: "trash")
-                            .font(.system(size: 18, weight: .semibold))
+                            .font(.system(size: 18, weight: .semibold, design: .rounded))
                             .foregroundColor(.red.opacity(0.8))
                             .padding(12)
                     }

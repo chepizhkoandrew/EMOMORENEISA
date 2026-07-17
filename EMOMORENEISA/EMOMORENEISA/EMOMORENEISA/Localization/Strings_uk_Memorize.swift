@@ -83,4 +83,15 @@ let ukMemorizeStrings: [String: String] = [
     "Reset all progress?": "Скинути весь прогрес?",
     "Reset": "Скинути",
     "This permanently deletes every memory card. Seagull Steven will forget all his words. This cannot be undone.": "Це назавжди видалить усі картки пам’яті. Чайка Стівен забуде всі свої слова. Скасувати буде неможливо.",
+
+    // Memory sub-menu (Home)
+    "Your Words Calendar": "Календар твоїх слів",
+    "Remember with Music": "Запам'ятовуй з музикою",
+    "learn vocabulary through songs": "вчи слова через пісні",
+
+    // Loro speech-bubble phrases (Spanish stays; this is the meaning)
+    "Life is crazy": "Життя божевільне",
+    "We have to work": "Треба робити роботу",
+    "Ah, yes-yes or no?": "Ой, та-так... чи ні?",
+    "Smells like chicken?": "Пахне куркою?",
 ]

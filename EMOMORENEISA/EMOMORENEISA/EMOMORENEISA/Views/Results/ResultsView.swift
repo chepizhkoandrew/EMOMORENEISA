@@ -12,7 +12,7 @@ struct ResultsView: View {
 
     var body: some View {
         ZStack {
-            GameBackground()
+            AppBackground()
 
             if isPerfect {
                 ConfettiView()
@@ -78,7 +78,7 @@ struct ResultsView: View {
     private var scoreHeader: some View {
         VStack(spacing: 12) {
             Text(isPerfect ? "🏆" : correct > total / 2 ? "🥈" : "💪")
-                .font(.system(size: 72))
+                .font(.system(size: 72, design: .rounded))
                 .shadow(color: isPerfect ? Color.yellow.opacity(0.6) : .clear, radius: 20)
 
             Text(isPerfect ? L("PERFECT ROUND!") : L("ROUND COMPLETE"))
@@ -113,7 +113,7 @@ struct ResultsView: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 8) {
                 Text(emoji)
-                    .font(.system(size: 14, weight: .black))
+                    .font(.system(size: 14, weight: .black, design: .rounded))
                     .foregroundColor(color)
                 Text(title)
                     .font(.system(size: 13, weight: .black, design: .monospaced))
@@ -141,7 +141,7 @@ struct ResultsView: View {
 
                     HStack(spacing: 5) {
                         Image(systemName: isCorrect ? "checkmark" : "xmark")
-                            .font(.system(size: 11, weight: .black))
+                            .font(.system(size: 11, weight: .black, design: .rounded))
                             .foregroundColor(color)
                         Text(cell.expectedConjugation)
                             .font(.system(size: 16, weight: .black, design: .monospaced))
@@ -171,7 +171,7 @@ struct ResultsView: View {
                 } label: {
                     HStack(spacing: 10) {
                         Image(systemName: "arrow.clockwise")
-                            .font(.system(size: 16, weight: .bold))
+                            .font(.system(size: 16, weight: .bold, design: .rounded))
                         Text(L("RETRY MISSED (%d)", engine.round?.missedCells.count ?? 0))
                             .font(.system(size: 16, weight: .black, design: .monospaced))
                     }
@@ -189,7 +189,7 @@ struct ResultsView: View {
             } label: {
                 HStack(spacing: 10) {
                     Image(systemName: "shuffle")
-                        .font(.system(size: 15, weight: .semibold))
+                        .font(.system(size: 15, weight: .semibold, design: .rounded))
                     Text(L("NEW ROUND"))
                         .font(.system(size: 16, weight: .bold, design: .monospaced))
                 }
@@ -209,7 +209,7 @@ struct ResultsView: View {
             } label: {
                 HStack(spacing: 8) {
                     Image(systemName: "chart.bar.fill")
-                        .font(.system(size: 13, weight: .semibold))
+                        .font(.system(size: 13, weight: .semibold, design: .rounded))
                     Text(L("VIEW STATS"))
                         .font(.system(size: 13, weight: .bold, design: .monospaced))
                 }

@@ -1,6 +1,7 @@
 import SwiftUI
 import SwiftData
 import Combine
+import AVFoundation
 
 /// The Memorize Hub — the 90%-case surface (spec §11.1 / §11.2). Shows El Loro,
 /// how many words he knows, the primary "Loro Memorize!" CTA, and the Due-Now
@@ -21,6 +22,21 @@ struct LoroMemorizeHubView: View {
     @State private var showChat = false
     @State private var now = Date()
     @State private var replayCard: MemoryCard?
+
+    // Same pattern as the professor-dog's bubble on the home screen: one
+    // phrase at a time, typed in, spoken, held, then deleted.
+    private let loroPhrases: [(es: String, meaning: String)] = [
+        ("La vida es loca", "Life is crazy"),
+        ("Tenemos que trabajar", "We have to work"),
+        ("Ah, si-si o no?", "Ah, yes-yes or no?"),
+        ("Huele a pollo?", "Smells like chicken?")
+    ]
+    @State private var loroDisplayedText = ""
+    @State private var loroPhraseIndex = 0
+    @State private var loroCharIndex = 0
+    @State private var loroCursorVisible = true
+    @State private var loroTypeTask: Task<Void, Never>? = nil
+    @State private var loroBubblePlayer: AVAudioPlayer? = nil
 
     private var service: MemoryCardService { MemoryCardService(context: modelContext) }
 
@@ -47,8 +63,14 @@ struct LoroMemorizeHubView: View {
                 VStack(spacing: 22) {
                     header
 
-                    LoroImage(asset: dueCards.isEmpty ? .sleeping : .idle, size: 230)
-                        .padding(.top, 4)
+                    HStack(alignment: .bottom, spacing: 12) {
+                        LoroImage(asset: dueCards.isEmpty ? .sleeping : .idle, size: 150)
+
+                        loroSpeechBubbleView
+                            .padding(.bottom, 30)
+                            .frame(maxWidth: .infinity)
+                    }
+                    .padding(.top, 4)
 
                     cta
 
@@ -76,6 +98,12 @@ struct LoroMemorizeHubView: View {
         .onReceive(Timer.publish(every: 30, on: .main, in: .common).autoconnect()) { _ in
             now = Date()
         }
+        .onAppear { startLoroTypewriter() }
+        .onDisappear {
+            loroTypeTask?.cancel()
+            loroBubblePlayer?.stop()
+            loroBubblePlayer = nil
+        }
     }
 
     private var header: some View {
@@ -88,6 +116,119 @@ struct LoroMemorizeHubView: View {
             Spacer()
         }
         .padding(.top, 50)
+    }
+
+    // MARK: - Speech Bubble (same pattern as the professor-dog's bubble)
+
+    private var loroSpeechBubbleView: some View {
+        ZStack(alignment: .leading) {
+            RoundedRectangle(cornerRadius: 14)
+                .fill(Color.yellow)
+                .shadow(color: .black.opacity(0.18), radius: 6, y: 3)
+
+            SpeechTailShape()
+                .fill(Color.yellow)
+                .frame(width: 11, height: 9)
+                .offset(x: -10, y: 2)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(loroDisplayedText + (loroCursorVisible ? "|" : " "))
+                    .font(.system(size: 17, weight: .bold, design: .rounded))
+                    .foregroundColor(.black)
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.7)
+                    .multilineTextAlignment(.leading)
+
+                Text(L(loroPhrases[loroPhraseIndex].meaning))
+                    .font(.system(size: 12, weight: .semibold, design: .rounded))
+                    .foregroundColor(.black.opacity(0.55))
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.7)
+                    .multilineTextAlignment(.leading)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            .padding(.horizontal, 12)
+            .padding(.top, 9)
+            .padding(.bottom, 9)
+        }
+        .frame(maxWidth: .infinity, minHeight: 86, maxHeight: 86)
+    }
+
+    private func playLoroBubbleSound(index: Int) {
+        // Falls back to the Spanish-only clip if the localized file is
+        // missing, and no-ops entirely if neither exists yet.
+        let langSuffix: String
+        switch LocalizationManager.shared.language {
+        case .ukrainian: langSuffix = "uk"
+        case .english:   langSuffix = "en"
+        }
+        let localizedName = "loro_bubble_\(index)_\(langSuffix)"
+        let url = Bundle.main.url(forResource: localizedName, withExtension: "mp3")
+            ?? Bundle.main.url(forResource: "loro_bubble_\(index)", withExtension: "mp3")
+        guard let url else { return }
+        do {
+            try AVAudioSession.sharedInstance().setCategory(.ambient, mode: .default, options: [.mixWithOthers])
+            try AVAudioSession.sharedInstance().setActive(true)
+            loroBubblePlayer = try AVAudioPlayer(contentsOf: url)
+            loroBubblePlayer?.volume = 0.7
+            loroBubblePlayer?.play()
+        } catch {}
+    }
+
+    private func startLoroTypewriter() {
+        loroTypeTask?.cancel()
+        loroDisplayedText = ""
+        loroPhraseIndex = 0
+        loroCharIndex = 0
+
+        loroTypeTask = Task {
+            Task {
+                while !Task.isCancelled {
+                    try? await Task.sleep(nanoseconds: 500_000_000)
+                    await MainActor.run { loroCursorVisible.toggle() }
+                }
+            }
+
+            while !Task.isCancelled {
+                let phrase = loroPhrases[loroPhraseIndex].es
+
+                let duration = await MainActor.run { () -> TimeInterval in
+                    playLoroBubbleSound(index: loroPhraseIndex)
+                    return loroBubblePlayer?.duration ?? 0
+                }
+
+                await MainActor.run { loroCharIndex = 0; loroDisplayedText = "" }
+                while loroCharIndex < phrase.count && !Task.isCancelled {
+                    await MainActor.run {
+                        loroCharIndex += 1
+                        loroDisplayedText = String(phrase.prefix(loroCharIndex))
+                    }
+                    try? await Task.sleep(nanoseconds: 70_000_000)
+                }
+
+                let start = Date()
+                let minHold: TimeInterval = 2.2
+                let cap = max(duration, minHold) + 0.5
+                while !Task.isCancelled {
+                    let playing = await MainActor.run { loroBubblePlayer?.isPlaying ?? false }
+                    let elapsed = Date().timeIntervalSince(start)
+                    if elapsed >= cap { break }
+                    if !playing && elapsed >= minHold { break }
+                    try? await Task.sleep(nanoseconds: 120_000_000)
+                }
+
+                while loroCharIndex > 0 && !Task.isCancelled {
+                    await MainActor.run {
+                        loroCharIndex -= 1
+                        loroDisplayedText = String(phrase.prefix(loroCharIndex))
+                    }
+                    try? await Task.sleep(nanoseconds: 32_000_000)
+                }
+
+                await MainActor.run { loroPhraseIndex = (loroPhraseIndex + 1) % loroPhrases.count }
+                try? await Task.sleep(nanoseconds: 300_000_000)
+            }
+        }
     }
 
     @ViewBuilder
@@ -142,7 +283,7 @@ struct LoroMemorizeHubView: View {
 
                     HStack(spacing: 12) {
                         Image(systemName: "brain.head.profile")
-                            .font(.system(size: 26, weight: .bold))
+                            .font(.system(size: 26, weight: .bold, design: .rounded))
                             .foregroundColor(.black.opacity(0.7))
                         Text(L("Practice Memory"))
                             .font(.system(size: 20, weight: .black, design: .rounded))
@@ -156,7 +297,7 @@ struct LoroMemorizeHubView: View {
         } else {
             VStack(spacing: 8) {
                 Image(systemName: "brain.head.profile")
-                    .font(.system(size: 30))
+                    .font(.system(size: 30, design: .rounded))
                     .foregroundColor(AppColors.textTertiary)
                 if let timeStr = nextDueInText {
                     Text(L("Next practice in %@", timeStr))
@@ -185,7 +326,7 @@ struct LoroMemorizeHubView: View {
             } label: {
                 HStack(spacing: 8) {
                     Image(systemName: "bubble.left.and.bubble.right.fill")
-                        .font(.system(size: 15, weight: .semibold))
+                        .font(.system(size: 15, weight: .semibold, design: .rounded))
                     Text(L("Teach Seagull Steven in Chat"))
                         .font(.system(size: 15, weight: .bold, design: .rounded))
                 }
@@ -261,7 +402,7 @@ struct LoroMemorizeHubView: View {
                     .font(.system(size: 12, weight: .semibold, design: .rounded))
                     .foregroundColor(AppColors.textTertiary)
                 Image(systemName: "play.circle.fill")
-                    .font(.system(size: 18))
+                    .font(.system(size: 18, design: .rounded))
                     .foregroundColor(.yellow.opacity(0.7))
             }
             .padding(.horizontal, 14)

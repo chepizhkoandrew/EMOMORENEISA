@@ -164,12 +164,12 @@ struct MessageBubbleView: View {
                             .scaleEffect(0.85)
                     } else if isPlaying {
                         Image(systemName: isPausedHere ? "play.fill" : "pause.fill")
-                            .font(.system(size: 18))
+                            .font(.system(size: 18, design: .rounded))
                             .foregroundColor(.yellow)
                             .contentTransition(.symbolEffect(.replace))
                     } else {
                         Image(systemName: "play.fill")
-                            .font(.system(size: 18))
+                            .font(.system(size: 18, design: .rounded))
                             .foregroundColor(AppColors.textTertiary)
                     }
                 }
@@ -215,11 +215,11 @@ struct MessageBubbleView: View {
             Button(action: onReplyInThread) {
                 HStack(spacing: 6) {
                     Image(systemName: "bubble.left.and.bubble.right")
-                        .font(.system(size: 19))
+                        .font(.system(size: 19, design: .rounded))
                     Text(LPlural(message.threadReplyCount,
                                  en: "%d reply", "%d replies",
                                  uk: "%d відповідь", "%d відповіді", "%d відповідей"))
-                        .font(.system(size: 20, weight: .medium))
+                        .font(.system(size: 20, weight: .medium, design: .rounded))
                 }
                 .foregroundColor(.yellow.opacity(0.8))
             }

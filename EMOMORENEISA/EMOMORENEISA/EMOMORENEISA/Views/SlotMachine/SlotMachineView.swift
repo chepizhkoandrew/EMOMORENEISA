@@ -15,7 +15,7 @@ struct SlotMachineView: View {
 
     var body: some View {
         ZStack {
-            GameBackground()
+            AppBackground()
 
             DreamParticlesView()
                 .allowsHitTesting(false)

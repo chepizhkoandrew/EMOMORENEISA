@@ -257,7 +257,7 @@ struct SRSPlayerView: View {
             HStack(spacing: 20) {
                 Button { player.togglePlayPause() } label: {
                     Image(systemName: player.isPlaying ? "pause.fill" : "play.fill")
-                        .font(.system(size: 28, weight: .semibold))
+                        .font(.system(size: 28, weight: .semibold, design: .rounded))
                         .foregroundColor(.black)
                         .frame(width: 72, height: 72)
                         .background(Color.yellow)
@@ -271,7 +271,7 @@ struct SRSPlayerView: View {
                     advance()
                 } label: {
                     Image(systemName: "forward.end.fill")
-                        .font(.system(size: 20, weight: .semibold))
+                        .font(.system(size: 20, weight: .semibold, design: .rounded))
                         .foregroundColor(AppColors.textSecondary)
                         .frame(width: 52, height: 52)
                         .background(AppColors.cardBackground)

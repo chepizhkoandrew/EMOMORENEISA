@@ -7,6 +7,7 @@ struct ThreadSheetView: View {
     @Environment(AuthState.self) private var authState
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.scenePhase) private var scenePhase
 
     @State private var inputText: String = ""
     @State private var isGenerating: Bool = false
@@ -93,8 +94,16 @@ struct ThreadSheetView: View {
                 .padding(.top, 14)
             }
             .scrollBounceBehavior(.basedOnSize)
+            .onAppear {
+                proxy.scrollTo("threadBottom", anchor: .bottom)
+            }
             .onChange(of: threadMessages.count) { _, _ in
                 withAnimation { proxy.scrollTo("threadBottom") }
+            }
+            .onChange(of: scenePhase) { _, newPhase in
+                if newPhase == .active {
+                    proxy.scrollTo("threadBottom", anchor: .bottom)
+                }
             }
         }
     }
@@ -113,7 +122,7 @@ struct ThreadSheetView: View {
 
             Button(action: sendReply) {
                 Image(systemName: isGenerating ? "hourglass" : "arrow.up.circle.fill")
-                    .font(.system(size: 34))
+                    .font(.system(size: 34, design: .rounded))
                     .foregroundColor(inputText.trimmingCharacters(in: .whitespaces).isEmpty || isGenerating ? AppColors.textTertiary : .yellow)
             }
             .disabled(inputText.trimmingCharacters(in: .whitespaces).isEmpty || isGenerating)

@@ -135,13 +135,23 @@ Debug builds API response
 
 Check builds available in TestFlight and review submission items
 
+### ios asc_state
+
+```sh
+[bundle exec] fastlane ios asc_state
+```
+
+Check current state of versions and IAPs
+
+Read-only: list recent builds with processing state (plus versions/subs via check_state)
+
 ### ios check_state
 
 ```sh
 [bundle exec] fastlane ios check_state
 ```
 
-Check current state of versions and IAPs
+
 
 ### ios submit_v11
 

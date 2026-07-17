@@ -20,7 +20,7 @@ struct AIDisclosureView: View {
 
                 VStack(spacing: 8) {
                     Image(systemName: "sparkles")
-                        .font(.system(size: 40))
+                        .font(.system(size: 40, design: .rounded))
                         .foregroundColor(.yellow)
                         .shadow(color: .yellow.opacity(0.5), radius: 16)
 
@@ -106,7 +106,7 @@ struct AIDisclosureView: View {
     private func disclosureRow(icon: String, text: String) -> some View {
         HStack(alignment: .top, spacing: 14) {
             Image(systemName: icon)
-                .font(.system(size: 18))
+                .font(.system(size: 18, design: .rounded))
                 .foregroundColor(.yellow)
                 .frame(width: 22)
             Text(text)

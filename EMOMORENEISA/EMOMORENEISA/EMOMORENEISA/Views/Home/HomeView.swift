@@ -67,7 +67,7 @@ struct HomeView: View {
 
     var body: some View {
         ZStack {
-            Color.black.ignoresSafeArea()
+            AppBackground()
 
             switch engine.phase {
             case .idle:

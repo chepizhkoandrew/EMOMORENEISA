@@ -36,18 +36,22 @@ struct BillingInfoView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 24) {
-                    hero
-                    whatAreTreats
-                    whatUsesTreats
-                    waysToSave
-                    howTopUpsWork
-                    howWeCalculate
-                    goodToKnow
-                    legalLinks
+            ZStack {
+                AppBackground()
+
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 24) {
+                        hero
+                        whatAreTreats
+                        whatUsesTreats
+                        waysToSave
+                        howTopUpsWork
+                        howWeCalculate
+                        goodToKnow
+                        legalLinks
+                    }
+                    .padding()
                 }
-                .padding()
             }
             .navigationTitle(L("How treats work"))
             .navigationBarTitleDisplayMode(.inline)
@@ -57,6 +61,8 @@ struct BillingInfoView: View {
                 }
             }
         }
+        .tint(.yellow)
+        .preferredColorScheme(.dark)
     }
 
     private var hero: some View {
@@ -97,7 +103,7 @@ struct BillingInfoView: View {
                 ForEach(activities) { item in
                     HStack(spacing: 14) {
                         Image(systemName: item.icon)
-                            .font(.system(size: 18))
+                            .font(.system(size: 18, design: .rounded))
                             .frame(width: 28)
                             .foregroundStyle(.tint)
                         VStack(alignment: .leading, spacing: 2) {
@@ -114,7 +120,8 @@ struct BillingInfoView: View {
                     }
                     .padding(12)
                     .frame(maxWidth: .infinity)
-                    .background(Color(.secondarySystemBackground))
+                    .background(AppColors.cardBackground)
+                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(AppColors.cardBorder, lineWidth: 1))
                     .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
             }
@@ -165,7 +172,8 @@ struct BillingInfoView: View {
         }
         .padding(12)
         .frame(maxWidth: .infinity)
-        .background(Color(.secondarySystemBackground))
+        .background(AppColors.cardBackground)
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(AppColors.cardBorder, lineWidth: 1))
         .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 

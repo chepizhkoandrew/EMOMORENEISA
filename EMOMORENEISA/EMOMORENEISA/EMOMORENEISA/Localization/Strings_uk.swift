@@ -38,4 +38,11 @@ let ukCommonStrings: [String: String] = [
     "Settings": "Налаштування",
     "Language": "Мова",
     "App Language": "Мова застосунку",
+
+    // Burger menu (Home + Chat screens)
+    "Menu": "Меню",
+    "Your Chats": "Ваші чати",
+    "Profile": "Профіль",
+    "Edit Goal": "Редагувати ціль",
+    "Coming soon": "Скоро",
 ]

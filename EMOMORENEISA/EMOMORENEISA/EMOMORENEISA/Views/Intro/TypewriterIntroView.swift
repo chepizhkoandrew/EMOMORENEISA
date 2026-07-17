@@ -333,7 +333,7 @@ struct SettingsSheetView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(L("Done")) { dismiss() }
-                        .font(.system(size: 16, weight: .bold))
+                        .font(.system(size: 16, weight: .bold, design: .rounded))
                         .foregroundColor(.yellow)
                 }
             }

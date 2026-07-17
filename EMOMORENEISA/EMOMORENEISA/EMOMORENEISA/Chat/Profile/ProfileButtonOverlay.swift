@@ -15,7 +15,7 @@ struct ProfileButtonOverlay: ViewModifier {
             .overlay(alignment: alignment) {
                 Button { showProfile = true } label: {
                     Image(systemName: "person.circle.fill")
-                        .font(.system(size: 28))
+                        .font(.system(size: 28, design: .rounded))
                         .foregroundColor(.white.opacity(0.6))
                         .padding(16)
                 }

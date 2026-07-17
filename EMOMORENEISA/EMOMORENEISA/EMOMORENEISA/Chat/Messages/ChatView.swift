@@ -7,6 +7,7 @@ struct ChatView: View {
     @Environment(AuthState.self) private var authState
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.scenePhase) private var scenePhase
 
     @State private var inputText: String = ""
     @State private var isGenerating: Bool = false
@@ -18,7 +19,6 @@ struct ChatView: View {
     @State private var showPhotoPicker = false
     @State private var showCamera = false
     @State private var audioRecorder = AudioRecorder()
-    @State private var goalFlash = false
     @State private var showGoalEditor = false
     @State private var parrotMessage: LocalChatMessage? = nil
     @State private var annotationTarget: AnnotationTarget? = nil
@@ -70,16 +70,10 @@ struct ChatView: View {
                     .lineLimit(2)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            ToolbarItem(placement: .navigationBarTrailing) {
-                Button {
-                    showGoalEditor = true
-                } label: {
-                    Image(systemName: "scope")
-                        .font(.system(size: 20))
-                        .foregroundColor(.yellow.opacity(0.85))
-                }
-            }
         }
+        .withBurgerMenu(extraItems: [
+            BurgerMenuItem(label: "Edit Goal", systemImage: "scope") { showGoalEditor = true }
+        ])
         .task { await openingMessage() }
         .sheet(isPresented: $showThread) {
             if let parent = threadParent {
@@ -172,11 +166,19 @@ struct ChatView: View {
                 .padding(.top, 14)
             }
             .scrollBounceBehavior(.basedOnSize)
+            .onAppear {
+                proxy.scrollTo("bottom", anchor: .bottom)
+            }
             .onChange(of: rootMessages.count) { _, _ in
                 withAnimation { proxy.scrollTo("bottom") }
             }
             .onChange(of: isGenerating) { _, _ in
                 withAnimation { proxy.scrollTo("bottom") }
+            }
+            .onChange(of: scenePhase) { _, newPhase in
+                if newPhase == .active {
+                    proxy.scrollTo("bottom", anchor: .bottom)
+                }
             }
         }
     }
@@ -218,7 +220,7 @@ struct ChatView: View {
                             if pendingImages.isEmpty { selectedPhotoItems = [] }
                         } label: {
                             Image(systemName: "xmark.circle.fill")
-                                .font(.system(size: 18))
+                                .font(.system(size: 18, design: .rounded))
                                 .foregroundColor(.white)
                                 .background(Color.black.opacity(0.6), in: Circle())
                         }
@@ -250,7 +252,7 @@ struct ChatView: View {
 
                 Button(action: sendMessage) {
                     Image(systemName: isGenerating ? "hourglass" : "arrow.up.circle.fill")
-                        .font(.system(size: 40))
+                        .font(.system(size: 40, design: .rounded))
                         .foregroundColor(canSend ? .yellow : AppColors.textTertiary)
                 }
                 .disabled(!canSend)
@@ -264,7 +266,7 @@ struct ChatView: View {
                 } label: {
                     HStack(spacing: 8) {
                         Image(systemName: "camera.fill")
-                            .font(.system(size: 20, weight: .semibold))
+                            .font(.system(size: 20, weight: .semibold, design: .rounded))
                         Text(L("Camera"))
                             .font(.system(size: 18, weight: .semibold, design: .rounded))
                     }
@@ -283,7 +285,7 @@ struct ChatView: View {
                 } label: {
                     HStack(spacing: 8) {
                         Image(systemName: "photo.on.rectangle.angled")
-                            .font(.system(size: 20, weight: .semibold))
+                            .font(.system(size: 20, weight: .semibold, design: .rounded))
                         Text(L("Photos"))
                             .font(.system(size: 18, weight: .semibold, design: .rounded))
                     }
@@ -338,12 +340,12 @@ struct ChatView: View {
                         .font(.system(size: 18, weight: .semibold, design: .rounded))
                 } else if isRec {
                     Image(systemName: "stop.fill")
-                        .font(.system(size: 20, weight: .semibold))
+                        .font(.system(size: 20, weight: .semibold, design: .rounded))
                     Text(L("Stop"))
                         .font(.system(size: 18, weight: .semibold, design: .rounded))
                 } else {
                     Image(systemName: "mic.fill")
-                        .font(.system(size: 20, weight: .semibold))
+                        .font(.system(size: 20, weight: .semibold, design: .rounded))
                     Text(L("Record"))
                         .font(.system(size: 18, weight: .semibold, design: .rounded))
                 }
@@ -376,52 +378,14 @@ struct ChatView: View {
         .background(Color.red.opacity(0.1))
     }
 
-    // MARK: - Goal Banner
-
-    private var goalBanner: some View {
-        HStack(spacing: 12) {
-            Image(systemName: "scope")
-                .font(.system(size: 22, weight: .semibold))
-                .foregroundColor(.yellow.opacity(0.8))
-
-            Text(session.sessionGoal ?? session.topic ?? L("Free conversation"))
-                .font(.system(size: 22, weight: .medium, design: .rounded))
-                .foregroundColor(AppColors.textSecondary)
-                .lineLimit(1)
-
-            Spacer()
-
-            Button {
-                showGoalEditor = true
-            } label: {
-                Image(systemName: "pencil.circle")
-                    .font(.system(size: 26))
-                    .foregroundColor(AppColors.textTertiary)
-            }
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 11)
-        .background(goalFlash ? Color.yellow.opacity(0.18) : AppColors.cardBackground)
-        .overlay(Rectangle().frame(height: 0.5).foregroundColor(Color.yellow.opacity(goalFlash ? 0.5 : 0.13)), alignment: .bottom)
-        .animation(.easeInOut(duration: 0.35), value: goalFlash)
-    }
-
     private func updateSessionGoal(_ newGoal: String) {
         session.sessionGoal = newGoal
         session.updatedAt = Date()
         try? modelContext.save()
-        flashGoalBanner()
         Task {
             if let userId = authState.userId {
                 await SupabaseSyncService.shared.upsertSession(session, userId: userId)
             }
-        }
-    }
-
-    private func flashGoalBanner() {
-        goalFlash = true
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
-            withAnimation { goalFlash = false }
         }
     }
 
@@ -766,7 +730,7 @@ struct GoalEditorSheet: View {
                     VoiceWaveformView(audioLevel: recorder.audioLevel, color: .white, barCount: 5, maxHeight: 24, barWidth: 3, spacing: 3)
                 } else {
                     Image(systemName: "mic.fill")
-                        .font(.system(size: 22, weight: .semibold))
+                        .font(.system(size: 22, weight: .semibold, design: .rounded))
                         .foregroundColor(AppColors.textSecondary)
                 }
             }

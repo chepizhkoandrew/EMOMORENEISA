@@ -45,7 +45,7 @@ struct LoroImage: View {
                 .frame(height: size)
         } else {
             Text(asset.textFallback)
-                .font(.system(size: size * 0.8))
+                .font(.system(size: size * 0.8, design: .rounded))
         }
     }
 }

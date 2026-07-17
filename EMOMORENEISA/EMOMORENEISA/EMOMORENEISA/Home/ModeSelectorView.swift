@@ -4,20 +4,21 @@ import AVFoundation
 
 struct ModeSelectorView: View {
     let onVerbGame: () -> Void
-    @State private var showExplore = false
+    @State private var showSpeaking = false
     /// True from the moment a new chat session is created until it's actually
     /// launched (there's a deliberate 0.35s delay between the two). Without
-    /// this, `showExplore` flipping to false fires the "resume typewriter +
+    /// this, `showSpeaking` flipping to false fires the "resume typewriter +
     /// music" branch immediately, only for `launchedSession` to kill it again
-    /// 0.35s later — a real restart-then-stop race on every single Explore
+    /// 0.35s later — a real restart-then-stop race on every single Speaking
     /// launch, not just a theoretical one.
     @State private var pendingSessionLaunch = false
-    @State private var showMemorize = false
+    @State private var showMemory = false
+    @State private var showGrammar = false
     @State private var launchedSession: LocalChatSession? = nil
     @State private var appear = false
-    @State private var verbCardPressed = false
-    @State private var exploreCardPressed = false
-    @State private var memorizeCardPressed = false
+    @State private var speakingCardPressed = false
+    @State private var memoryCardPressed = false
+    @State private var grammarCardPressed = false
     @State private var bubblePlayer: AVAudioPlayer? = nil
     @Environment(AuthState.self) private var authState
     @Environment(\.modelContext) private var modelContext
@@ -40,7 +41,6 @@ struct ModeSelectorView: View {
     @State private var isDeleting = false
     @State private var cursorVisible = true
     @State private var typeTask: Task<Void, Never>? = nil
-    @State private var showProfile = false
     @State private var showOnboarding = false
 
     var body: some View {
@@ -71,13 +71,13 @@ struct ModeSelectorView: View {
                                     .frame(maxWidth: .infinity)
                             }
 
-                            exploreCard(illustrationH: illoH)
+                            speakingCard(illustrationH: illoH)
                         }
                         .frame(height: dogH)
 
-                        memoriseWordsCard(illustrationH: illoH)
+                        memoryCard(illustrationH: illoH)
 
-                        verbsTimesCard(illustrationH: illoH)
+                        grammarCard(illustrationH: illoH)
                     }
                     .padding(.horizontal, HomeLayout.hPadding)
 
@@ -97,22 +97,8 @@ struct ModeSelectorView: View {
                 bubblePlayer?.stop()
                 bubblePlayer = nil
             }
-
-            VStack {
-                HStack {
-                    Spacer()
-                    Button {
-                        showProfile = true
-                    } label: {
-                        Image(systemName: "person.circle.fill")
-                            .font(.system(size: 28))
-                            .foregroundColor(.white.opacity(0.6))
-                            .padding(16)
-                    }
-                }
-                Spacer()
-            }
         }
+        .withBurgerMenu()
         .fullScreenCover(isPresented: $showOnboarding) {
             OnboardingContainerView {
                 showOnboarding = false
@@ -137,17 +123,11 @@ struct ModeSelectorView: View {
         .onAppear {
             if authState.needsOnboarding { showOnboarding = true }
         }
-        .fullScreenCover(isPresented: $showProfile) {
-            NavigationStack {
-                ProfileView(onBack: { showProfile = false })
-                    .environment(authState)
-            }
-        }
-        .fullScreenCover(isPresented: $showExplore) {
+        .fullScreenCover(isPresented: $showSpeaking) {
             if authState.isSignedIn {
                 NewSessionView(onSessionCreated: { session in
                     pendingSessionLaunch = true
-                    showExplore = false
+                    showSpeaking = false
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
                         launchedSession = session
                     }
@@ -158,11 +138,14 @@ struct ModeSelectorView: View {
                     .environment(authState)
             }
         }
-        .fullScreenCover(isPresented: $showMemorize) {
-            MemorizeContainerView()
+        .fullScreenCover(isPresented: $showMemory) {
+            MemoryMenuView()
                 .environment(authState)
         }
-        .onChange(of: showMemorize) { _, isShowing in
+        .fullScreenCover(isPresented: $showGrammar) {
+            GrammarMenuView(onVerbGame: onVerbGame)
+        }
+        .onChange(of: showMemory) { _, isShowing in
             if isShowing {
                 typeTask?.cancel()
                 bubblePlayer?.stop()
@@ -173,7 +156,18 @@ struct ModeSelectorView: View {
                 BackgroundMusicPlayer.shared.play()
             }
         }
-        .onChange(of: showExplore) { _, isShowing in
+        .onChange(of: showGrammar) { _, isShowing in
+            if isShowing {
+                typeTask?.cancel()
+                bubblePlayer?.stop()
+                bubblePlayer = nil
+                BackgroundMusicPlayer.shared.fadeOut(duration: 0.3)
+            } else {
+                startTypewriter()
+                BackgroundMusicPlayer.shared.play()
+            }
+        }
+        .onChange(of: showSpeaking) { _, isShowing in
             if isShowing {
                 typeTask?.cancel()
                 bubblePlayer?.stop()
@@ -337,12 +331,12 @@ struct ModeSelectorView: View {
 
     // MARK: - Cards
 
-    private func exploreCard(illustrationH: CGFloat) -> some View {
-        Button(action: { showExplore = true }) {
+    private func speakingCard(illustrationH: CGFloat) -> some View {
+        Button(action: { showSpeaking = true }) {
             HomeModeCard(
-                title: L("Explore"),
-                subtitle: L("learn visually, speak about what you see around"),
-                pressed: exploreCardPressed
+                title: L("Speaking"),
+                subtitle: L("practice real conversations & role play"),
+                pressed: speakingCardPressed
             ) {
                 Image("street_view")
                     .resizable()
@@ -353,18 +347,18 @@ struct ModeSelectorView: View {
         .buttonStyle(.plain)
         .simultaneousGesture(
             DragGesture(minimumDistance: 0)
-                .onChanged { _ in exploreCardPressed = true }
-                .onEnded { _ in exploreCardPressed = false }
+                .onChanged { _ in speakingCardPressed = true }
+                .onEnded { _ in speakingCardPressed = false }
         )
     }
 
-    private func memoriseWordsCard(illustrationH: CGFloat) -> some View {
-        Button(action: { showMemorize = true }) {
+    private func memoryCard(illustrationH: CGFloat) -> some View {
+        Button(action: { showMemory = true }) {
             HomeModeCard(
-                title: L("Memorise words"),
-                subtitle: L("everyday queue for new words"),
+                title: L("Memory"),
+                subtitle: L("your word queue & memory games"),
                 badge: memorizeDueCount,
-                pressed: memorizeCardPressed
+                pressed: memoryCardPressed
             ) {
                 Image("progress_screen")
                     .resizable()
@@ -375,29 +369,30 @@ struct ModeSelectorView: View {
         .buttonStyle(.plain)
         .simultaneousGesture(
             DragGesture(minimumDistance: 0)
-                .onChanged { _ in memorizeCardPressed = true }
-                .onEnded { _ in memorizeCardPressed = false }
+                .onChanged { _ in memoryCardPressed = true }
+                .onEnded { _ in memoryCardPressed = false }
         )
     }
 
-    private func verbsTimesCard(illustrationH: CGFloat) -> some View {
-        Button(action: onVerbGame) {
+    private func grammarCard(illustrationH: CGFloat) -> some View {
+        Button(action: { showGrammar = true }) {
             HomeModeCard(
-                title: L("Verbs & times"),
-                subtitle: L("game to learn verbs & tenses fast"),
-                pressed: verbCardPressed
+                title: L("Grammar"),
+                subtitle: L("rules, verbs & tenses explained"),
+                pressed: grammarCardPressed
             ) {
-                Image("verb_game")
+                Image(systemName: "character.book.closed.fill")
                     .resizable()
                     .scaledToFit()
-                    .frame(height: illustrationH)
+                    .frame(height: illustrationH * 0.6)
+                    .foregroundColor(.yellow.opacity(0.85))
             }
         }
         .buttonStyle(.plain)
         .simultaneousGesture(
             DragGesture(minimumDistance: 0)
-                .onChanged { _ in verbCardPressed = true }
-                .onEnded { _ in verbCardPressed = false }
+                .onChanged { _ in grammarCardPressed = true }
+                .onEnded { _ in grammarCardPressed = false }
         )
     }
 

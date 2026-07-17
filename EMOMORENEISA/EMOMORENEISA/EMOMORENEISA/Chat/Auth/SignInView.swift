@@ -86,7 +86,7 @@ struct SignInView: View {
                                 Button(action: handleGoogleSignIn) {
                                     HStack(spacing: 12) {
                                         Image(systemName: "g.circle.fill")
-                                            .font(.system(size: 22))
+                                            .font(.system(size: 22, design: .rounded))
                                             .foregroundColor(.white)
                                         Text(L("Continue with Google"))
                                             .font(.system(size: 16, weight: .semibold, design: .rounded))
@@ -108,7 +108,7 @@ struct SignInView: View {
                                     Button(action: { withAnimation { showEmailForm = true } }) {
                                         HStack(spacing: 12) {
                                             Image(systemName: "envelope.fill")
-                                                .font(.system(size: 18))
+                                                .font(.system(size: 18, design: .rounded))
                                                 .foregroundColor(.white)
                                             Text(L("Continue with Email"))
                                                 .font(.system(size: 16, weight: .semibold, design: .rounded))
@@ -210,7 +210,7 @@ struct SignInView: View {
                     withAnimation(.easeInOut(duration: 0.15)) { hasAgreedToTerms.toggle() }
                 } label: {
                     Image(systemName: hasAgreedToTerms ? "checkmark.square.fill" : "square")
-                        .font(.system(size: 20))
+                        .font(.system(size: 20, design: .rounded))
                         .foregroundColor(hasAgreedToTerms ? .yellow : .white.opacity(0.4))
                 }
                 .buttonStyle(.plain)

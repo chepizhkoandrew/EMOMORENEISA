@@ -26,7 +26,7 @@ struct MatrixCellView: View {
                 revealedContent
             } else {
                 Image(systemName: isActive ? "mic.fill" : "questionmark")
-                    .font(.system(size: isActive ? 24 : 20, weight: .semibold))
+                    .font(.system(size: isActive ? 24 : 20, weight: .semibold, design: .rounded))
                     .foregroundColor(isActive ? .yellow : .white.opacity(0.25))
                     .shadow(color: isActive ? Color.yellow.opacity(0.7) : .clear, radius: 6)
             }
@@ -99,7 +99,7 @@ struct MatrixCellView: View {
         } else {
             VStack(spacing: 3) {
                 Image(systemName: isCorrect ? "checkmark" : "xmark")
-                    .font(.system(size: 14, weight: .black))
+                    .font(.system(size: 14, weight: .black, design: .rounded))
                     .foregroundColor(isCorrect ? GameColors.verde : GameColors.rojo)
 
                 Text(cell.expectedConjugation)

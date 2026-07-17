@@ -16,8 +16,8 @@ struct NewSessionView: View {
     @State private var isTranscribingTopic = false
     @State private var topicCardPressed = false
     @State private var streetCardPressed = false
-    @State private var yourChatsCardPressed = false
-    @State private var showSessionList = false
+    @State private var rolePlayCardPressed = false
+    @State private var showRolePlay = false
 
     @State private var appear = false
     @State private var nsvDisplayedText = ""
@@ -123,16 +123,14 @@ struct NewSessionView: View {
             }
             .ignoresSafeArea()
         }
-        .fullScreenCover(isPresented: $showSessionList) {
-            if authState.isSignedIn {
-                SessionListView()
-                    .environment(authState)
-            } else {
-                SignInView()
-                    .environment(authState)
-            }
+        .fullScreenCover(isPresented: $showRolePlay) {
+            ComingSoonView(
+                title: L("Role Play"),
+                message: L("Chat with any character you imagine"),
+                systemImage: "theatermasks.fill"
+            )
         }
-        .onChange(of: showSessionList) { _, isShowing in
+        .onChange(of: showRolePlay) { _, isShowing in
             if isShowing {
                 nsvTypeTask?.cancel()
                 nsvBubblePlayer?.stop()
@@ -141,7 +139,6 @@ struct NewSessionView: View {
                 startTypewriter()
             }
         }
-        .withProfileButton()
     }
 
     // MARK: - Full-screen mode selection (GameBackground + animation)
@@ -179,7 +176,7 @@ struct NewSessionView: View {
 
                         topicModeCard(illustrationH: illoH)
 
-                        yourChatsCard(illustrationH: illoH)
+                        rolePlayCard(illustrationH: illoH)
                     }
                     .padding(.horizontal, HomeLayout.hPadding)
 
@@ -344,7 +341,7 @@ struct NewSessionView: View {
             }
         }) {
             HomeModeCard(
-                title: L("Choose a topic"),
+                title: L("Your topic"),
                 subtitle: L("Talk with tutor via text and voice messages"),
                 pressed: topicCardPressed
             ) {
@@ -370,7 +367,7 @@ struct NewSessionView: View {
             showStreetCamera = true
         }) {
             HomeModeCard(
-                title: L("Street view"),
+                title: L("Learn from what you see"),
                 subtitle: L("Take a picture of what you see around you"),
                 pressed: streetCardPressed
             ) {
@@ -388,24 +385,25 @@ struct NewSessionView: View {
         )
     }
 
-    private func yourChatsCard(illustrationH: CGFloat) -> some View {
-        Button(action: { showSessionList = true }) {
+    private func rolePlayCard(illustrationH: CGFloat) -> some View {
+        Button(action: { showRolePlay = true }) {
             HomeModeCard(
-                title: L("Your chats"),
-                subtitle: L("Browse your previous conversations"),
-                pressed: yourChatsCardPressed
+                title: L("Role Play"),
+                subtitle: L("Chat with any character you imagine"),
+                pressed: rolePlayCardPressed
             ) {
-                Image("btn_seagull_sound")
+                Image(systemName: "theatermasks.fill")
                     .resizable()
                     .scaledToFit()
-                    .frame(height: illustrationH)
+                    .frame(height: illustrationH * 0.6)
+                    .foregroundColor(.yellow.opacity(0.85))
             }
         }
         .buttonStyle(.plain)
         .simultaneousGesture(
             DragGesture(minimumDistance: 0)
-                .onChanged { _ in yourChatsCardPressed = true }
-                .onEnded { _ in yourChatsCardPressed = false }
+                .onChanged { _ in rolePlayCardPressed = true }
+                .onEnded { _ in rolePlayCardPressed = false }
         )
     }
 
@@ -531,7 +529,7 @@ struct NewSessionView: View {
                     )
                 } else {
                     Image(systemName: "mic.fill")
-                        .font(.system(size: 22, weight: .semibold))
+                        .font(.system(size: 22, weight: .semibold, design: .rounded))
                         .foregroundColor(AppColors.textSecondary)
                 }
             }
@@ -613,7 +611,7 @@ struct NewSessionView: View {
     private var streetEmptyState: some View {
         VStack(spacing: 16) {
             Image(systemName: "camera.viewfinder")
-                .font(.system(size: 64, weight: .thin))
+                .font(.system(size: 64, weight: .thin, design: .rounded))
                 .foregroundColor(.white.opacity(0.25))
 
             Text(L("Visual learning: remember words 5× faster from photos of your real life."))
@@ -670,7 +668,7 @@ struct NewSessionView: View {
                 if streetImages.isEmpty { selectedStreetItems = [] }
             } label: {
                 Image(systemName: "xmark.circle.fill")
-                    .font(.system(size: 22))
+                    .font(.system(size: 22, design: .rounded))
                     .foregroundColor(.white)
                     .background(Color.black.opacity(0.55), in: Circle())
             }
@@ -685,7 +683,7 @@ struct NewSessionView: View {
         } label: {
             VStack(spacing: 10) {
                 Image(systemName: "plus")
-                    .font(.system(size: 26, weight: .semibold))
+                    .font(.system(size: 26, weight: .semibold, design: .rounded))
                     .foregroundColor(.white.opacity(0.55))
             }
             .frame(maxWidth: .infinity)
@@ -708,7 +706,7 @@ struct NewSessionView: View {
                 } label: {
                     HStack(spacing: 8) {
                         Image(systemName: "camera.fill")
-                            .font(.system(size: 18, weight: .semibold))
+                            .font(.system(size: 18, weight: .semibold, design: .rounded))
                         Text(L("Camera"))
                             .font(.system(size: 17, weight: .semibold, design: .rounded))
                     }
@@ -727,7 +725,7 @@ struct NewSessionView: View {
                 } label: {
                     HStack(spacing: 8) {
                         Image(systemName: "photo.on.rectangle.angled")
-                            .font(.system(size: 18, weight: .semibold))
+                            .font(.system(size: 18, weight: .semibold, design: .rounded))
                         Text(L("Photos"))
                             .font(.system(size: 17, weight: .semibold, design: .rounded))
                     }

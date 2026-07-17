@@ -108,7 +108,7 @@ struct PreOnboardingFormView: View {
                         .fill(Color.black.opacity(0.35))
                         .frame(width: 44, height: 44)
                     Image(systemName: "chevron.left")
-                        .font(.system(size: 20, weight: .bold))
+                        .font(.system(size: 20, weight: .bold, design: .rounded))
                         .foregroundColor(.white)
                 }
             }
@@ -199,7 +199,7 @@ struct PreOnboardingFormView: View {
                             Spacer()
                             if store.pronoun == p {
                                 Image(systemName: "checkmark.circle.fill")
-                                    .font(.system(size: 20, weight: .bold))
+                                    .font(.system(size: 20, weight: .bold, design: .rounded))
                                     .foregroundColor(.black)
                             }
                         }
@@ -238,14 +238,14 @@ struct PreOnboardingFormView: View {
                     } label: {
                         HStack(spacing: 12) {
                             Text(lang.flag)
-                                .font(.system(size: 22))
+                                .font(.system(size: 22, design: .rounded))
                             Text(lang.displayLabel)
                                 .font(.system(size: 16, weight: .semibold, design: .rounded))
                                 .foregroundColor(store.quizLanguage == lang ? .black : AppColors.textPrimary)
                             Spacer()
                             if store.quizLanguage == lang {
                                 Image(systemName: "checkmark.circle.fill")
-                                    .font(.system(size: 20, weight: .bold))
+                                    .font(.system(size: 20, weight: .bold, design: .rounded))
                                     .foregroundColor(.black)
                             }
                         }

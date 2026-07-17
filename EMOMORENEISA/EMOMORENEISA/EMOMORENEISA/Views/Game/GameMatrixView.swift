@@ -9,7 +9,7 @@ struct GameMatrixView: View {
 
     var body: some View {
         ZStack {
-            GameBackground()
+            AppBackground()
 
             ScrollView(isLandscape ? .vertical : []) {
                 VStack(spacing: 0) {
@@ -38,7 +38,7 @@ struct GameMatrixView: View {
             } label: {
                 HStack(spacing: 6) {
                     Image(systemName: "xmark")
-                        .font(.system(size: 12, weight: .bold))
+                        .font(.system(size: 12, weight: .bold, design: .rounded))
                     Text(isReview ? L("NEW ROUND") : L("STOP"))
                         .font(.system(size: 13, weight: .bold, design: .monospaced))
                 }
@@ -80,7 +80,7 @@ struct GameMatrixView: View {
                 engine.adjustTimer(by: -1.0)
             } label: {
                 Image(systemName: "minus")
-                    .font(.system(size: 12, weight: .bold))
+                    .font(.system(size: 12, weight: .bold, design: .rounded))
                     .foregroundColor(.white.opacity(0.6))
                     .frame(width: 30, height: 30)
                     .background(Color.white.opacity(0.09))
@@ -97,7 +97,7 @@ struct GameMatrixView: View {
                 engine.adjustTimer(by: 1.0)
             } label: {
                 Image(systemName: "plus")
-                    .font(.system(size: 12, weight: .bold))
+                    .font(.system(size: 12, weight: .bold, design: .rounded))
                     .foregroundColor(.white.opacity(0.6))
                     .frame(width: 30, height: 30)
                     .background(Color.white.opacity(0.09))
@@ -109,7 +109,7 @@ struct GameMatrixView: View {
                 if engine.isPaused { engine.resume() } else { engine.pause() }
             } label: {
                 Image(systemName: engine.isPaused ? "play.fill" : "pause.fill")
-                    .font(.system(size: 13, weight: .bold))
+                    .font(.system(size: 13, weight: .bold, design: .rounded))
                     .foregroundColor(engine.isPaused ? GameColors.gold : .white.opacity(0.6))
                     .frame(width: 34, height: 34)
                     .background(engine.isPaused ? GameColors.gold.opacity(0.15) : Color.white.opacity(0.09))
@@ -129,7 +129,7 @@ struct GameMatrixView: View {
             } label: {
                 HStack(spacing: 5) {
                     Image(systemName: engine.hideCorrect ? "eye.slash" : "eye")
-                        .font(.system(size: 11, weight: .bold))
+                        .font(.system(size: 11, weight: .bold, design: .rounded))
                     Text(engine.hideCorrect ? L("SHOW ALL") : L("HIDE ✓"))
                         .font(.system(size: 11, weight: .bold, design: .monospaced))
                 }
@@ -149,7 +149,7 @@ struct GameMatrixView: View {
             } label: {
                 HStack(spacing: 5) {
                     Image(systemName: "arrow.counterclockwise")
-                        .font(.system(size: 11, weight: .bold))
+                        .font(.system(size: 11, weight: .bold, design: .rounded))
                     Text(L("REPEAT"))
                         .font(.system(size: 11, weight: .bold, design: .monospaced))
                 }
@@ -278,7 +278,7 @@ struct GameMatrixView: View {
                 } else if result.correct {
                     HStack(spacing: 4) {
                         Image(systemName: "checkmark.circle.fill")
-                            .font(.system(size: 12, weight: .bold))
+                            .font(.system(size: 12, weight: .bold, design: .rounded))
                         Text(L("CORRECT"))
                             .font(.system(size: 12, weight: .bold, design: .monospaced))
                     }
@@ -421,7 +421,7 @@ struct GameMatrixView: View {
             Spacer()
             HStack(spacing: 12) {
                 Image(systemName: isProcessing ? "waveform" : "mic.fill")
-                    .font(.system(size: 18, weight: .bold))
+                    .font(.system(size: 18, weight: .bold, design: .rounded))
                     .foregroundColor(isProcessing ? GameColors.gold : GameColors.rojo)
                     .shadow(color: (isProcessing ? GameColors.gold : GameColors.rojo).opacity(0.8), radius: 6)
 
