@@ -4,45 +4,26 @@ import PhotosUI
 import AVFoundation
 
 struct NewSessionView: View {
+    enum InitialStep { case topicInput, streetViewPhotos }
+
+    let initialStep: InitialStep
     let onSessionCreated: (LocalChatSession) -> Void
     @Environment(AuthState.self) private var authState
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
 
-    @State private var step: NewSessionStep = .modeSelection
+    @State private var step: NewSessionStep
     @State private var topicText: String = ""
     @State private var topicRecorder = AudioRecorder()
     @State private var isRecordingTopic = false
     @State private var isTranscribingTopic = false
-    @State private var topicCardPressed = false
-    @State private var streetCardPressed = false
-    @State private var rolePlayCardPressed = false
-    @State private var showRolePlay = false
-
-    @State private var appear = false
-    @State private var nsvDisplayedText = ""
-    @State private var nsvPhraseIndex = 0
-    @State private var nsvCharIndex = 0
-    @State private var nsvCursorVisible = true
-    @State private var nsvTypeTask: Task<Void, Never>? = nil
-    @State private var nsvBubblePlayer: AVAudioPlayer? = nil
-
-    // Same approach as the home mode selector: each bubble is Spanish first with
-    // its meaning underneath, and the clip voices Spanish → native meaning once.
-    private let explorePhrases: [(es: String, meaning: String)] = [
-        ("¿Qué exploramos hoy?", "What are we exploring today?"),
-        ("¿Cómo quieres aprender?", "How do you want to learn?"),
-        ("¡Elige tu aventura!", "Pick your adventure!"),
-        ("¡Tú decides!", "You decide!"),
-        ("El mundo es tu aula.", "The world is your classroom.")
-    ]
 
     @State private var streetImages: [UIImage] = []
     @State private var selectedStreetItems: [PhotosPickerItem] = []
     @State private var showStreetCamera = false
     @State private var showStreetPhotoPicker = false
 
-    private enum NewSessionStep { case modeSelection, topicInput, streetViewPhotos }
+    private enum NewSessionStep { case topicInput, streetViewPhotos }
 
     private let predefinedTopics = [
         "Past-tense verbs",
@@ -52,49 +33,39 @@ struct NewSessionView: View {
         "Palabrotas..."
     ]
 
+    init(initialStep: InitialStep, onSessionCreated: @escaping (LocalChatSession) -> Void) {
+        self.initialStep = initialStep
+        self.onSessionCreated = onSessionCreated
+        _step = State(initialValue: initialStep == .topicInput ? .topicInput : .streetViewPhotos)
+    }
+
     var body: some View {
-        Group {
-            if step == .modeSelection {
-                modeSelectionFullScreen
-            } else {
-                NavigationStack {
-                    ZStack {
-                        AppBackground()
-                        Group {
-                            switch step {
-                            case .topicInput:
-                                topicInputContent
-                                    .transition(.asymmetric(
-                                        insertion: .move(edge: .trailing).combined(with: .opacity),
-                                        removal: .move(edge: .trailing).combined(with: .opacity)
-                                    ))
-                            case .streetViewPhotos:
-                                streetViewPhotosContent
-                                    .transition(.asymmetric(
-                                        insertion: .move(edge: .trailing).combined(with: .opacity),
-                                        removal: .move(edge: .trailing).combined(with: .opacity)
-                                    ))
-                            default:
-                                EmptyView()
-                            }
-                        }
-                        .animation(.spring(response: 0.40, dampingFraction: 0.85), value: step)
-                    }
-                    .navigationTitle(navTitle)
-                    .navigationBarTitleDisplayMode(.large)
-                    .toolbarColorScheme(.dark, for: .navigationBar)
-                    .toolbarBackground(AppColors.backgroundTop, for: .navigationBar)
-                    .toolbarBackground(.visible, for: .navigationBar)
-                    .toolbar {
-                        ToolbarItem(placement: .navigationBarLeading) {
-                            BackButton {
-                                withAnimation(.spring(response: 0.40, dampingFraction: 0.85)) {
-                                    step = .modeSelection
-                                }
-                            }
-                        }
+        NavigationStack {
+            ZStack {
+                AppBackground()
+                Group {
+                    switch step {
+                    case .topicInput:
+                        topicInputContent
+                    case .streetViewPhotos:
+                        streetViewPhotosContent
                     }
                 }
+            }
+            .navigationTitle(navTitle)
+            .navigationBarTitleDisplayMode(.large)
+            .toolbarColorScheme(.dark, for: .navigationBar)
+            .toolbarBackground(AppColors.backgroundTop, for: .navigationBar)
+            .toolbarBackground(.visible, for: .navigationBar)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    BackButton { dismiss() }
+                }
+            }
+        }
+        .onAppear {
+            if initialStep == .streetViewPhotos && streetImages.isEmpty {
+                showStreetCamera = true
             }
         }
         .photosPicker(
@@ -123,291 +94,16 @@ struct NewSessionView: View {
             }
             .ignoresSafeArea()
         }
-        .fullScreenCover(isPresented: $showRolePlay) {
-            ComingSoonView(
-                title: L("Role Play"),
-                message: L("Chat with any character you imagine"),
-                systemImage: "theatermasks.fill"
-            )
-        }
-        .onChange(of: showRolePlay) { _, isShowing in
-            if isShowing {
-                nsvTypeTask?.cancel()
-                nsvBubblePlayer?.stop()
-                nsvBubblePlayer = nil
-            } else {
-                startTypewriter()
-            }
-        }
-    }
-
-    // MARK: - Full-screen mode selection (GameBackground + animation)
-
-    private var modeSelectionFullScreen: some View {
-        ZStack {
-            GameBackground()
-            DreamParticlesView()
-                .allowsHitTesting(false)
-                .ignoresSafeArea()
-
-            GeometryReader { geo in
-                let dogH = HomeLayout.dogHeight(geo.size.height)
-                let illoH = HomeLayout.illustrationHeight
-
-                VStack(spacing: 0) {
-                    Spacer(minLength: 0)
-
-                    VStack(spacing: HomeLayout.cardSpacing) {
-                        ZStack(alignment: .bottom) {
-                            HStack(alignment: .bottom, spacing: 12) {
-                                Image("professor_dog")
-                                    .resizable()
-                                    .scaledToFit()
-                                    .frame(height: dogH)
-
-                                animatedSpeechBubble
-                                    .padding(.bottom, dogH * 0.50)
-                                    .frame(maxWidth: .infinity)
-                            }
-
-                            streetViewCard(illustrationH: illoH)
-                        }
-                        .frame(height: dogH)
-
-                        topicModeCard(illustrationH: illoH)
-
-                        rolePlayCard(illustrationH: illoH)
-                    }
-                    .padding(.horizontal, HomeLayout.hPadding)
-
-                    Spacer(minLength: 0)
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-            }
-            .overlay(alignment: .topLeading) {
-                BackButton { dismiss() }
-                    .padding(.leading, HomeLayout.hPadding)
-                    .padding(.top, 56)
-            }
-        }
-        .opacity(appear ? 1 : 0)
-        .offset(y: appear ? 0 : 40)
-        .animation(.spring(response: 0.55, dampingFraction: 0.75).delay(0.08), value: appear)
-        .onAppear {
-            appear = true
-            startTypewriter()
-        }
-        .onDisappear {
-            nsvTypeTask?.cancel()
-            nsvBubblePlayer?.stop()
-            nsvBubblePlayer = nil
-            appear = false
-        }
-    }
-
-    private var animatedSpeechBubble: some View {
-        ZStack(alignment: .leading) {
-            RoundedRectangle(cornerRadius: 14)
-                .fill(Color.yellow)
-                .shadow(color: .black.opacity(0.18), radius: 6, y: 3)
-
-            SpeechTailShape()
-                .fill(Color.yellow)
-                .frame(width: 11, height: 9)
-                .offset(x: -10, y: 2)
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(nsvDisplayedText + (nsvCursorVisible ? "|" : " "))
-                    .font(.system(size: 17, weight: .bold, design: .rounded))
-                    .foregroundColor(.black)
-                    .lineLimit(2)
-                    .minimumScaleFactor(0.7)
-                    .multilineTextAlignment(.leading)
-
-                Text(L(explorePhrases[nsvPhraseIndex % explorePhrases.count].meaning))
-                    .font(.system(size: 12, weight: .semibold, design: .rounded))
-                    .foregroundColor(.black.opacity(0.55))
-                    .lineLimit(2)
-                    .minimumScaleFactor(0.7)
-                    .multilineTextAlignment(.leading)
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-            .padding(.horizontal, 12)
-            .padding(.top, 9)
-            .padding(.bottom, 9)
-        }
-        .frame(maxWidth: .infinity, minHeight: 86, maxHeight: 86)
-    }
-
-    private func playExploreSound(index: Int) {
-        // Localized clip voices the sequence Spanish → native meaning.
-        // Falls back to the Spanish-only clip if the localized file is missing.
-        let langSuffix: String
-        switch LocalizationManager.shared.language {
-        case .ukrainian: langSuffix = "uk"
-        case .english:   langSuffix = "en"
-        }
-        let i = index % explorePhrases.count
-        let localizedName = "explore_bubble_\(i)_\(langSuffix)"
-        let url = Bundle.main.url(forResource: localizedName, withExtension: "mp3")
-            ?? Bundle.main.url(forResource: "explore_bubble_\(i)", withExtension: "mp3")
-        guard let url else { return }
-        do {
-            try AVAudioSession.sharedInstance().setCategory(.ambient, mode: .default, options: [.mixWithOthers])
-            try AVAudioSession.sharedInstance().setActive(true)
-            nsvBubblePlayer = try AVAudioPlayer(contentsOf: url)
-            nsvBubblePlayer?.volume = 0.7
-            nsvBubblePlayer?.play()
-        } catch {}
-    }
-
-    private func startTypewriter() {
-        nsvTypeTask?.cancel()
-        nsvDisplayedText = ""
-        nsvPhraseIndex = 0
-        nsvCharIndex = 0
-
-        nsvTypeTask = Task {
-            Task {
-                while !Task.isCancelled {
-                    try? await Task.sleep(nanoseconds: 500_000_000)
-                    await MainActor.run { nsvCursorVisible.toggle() }
-                }
-            }
-
-            // One phrase at a time: each bubble is spoken (Spanish → meaning) and
-            // the visible text is held for the whole clip, so the audio is the
-            // source of truth and cycles never overlap.
-            while !Task.isCancelled {
-                let phrase = explorePhrases[nsvPhraseIndex % explorePhrases.count].es
-
-                // Start this phrase's clip and learn how long it runs.
-                let duration = await MainActor.run { () -> TimeInterval in
-                    playExploreSound(index: nsvPhraseIndex)
-                    return nsvBubblePlayer?.duration ?? 0
-                }
-
-                // Type the Spanish in.
-                await MainActor.run { nsvCharIndex = 0; nsvDisplayedText = "" }
-                while nsvCharIndex < phrase.count && !Task.isCancelled {
-                    await MainActor.run {
-                        nsvCharIndex += 1
-                        nsvDisplayedText = String(phrase.prefix(nsvCharIndex))
-                    }
-                    try? await Task.sleep(nanoseconds: 48_000_000)
-                }
-
-                // Hold the fully-typed phrase until its clip finishes playing.
-                let start = Date()
-                let minHold: TimeInterval = 2.2
-                let cap = max(duration, minHold) + 0.5
-                while !Task.isCancelled {
-                    let playing = await MainActor.run { nsvBubblePlayer?.isPlaying ?? false }
-                    let elapsed = Date().timeIntervalSince(start)
-                    if elapsed >= cap { break }
-                    if !playing && elapsed >= minHold { break }
-                    try? await Task.sleep(nanoseconds: 120_000_000)
-                }
-
-                // Delete before moving to the next phrase.
-                while nsvCharIndex > 0 && !Task.isCancelled {
-                    await MainActor.run {
-                        nsvCharIndex -= 1
-                        nsvDisplayedText = String(phrase.prefix(nsvCharIndex))
-                    }
-                    try? await Task.sleep(nanoseconds: 28_000_000)
-                }
-
-                await MainActor.run { nsvPhraseIndex = (nsvPhraseIndex + 1) % explorePhrases.count }
-                try? await Task.sleep(nanoseconds: 200_000_000)
-            }
-        }
     }
 
     private var navTitle: String {
         switch step {
-        case .modeSelection:     return ""
         case .topicInput:        return L("Choose a Topic")
         case .streetViewPhotos:  return L("Street View")
         }
     }
 
-    // MARK: - Step 2+: Cards (also used by modeSelectionFullScreen)
-
-    private func topicModeCard(illustrationH: CGFloat) -> some View {
-        Button(action: {
-            withAnimation(.spring(response: 0.40, dampingFraction: 0.85)) {
-                step = .topicInput
-            }
-        }) {
-            HomeModeCard(
-                title: L("Your topic"),
-                subtitle: L("Talk with tutor via text and voice messages"),
-                pressed: topicCardPressed
-            ) {
-                Image("btn_parrot_brain")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(height: illustrationH)
-            }
-        }
-        .buttonStyle(.plain)
-        .simultaneousGesture(
-            DragGesture(minimumDistance: 0)
-                .onChanged { _ in topicCardPressed = true }
-                .onEnded { _ in topicCardPressed = false }
-        )
-    }
-
-    private func streetViewCard(illustrationH: CGFloat) -> some View {
-        Button(action: {
-            withAnimation(.spring(response: 0.40, dampingFraction: 0.85)) {
-                step = .streetViewPhotos
-            }
-            showStreetCamera = true
-        }) {
-            HomeModeCard(
-                title: L("Learn from what you see"),
-                subtitle: L("Take a picture of what you see around you"),
-                pressed: streetCardPressed
-            ) {
-                Image("btn_eye_see")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(height: illustrationH)
-            }
-        }
-        .buttonStyle(.plain)
-        .simultaneousGesture(
-            DragGesture(minimumDistance: 0)
-                .onChanged { _ in streetCardPressed = true }
-                .onEnded { _ in streetCardPressed = false }
-        )
-    }
-
-    private func rolePlayCard(illustrationH: CGFloat) -> some View {
-        Button(action: { showRolePlay = true }) {
-            HomeModeCard(
-                title: L("Role Play"),
-                subtitle: L("Chat with any character you imagine"),
-                pressed: rolePlayCardPressed
-            ) {
-                Image(systemName: "theatermasks.fill")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(height: illustrationH * 0.6)
-                    .foregroundColor(.yellow.opacity(0.85))
-            }
-        }
-        .buttonStyle(.plain)
-        .simultaneousGesture(
-            DragGesture(minimumDistance: 0)
-                .onChanged { _ in rolePlayCardPressed = true }
-                .onEnded { _ in rolePlayCardPressed = false }
-        )
-    }
-
-    // MARK: - Step 2: Topic Input
+    // MARK: - Step: Topic Input
 
     private var topicInputContent: some View {
         VStack(spacing: 0) {
@@ -584,7 +280,7 @@ struct NewSessionView: View {
         .overlay(Rectangle().frame(height: 0.5).foregroundColor(AppColors.cardBorder), alignment: .top)
     }
 
-    // MARK: - Step 3: Street View Photos
+    // MARK: - Step: Street View Photos
 
     private var streetViewPhotosContent: some View {
         VStack(spacing: 0) {

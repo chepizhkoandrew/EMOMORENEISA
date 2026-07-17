@@ -52,7 +52,7 @@ struct SessionListView: View {
                 }
             }
             .fullScreenCover(isPresented: $showNewSession) {
-                NewSessionView(onSessionCreated: { session in
+                NewSessionView(initialStep: .topicInput, onSessionCreated: { session in
                     showNewSession = false
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
                         navigateToNewSession = session

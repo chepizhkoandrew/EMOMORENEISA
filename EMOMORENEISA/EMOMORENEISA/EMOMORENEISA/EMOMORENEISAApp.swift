@@ -32,6 +32,11 @@ struct EMOMORENEISAApp: App {
                 .environment(authState)
                 .modelContainer(Self.modelContainer)
                 .task { await authState.restoreSession() }
+                // The app is dark-themed everywhere, but without this,
+                // fullScreenCover/sheet presentations can show a flash of the
+                // system's light-mode backdrop for a frame before the
+                // presented view's own background paints.
+                .preferredColorScheme(.dark)
         }
     }
 }

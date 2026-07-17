@@ -4,21 +4,41 @@ import AVFoundation
 
 struct ModeSelectorView: View {
     let onVerbGame: () -> Void
-    @State private var showSpeaking = false
+
+    /// Which set of cards is currently showing. Switching levels never tears
+    /// this view down — only the card content transitions — so the dog,
+    /// its speech bubble, the background, and the music never restart.
+    private enum HomeLevel { case top, speaking, memory, grammar }
+    @State private var level: HomeLevel = .top
+    private let cardTransition = Animation.spring(response: 0.4, dampingFraction: 0.85)
+
+    /// A genuinely separate screen reached from a card (as opposed to a
+    /// `level` switch, which stays on this same screen).
+    private enum LeafDestination: Identifiable {
+        case topicFlow, streetViewFlow, rolePlay, memoryCalendar, musicPlaceholder, explainRules, freeForum
+        var id: Self { self }
+    }
+    @State private var activeLeaf: LeafDestination? = nil
+
     /// True from the moment a new chat session is created until it's actually
     /// launched (there's a deliberate 0.35s delay between the two). Without
-    /// this, `showSpeaking` flipping to false fires the "resume typewriter +
+    /// this, `activeLeaf` clearing to nil fires the "resume typewriter +
     /// music" branch immediately, only for `launchedSession` to kill it again
-    /// 0.35s later — a real restart-then-stop race on every single Speaking
+    /// 0.35s later — a real restart-then-stop race on every single session
     /// launch, not just a theoretical one.
     @State private var pendingSessionLaunch = false
-    @State private var showMemory = false
-    @State private var showGrammar = false
     @State private var launchedSession: LocalChatSession? = nil
     @State private var appear = false
     @State private var speakingCardPressed = false
     @State private var memoryCardPressed = false
     @State private var grammarCardPressed = false
+    @State private var rolePlayCardPressed = false
+    @State private var yourTopicCardPressed = false
+    @State private var calendarCardPressed = false
+    @State private var musicCardPressed = false
+    @State private var explainRulesCardPressed = false
+    @State private var verbsTimesCardPressed = false
+    @State private var freeForumCardPressed = false
     @State private var bubblePlayer: AVAudioPlayer? = nil
     @Environment(AuthState.self) private var authState
     @Environment(\.modelContext) private var modelContext
@@ -43,6 +63,8 @@ struct ModeSelectorView: View {
     @State private var typeTask: Task<Void, Never>? = nil
     @State private var showOnboarding = false
 
+    private var showsDog: Bool { level == .top || level == .speaking }
+
     var body: some View {
         ZStack {
             GameBackground()
@@ -59,31 +81,41 @@ struct ModeSelectorView: View {
                     Spacer(minLength: 0)
 
                     VStack(spacing: HomeLayout.cardSpacing) {
-                        ZStack(alignment: .bottom) {
-                            HStack(alignment: .bottom, spacing: 12) {
-                                Image("professor_dog")
-                                    .resizable()
-                                    .scaledToFit()
-                                    .frame(height: dogH)
+                        if showsDog {
+                            ZStack(alignment: .bottom) {
+                                HStack(alignment: .bottom, spacing: 12) {
+                                    Image("professor_dog")
+                                        .resizable()
+                                        .scaledToFit()
+                                        .frame(height: dogH)
 
-                                speechBubbleView
-                                    .padding(.bottom, dogH * 0.50)
-                                    .frame(maxWidth: .infinity)
+                                    speechBubbleView
+                                        .padding(.bottom, dogH * 0.50)
+                                        .frame(maxWidth: .infinity)
+                                }
+
+                                Group { firstCard(illustrationH: illoH) }
+                                    .id(level)
+                                    .transition(.opacity)
                             }
-
-                            speakingCard(illustrationH: illoH)
+                            .frame(height: dogH)
+                            .transition(.opacity)
                         }
-                        .frame(height: dogH)
 
-                        memoryCard(illustrationH: illoH)
-
-                        grammarCard(illustrationH: illoH)
+                        remainingCards(illustrationH: illoH)
                     }
                     .padding(.horizontal, HomeLayout.hPadding)
 
                     Spacer(minLength: 0)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+            .overlay(alignment: .topLeading) {
+                if level != .top {
+                    BackButton { withAnimation(cardTransition) { level = .top } }
+                        .padding(.leading, HomeLayout.hPadding)
+                        .padding(.top, 56)
+                }
             }
             .opacity(appear ? 1 : 0)
             .offset(y: appear ? 0 : 40)
@@ -123,56 +155,16 @@ struct ModeSelectorView: View {
         .onAppear {
             if authState.needsOnboarding { showOnboarding = true }
         }
-        .fullScreenCover(isPresented: $showSpeaking) {
-            if authState.isSignedIn {
-                NewSessionView(onSessionCreated: { session in
-                    pendingSessionLaunch = true
-                    showSpeaking = false
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
-                        launchedSession = session
-                    }
-                })
-                .environment(authState)
-            } else {
-                SignInView()
-                    .environment(authState)
-            }
+        .fullScreenCover(item: $activeLeaf) { leaf in
+            leafDestination(leaf)
         }
-        .fullScreenCover(isPresented: $showMemory) {
-            MemoryMenuView()
-                .environment(authState)
-        }
-        .fullScreenCover(isPresented: $showGrammar) {
-            GrammarMenuView(onVerbGame: onVerbGame)
-        }
-        .onChange(of: showMemory) { _, isShowing in
-            if isShowing {
+        .onChange(of: activeLeaf) { _, leaf in
+            if leaf != nil {
                 typeTask?.cancel()
                 bubblePlayer?.stop()
                 bubblePlayer = nil
-                BackgroundMusicPlayer.shared.fadeOut(duration: 0.3)
-            } else {
-                startTypewriter()
-                BackgroundMusicPlayer.shared.play()
-            }
-        }
-        .onChange(of: showGrammar) { _, isShowing in
-            if isShowing {
-                typeTask?.cancel()
-                bubblePlayer?.stop()
-                bubblePlayer = nil
-                BackgroundMusicPlayer.shared.fadeOut(duration: 0.3)
-            } else {
-                startTypewriter()
-                BackgroundMusicPlayer.shared.play()
-            }
-        }
-        .onChange(of: showSpeaking) { _, isShowing in
-            if isShowing {
-                typeTask?.cancel()
-                bubblePlayer?.stop()
-                bubblePlayer = nil
-                BackgroundMusicPlayer.shared.fadeOut(duration: 1.5)
+                let longFade = leaf == .topicFlow || leaf == .streetViewFlow
+                BackgroundMusicPlayer.shared.fadeOut(duration: longFade ? 1.5 : 0.3)
             } else if !pendingSessionLaunch {
                 // Only resume here if we're actually landing back on this
                 // screen — a pending session launch means we're 0.35s away
@@ -203,6 +195,62 @@ struct ModeSelectorView: View {
                 TTSService.shared.stop()
                 BackgroundMusicPlayer.shared.play()
             }
+        }
+    }
+
+    // MARK: - Leaf destinations
+
+    @ViewBuilder
+    private func leafDestination(_ leaf: LeafDestination) -> some View {
+        switch leaf {
+        case .topicFlow:
+            if authState.isSignedIn {
+                NewSessionView(initialStep: .topicInput, onSessionCreated: handleSessionCreated)
+                    .environment(authState)
+            } else {
+                SignInView().environment(authState)
+            }
+        case .streetViewFlow:
+            if authState.isSignedIn {
+                NewSessionView(initialStep: .streetViewPhotos, onSessionCreated: handleSessionCreated)
+                    .environment(authState)
+            } else {
+                SignInView().environment(authState)
+            }
+        case .rolePlay:
+            ComingSoonView(
+                title: L("Role Play"),
+                message: L("Chat with any character you imagine"),
+                systemImage: "theatermasks.fill"
+            )
+        case .memoryCalendar:
+            MemorizeContainerView().environment(authState)
+        case .musicPlaceholder:
+            ComingSoonView(
+                title: L("Remember with Music"),
+                message: L("learn vocabulary through songs"),
+                systemImage: "music.note"
+            )
+        case .explainRules:
+            ComingSoonView(
+                title: L("Explain Rules"),
+                message: L("browse grammar topics & lessons"),
+                systemImage: "text.book.closed.fill"
+            )
+        case .freeForum:
+            ComingSoonView(
+                title: L("Ask in a Free Forum"),
+                message: L("ask anything, attach a photo"),
+                systemImage: "questionmark.bubble.fill"
+            )
+        }
+    }
+
+    private func handleSessionCreated(_ session: LocalChatSession) {
+        pendingSessionLaunch = true
+        activeLeaf = nil
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+            launchedSession = session
         }
     }
 
@@ -329,16 +377,56 @@ struct ModeSelectorView: View {
         }
     }
 
-    // MARK: - Cards
+    // MARK: - Card layout per level
+
+    @ViewBuilder
+    private func firstCard(illustrationH: CGFloat) -> some View {
+        switch level {
+        case .top:
+            speakingCard(illustrationH: illustrationH)
+        case .speaking:
+            learnFromWhatYouSeeCard(illustrationH: illustrationH)
+        case .memory, .grammar:
+            EmptyView()
+        }
+    }
+
+    @ViewBuilder
+    private func remainingCards(illustrationH: CGFloat) -> some View {
+        Group {
+            switch level {
+            case .top:
+                memoryCard(illustrationH: illustrationH)
+                grammarCard(illustrationH: illustrationH)
+            case .speaking:
+                rolePlayCard(illustrationH: illustrationH)
+                yourTopicCard(illustrationH: illustrationH)
+            case .memory:
+                calendarCard(illustrationH: illustrationH)
+                musicCard(illustrationH: illustrationH)
+            case .grammar:
+                explainRulesCard(illustrationH: illustrationH)
+                verbsTimesCard(illustrationH: illustrationH)
+                freeForumCard(illustrationH: illustrationH)
+            }
+        }
+        .id(level)
+        .transition(.asymmetric(
+            insertion: .move(edge: .trailing).combined(with: .opacity),
+            removal: .move(edge: .leading).combined(with: .opacity)
+        ))
+    }
+
+    // MARK: - Top-level cards
 
     private func speakingCard(illustrationH: CGFloat) -> some View {
-        Button(action: { showSpeaking = true }) {
+        Button(action: { withAnimation(cardTransition) { level = .speaking } }) {
             HomeModeCard(
                 title: L("Speaking"),
                 subtitle: L("practice real conversations & role play"),
                 pressed: speakingCardPressed
             ) {
-                Image("street_view")
+                Image("btn_speaking")
                     .resizable()
                     .scaledToFit()
                     .frame(height: illustrationH)
@@ -353,14 +441,14 @@ struct ModeSelectorView: View {
     }
 
     private func memoryCard(illustrationH: CGFloat) -> some View {
-        Button(action: { showMemory = true }) {
+        Button(action: { withAnimation(cardTransition) { level = .memory } }) {
             HomeModeCard(
                 title: L("Memory"),
                 subtitle: L("your word queue & memory games"),
                 badge: memorizeDueCount,
                 pressed: memoryCardPressed
             ) {
-                Image("progress_screen")
+                Image("btn_memory")
                     .resizable()
                     .scaledToFit()
                     .frame(height: illustrationH)
@@ -375,17 +463,16 @@ struct ModeSelectorView: View {
     }
 
     private func grammarCard(illustrationH: CGFloat) -> some View {
-        Button(action: { showGrammar = true }) {
+        Button(action: { withAnimation(cardTransition) { level = .grammar } }) {
             HomeModeCard(
                 title: L("Grammar"),
                 subtitle: L("rules, verbs & tenses explained"),
                 pressed: grammarCardPressed
             ) {
-                Image(systemName: "character.book.closed.fill")
+                Image("btn_grammar")
                     .resizable()
                     .scaledToFit()
-                    .frame(height: illustrationH * 0.6)
-                    .foregroundColor(.yellow.opacity(0.85))
+                    .frame(height: illustrationH)
             }
         }
         .buttonStyle(.plain)
@@ -393,6 +480,181 @@ struct ModeSelectorView: View {
             DragGesture(minimumDistance: 0)
                 .onChanged { _ in grammarCardPressed = true }
                 .onEnded { _ in grammarCardPressed = false }
+        )
+    }
+
+    // MARK: - Speaking level cards
+
+    private func learnFromWhatYouSeeCard(illustrationH: CGFloat) -> some View {
+        Button(action: { activeLeaf = .streetViewFlow }) {
+            HomeModeCard(
+                title: L("Learn from what you see"),
+                subtitle: L("Take a picture of what you see around you"),
+                pressed: speakingCardPressed
+            ) {
+                Image("btn_eye_see")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(height: illustrationH)
+            }
+        }
+        .buttonStyle(.plain)
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 0)
+                .onChanged { _ in speakingCardPressed = true }
+                .onEnded { _ in speakingCardPressed = false }
+        )
+    }
+
+    private func rolePlayCard(illustrationH: CGFloat) -> some View {
+        Button(action: { activeLeaf = .rolePlay }) {
+            HomeModeCard(
+                title: L("Role Play"),
+                subtitle: L("Chat with any character you imagine"),
+                pressed: rolePlayCardPressed
+            ) {
+                Image("btn_role_play")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(height: illustrationH)
+            }
+        }
+        .buttonStyle(.plain)
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 0)
+                .onChanged { _ in rolePlayCardPressed = true }
+                .onEnded { _ in rolePlayCardPressed = false }
+        )
+    }
+
+    private func yourTopicCard(illustrationH: CGFloat) -> some View {
+        Button(action: { activeLeaf = .topicFlow }) {
+            HomeModeCard(
+                title: L("Your topic"),
+                subtitle: L("Talk with tutor via text and voice messages"),
+                pressed: yourTopicCardPressed
+            ) {
+                Image("btn_parrot_brain")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(height: illustrationH)
+            }
+        }
+        .buttonStyle(.plain)
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 0)
+                .onChanged { _ in yourTopicCardPressed = true }
+                .onEnded { _ in yourTopicCardPressed = false }
+        )
+    }
+
+    // MARK: - Memory level cards
+
+    private func calendarCard(illustrationH: CGFloat) -> some View {
+        Button(action: { activeLeaf = .memoryCalendar }) {
+            HomeModeCard(
+                title: L("Your Words Calendar"),
+                subtitle: L("everyday queue for new words"),
+                badge: memorizeDueCount,
+                pressed: calendarCardPressed
+            ) {
+                Image("btn_words_calendar")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(height: illustrationH)
+            }
+        }
+        .buttonStyle(.plain)
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 0)
+                .onChanged { _ in calendarCardPressed = true }
+                .onEnded { _ in calendarCardPressed = false }
+        )
+    }
+
+    private func musicCard(illustrationH: CGFloat) -> some View {
+        Button(action: { activeLeaf = .musicPlaceholder }) {
+            HomeModeCard(
+                title: L("Remember with Music"),
+                subtitle: L("learn vocabulary through songs"),
+                pressed: musicCardPressed
+            ) {
+                Image("btn_remember_music")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(height: illustrationH)
+            }
+        }
+        .buttonStyle(.plain)
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 0)
+                .onChanged { _ in musicCardPressed = true }
+                .onEnded { _ in musicCardPressed = false }
+        )
+    }
+
+    // MARK: - Grammar level cards
+
+    private func explainRulesCard(illustrationH: CGFloat) -> some View {
+        Button(action: { activeLeaf = .explainRules }) {
+            HomeModeCard(
+                title: L("Explain Rules"),
+                subtitle: L("browse grammar topics & lessons"),
+                pressed: explainRulesCardPressed
+            ) {
+                Image("btn_explain_rules")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(height: illustrationH)
+            }
+        }
+        .buttonStyle(.plain)
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 0)
+                .onChanged { _ in explainRulesCardPressed = true }
+                .onEnded { _ in explainRulesCardPressed = false }
+        )
+    }
+
+    private func verbsTimesCard(illustrationH: CGFloat) -> some View {
+        Button(action: onVerbGame) {
+            HomeModeCard(
+                title: L("Verbs & times"),
+                subtitle: L("game to learn verbs & tenses fast"),
+                pressed: verbsTimesCardPressed
+            ) {
+                Image("btn_verbs_times")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(height: illustrationH)
+            }
+        }
+        .buttonStyle(.plain)
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 0)
+                .onChanged { _ in verbsTimesCardPressed = true }
+                .onEnded { _ in verbsTimesCardPressed = false }
+        )
+    }
+
+    private func freeForumCard(illustrationH: CGFloat) -> some View {
+        Button(action: { activeLeaf = .freeForum }) {
+            HomeModeCard(
+                title: L("Ask in a Free Forum"),
+                subtitle: L("ask anything, attach a photo"),
+                pressed: freeForumCardPressed
+            ) {
+                Image("btn_free_forum")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(height: illustrationH)
+            }
+        }
+        .buttonStyle(.plain)
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 0)
+                .onChanged { _ in freeForumCardPressed = true }
+                .onEnded { _ in freeForumCardPressed = false }
         )
     }
 
