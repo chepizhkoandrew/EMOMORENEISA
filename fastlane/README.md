@@ -145,6 +145,14 @@ Check current state of versions and IAPs
 
 Read-only: list recent builds with processing state (plus versions/subs via check_state)
 
+### ios create_v12
+
+```sh
+[bundle exec] fastlane ios create_v12
+```
+
+Create v1.2 in App Store Connect (now that v1.1 is READY_FOR_SALE and its train is closed) and bump the local marketing version to match. TestFlight-only — does not submit for review.
+
 ### ios check_state
 
 ```sh

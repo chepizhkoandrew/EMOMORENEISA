@@ -1168,6 +1168,64 @@ platform :ios do
     end
   end
 
+  desc "Create v1.2 in App Store Connect (now that v1.1 is READY_FOR_SALE and its train is closed) and bump the local marketing version to match. TestFlight-only — does not submit for review."
+  lane :create_v12 do
+    require "net/http"
+    require "uri"
+    require "json"
+    require "openssl"
+    require "jwt"
+
+    new_version = "1.2"
+
+    private_key = OpenSSL::PKey::EC.new(File.read(KEY_PATH))
+    now   = Time.now.to_i
+    token = JWT.encode(
+      { iss: ISSUER_ID, iat: now, exp: now + 1200, aud: "appstoreconnect-v1" },
+      private_key, "ES256", { kid: KEY_ID }
+    )
+    base    = "https://api.appstoreconnect.apple.com/v1"
+    headers = { "Authorization" => "Bearer #{token}", "Content-Type" => "application/json" }
+    asc_get = lambda do |path|
+      uri  = URI("#{base}#{path}")
+      req  = Net::HTTP::Get.new(uri)
+      headers.each { |k, v| req[k] = v }
+      resp = Net::HTTP.start(uri.hostname, uri.port, use_ssl: true) { |http| http.request(req) }
+      JSON.parse(resp.body)
+    end
+    asc_post = lambda do |path, body|
+      uri  = URI("#{base}#{path}")
+      req  = Net::HTTP::Post.new(uri)
+      headers.each { |k, v| req[k] = v }
+      req.body = JSON.generate(body)
+      resp = Net::HTTP.start(uri.hostname, uri.port, use_ssl: true) { |http| http.request(req) }
+      parsed = begin; JSON.parse(resp.body); rescue; {}; end
+      [resp.code.to_i, parsed]
+    end
+
+    existing = asc_get.call("/apps/#{APPLE_ID}/appStoreVersions?filter%5Bplatform%5D=IOS&filter%5BversionString%5D=#{new_version}&limit=1")
+    if (existing["data"] || []).any?
+      UI.success("v#{new_version} already exists in App Store Connect (id: #{existing['data'][0]['id']}) — nothing to create.")
+    else
+      code, body = asc_post.call("/appStoreVersions", {
+        data: {
+          type: "appStoreVersions",
+          attributes: { platform: "IOS", versionString: new_version },
+          relationships: { app: { data: { type: "apps", id: APPLE_ID } } }
+        }
+      })
+      if code == 201
+        UI.success("Created v#{new_version} in App Store Connect (id: #{body.dig('data', 'id')}).")
+      else
+        UI.error("Failed to create v#{new_version}: HTTP #{code} — #{body}")
+        next
+      end
+    end
+
+    increment_version_number(version_number: new_version, xcodeproj: XCPROJECT)
+    UI.success("Bumped local MARKETING_VERSION to #{new_version}. Run `bundle exec fastlane beta` next to build and upload to TestFlight.")
+  end
+
   lane :check_state do
     require "net/http"
     require "uri"
