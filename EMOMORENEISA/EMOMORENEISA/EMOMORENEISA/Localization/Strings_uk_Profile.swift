@@ -36,6 +36,8 @@ let ukProfileStrings: [String: String] = [
     "Voice": "Голос",
     "Automatic voice replies": "Автоозвучення відповідей",
     "Turn off to save treats — tap a message to hear it on demand.": "Вимкни, щоб економити смаколики — торкайся повідомлення, коли захочеш почути його.",
+    "Pronoun": "Займенник",
+    "This shapes how your tutor addresses you — especially gendered endings in Ukrainian.": "Це впливає на те, як звертається до тебе викладач — особливо на родові закінчення в українській.",
 
     // Sign out / delete
     "Sign out?": "Вийти?",

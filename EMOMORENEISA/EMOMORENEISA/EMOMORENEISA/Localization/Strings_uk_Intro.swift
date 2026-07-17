@@ -90,9 +90,11 @@ let ukIntroStrings: [String: String] = [
 
     // Settings
     "Tense": "Час",
+    "Timer": "Таймер",
     "Timer per word": "Таймер на слово",
     "%.1fs": "%.1f с",
     "Show answer hint": "Показувати підказку відповіді",
+    "Reveal the correct conjugation under each cell as the timer runs.": "Показувати правильну форму під кожною клітинкою, поки біжить таймер.",
     "Settings": "Налаштування",
     "Done": "Готово"
 ]

@@ -39,6 +39,13 @@ let ukCommonStrings: [String: String] = [
     "Language": "Мова",
     "App Language": "Мова застосунку",
 
+    // Settings hub (two-level settings reached from the burger menu)
+    "Words queue": "Черга слів",
+    "User settings": "Налаштування користувача",
+    "Seagull Steven's memory schedule & capacity": "Розклад і обсяг пам’яті Чайки Стівена",
+    "Verb game tense, timer & hints": "Час, таймер і підказки гри з дієсловами",
+    "Language, pronoun & voice replies": "Мова, займенник та озвучення",
+
     // Burger menu (Home + Chat screens)
     "Menu": "Меню",
     "Your Chats": "Ваші чати",

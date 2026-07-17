@@ -256,99 +256,24 @@ struct TypewriterIntroView: View {
     }
 }
 
+/// Standalone in-game settings sheet for the verb game (opened from the game's
+/// gear button). Wraps the shared, restyled `VerbGameSettingsView` — the same
+/// page reachable from Settings → Verbs & times — in its own NavigationStack so
+/// it presents cleanly as a sheet with a Done button.
 struct SettingsSheetView: View {
-    @AppStorage("timerSeconds") var timerSeconds: Double = 4.0
-    @AppStorage("selectedTenseName") var selectedTenseName: String = Tense.present.rawValue
-    @AppStorage("showAnswerHint") private var showAnswerHint: Bool = false
     @Environment(\.dismiss) private var dismiss
 
-    private var tenseBinding: Binding<Tense> {
-        Binding(
-            get: { Tense(rawValue: selectedTenseName) ?? .present },
-            set: { selectedTenseName = $0.rawValue }
-        )
-    }
-
     var body: some View {
-        NavigationView {
-            ZStack {
-                AppBackground()
-
-                VStack(spacing: 24) {
-                    settingCard {
-                        VStack(alignment: .leading, spacing: 14) {
-                            Label(L("Tense"), systemImage: "book.closed.fill")
-                                .font(.system(size: 15, weight: .bold, design: .monospaced))
-                                .foregroundColor(AppColors.textSecondary)
-
-                            Picker(L("Tense"), selection: tenseBinding) {
-                                ForEach(Tense.allCases) { tense in
-                                    Text(tense.displayLabel).tag(tense)
-                                }
-                            }
-                            .pickerStyle(.segmented)
-                            .colorMultiply(AppColors.accent)
-                        }
+        NavigationStack {
+            VerbGameSettingsView()
+                .toolbar {
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button(L("Done")) { dismiss() }
+                            .font(.system(size: 16, weight: .bold, design: .rounded))
+                            .foregroundColor(.yellow)
                     }
-
-                    settingCard {
-                        VStack(alignment: .leading, spacing: 14) {
-                            HStack {
-                                Label(L("Timer per word"), systemImage: "timer")
-                                    .font(.system(size: 15, weight: .bold, design: .monospaced))
-                                    .foregroundColor(AppColors.textSecondary)
-                                Spacer()
-                                Text(L("%.1fs", timerSeconds))
-                                    .font(.system(size: 22, weight: .black, design: .monospaced))
-                                    .foregroundColor(AppColors.accent)
-                                    .shadow(color: AppColors.accent.opacity(0.5), radius: 6)
-                            }
-                            Slider(value: $timerSeconds, in: 1.0...8.0, step: 0.5)
-                                .accentColor(.yellow)
-                        }
-                    }
-
-                    settingCard {
-                        HStack {
-                            Label(L("Show answer hint"), systemImage: "eye.fill")
-                                .font(.system(size: 15, weight: .bold, design: .monospaced))
-                                .foregroundColor(AppColors.textSecondary)
-                            Spacer()
-                            Toggle("", isOn: $showAnswerHint)
-                                .labelsHidden()
-                                .tint(.yellow)
-                                .scaleEffect(1.1)
-                        }
-                    }
-
-                    Spacer()
                 }
-                .padding(20)
-            }
-            .navigationTitle(L("Settings"))
-            .navigationBarTitleDisplayMode(.large)
-            .toolbarColorScheme(.dark, for: .navigationBar)
-            .toolbarBackground(AppColors.backgroundTop, for: .navigationBar)
-            .toolbarBackground(.visible, for: .navigationBar)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(L("Done")) { dismiss() }
-                        .font(.system(size: 16, weight: .bold, design: .rounded))
-                        .foregroundColor(.yellow)
-                }
-            }
         }
         .preferredColorScheme(.dark)
-    }
-
-    private func settingCard<Content: View>(@ViewBuilder content: () -> Content) -> some View {
-        content()
-            .padding(20)
-            .background(AppColors.cardBackground)
-            .overlay(
-                RoundedRectangle(cornerRadius: 18)
-                    .stroke(AppColors.cardBorder, lineWidth: 1)
-            )
-            .clipShape(RoundedRectangle(cornerRadius: 18))
     }
 }

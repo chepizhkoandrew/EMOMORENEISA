@@ -56,30 +56,41 @@ struct LoroMemorizeHubView: View {
     }
 
     var body: some View {
-        ZStack {
-            AppBackground()
+        GeometryReader { geo in
+            // Match the home professor-dog's hero: same `HomeLayout.dogHeight`
+            // target and the same `* 0.50` bubble lift + 86pt bubble. The dog art
+            // is a tall portrait (renders ~150pt wide at full height); the seagull
+            // art is square, so we clamp its side by the row width — otherwise a
+            // full-height square would fill the row and crush the bubble. This
+            // makes the seagull read as big as the dog while both bubbles keep a
+            // fair share of the width.
+            let heroSide = min(HomeLayout.dogHeight(geo.size.height), (geo.size.width - 40) * 0.55)
+            ZStack {
+                AppBackground()
 
-            ScrollView {
-                VStack(spacing: 22) {
-                    header
+                ScrollView {
+                    VStack(spacing: 22) {
+                        header
 
-                    HStack(alignment: .bottom, spacing: 12) {
-                        LoroImage(asset: dueCards.isEmpty ? .sleeping : .idle, size: 150)
+                        HStack(alignment: .bottom, spacing: 12) {
+                            LoroImage(asset: dueCards.isEmpty ? .sleeping : .idle, size: heroSide)
 
-                        loroSpeechBubbleView
-                            .padding(.bottom, 30)
-                            .frame(maxWidth: .infinity)
+                            loroSpeechBubbleView
+                                .padding(.bottom, heroSide * 0.50)
+                                .frame(maxWidth: .infinity)
+                        }
+                        .frame(height: heroSide)
+                        .padding(.top, 4)
+
+                        cta
+
+                        dueSection
+
+                        dueLaterSection
                     }
-                    .padding(.top, 4)
-
-                    cta
-
-                    dueSection
-
-                    dueLaterSection
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 40)
                 }
-                .padding(.horizontal, 20)
-                .padding(.bottom, 40)
             }
         }
         .fullScreenCover(isPresented: $showSession, onDismiss: { now = Date() }) {

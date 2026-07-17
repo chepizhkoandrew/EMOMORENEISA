@@ -20,6 +20,7 @@ struct BurgerMenuOverlay: ViewModifier {
     @State private var showMenu = false
     @State private var showChats = false
     @State private var showProfile = false
+    @State private var showSettings = false
     var alignment: Alignment = .topTrailing
     var extraItems: [BurgerMenuItem] = []
 
@@ -43,9 +44,17 @@ struct BurgerMenuOverlay: ViewModifier {
                     onProfile: {
                         showMenu = false
                         showProfile = true
+                    },
+                    onSettings: {
+                        showMenu = false
+                        showSettings = true
                     }
                 )
                 .presentationDetents([.medium])
+            }
+            .fullScreenCover(isPresented: $showSettings) {
+                SettingsHubView()
+                    .environment(authState)
             }
             .fullScreenCover(isPresented: $showChats) {
                 if authState.isSignedIn {
@@ -70,6 +79,7 @@ private struct BurgerMenuSheet: View {
     let extraItems: [BurgerMenuItem]
     let onChats: () -> Void
     let onProfile: () -> Void
+    let onSettings: () -> Void
 
     var body: some View {
         NavigationStack {
@@ -83,6 +93,7 @@ private struct BurgerMenuSheet: View {
                         }
                     }
                     row(label: L("Your Chats"), systemImage: "bubble.left.and.bubble.right.fill", action: onChats)
+                    row(label: L("Settings"), systemImage: "gearshape.fill", action: onSettings)
                     row(label: L("Profile"), systemImage: "person.circle.fill", action: onProfile)
                     Spacer()
                 }
