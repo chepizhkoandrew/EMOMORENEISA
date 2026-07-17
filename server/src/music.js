@@ -4,10 +4,15 @@ import { geminiText } from "./providers.js";
 
 // Song generation pipeline. The proxy composes learner-friendly Spanish lyrics
 // (Gemini) when the client didn't supply explicit ones, then calls the
-// self-hosted ACE-Step service (Cloud Run GPU, scale-to-zero) to render audio.
+// self-hosted ACE-Step service (Modal, GPU, scale-to-zero) to render audio.
 // Generation takes 10s–3min (cold starts load the model), so it runs as an
 // async job the client polls — a single long HTTP request would sail past
 // mobile network timeouts.
+//
+// (Originally deployed on Cloud Run; its GPU-attached containers never
+// reliably received external traffic — healthy container, zero requests ever
+// routed to it, reproduced across regions/frameworks/configs. Moved to Modal,
+// which owns its own web-serving layer instead of us managing one.)
 
 // In-memory job store. Fine for the current single-process Railway deployment
 // and the testing phase; revisit (Supabase table) before scaling out.
@@ -71,11 +76,17 @@ async function composeLyrics(params) {
   };
 }
 
+// Modal's web endpoint blocks on the underlying GPU call up to its own
+// internal deadline (~150s observed); past that it returns 303 with a
+// Location header pointing at a poll URL that re-runs the same wait. We
+// drive that loop explicitly (redirect: "manual") rather than relying on
+// fetch's built-in redirect-following, so we control the retry cadence and
+// get a clear error if it chains further than expected.
 async function callMusicService({ styleTags, lyrics, durationSec }) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), config.music.requestTimeoutMs);
   try {
-    const resp = await fetch(`${config.music.serviceUrl.replace(/\/$/, "")}/generate`, {
+    let resp = await fetch(`${config.music.serviceUrl.replace(/\/$/, "")}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -86,8 +97,18 @@ async function callMusicService({ styleTags, lyrics, durationSec }) {
         lyrics,
         duration_sec: durationSec
       }),
+      redirect: "manual",
       signal: controller.signal
     });
+
+    let hops = 0;
+    while (resp.status === 303 && hops < 20) {
+      const location = resp.headers.get("location");
+      if (!location) throw new Error("music_service_303_missing_location");
+      resp = await fetch(location, { headers: { "X-API-Key": config.music.serviceKey }, redirect: "manual", signal: controller.signal });
+      hops += 1;
+    }
+
     if (!resp.ok) {
       let detail = "";
       try { detail = (await resp.text()).slice(0, 300); } catch (_) {}
