@@ -145,6 +145,19 @@ export const config = {
     maxSize: num("IMAGE_MAX_SIZE", 512)
   },
 
+  // Self-hosted song generation (ACE-Step on Cloud Run GPU, scale-to-zero —
+  // the instance spins up per request and bills only generation seconds, so
+  // "off" is the default state and needs no manual switching).
+  music: {
+    serviceUrl: str("MUSIC_SERVICE_URL", ""),
+    serviceKey: str("MUSIC_SERVICE_KEY", ""),
+    lyricsModel: str("MODEL_MUSIC_LYRICS", "gemini-2.5-flash"),
+    // Cold start (model load) + generation can take minutes; the proxy->GPU
+    // call needs real headroom. The client polls, so nothing user-facing
+    // hangs on this.
+    requestTimeoutMs: num("MUSIC_REQUEST_TIMEOUT_MS", 600000)
+  },
+
   enforceWallet: bool("ENFORCE_WALLET", false),
 
   // Apple / StoreKit
@@ -173,7 +186,11 @@ export const config = {
     streetView: num("COST_STREET_VIEW", 9),
     loro: num("COST_LORO_DRILL", 3),
     annotate: num("COST_ANNOTATE", 6),
-    verbCheck: num("COST_VERB_CHECK", 2)
+    verbCheck: num("COST_VERB_CHECK", 2),
+    // Placeholder song prices until real GPU cost per length is measured.
+    musicShort: num("COST_MUSIC_30S", 15),
+    musicMedium: num("COST_MUSIC_60S", 25),
+    musicLong: num("COST_MUSIC_120S", 45)
   },
 
   pricing: {

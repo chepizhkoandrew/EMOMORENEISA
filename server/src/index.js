@@ -10,6 +10,7 @@ import { getWallet, debit, credit, grantTrialIfNeeded, recordTopup } from "./wal
 import { supabase } from "./supabase.js";
 import { record } from "./meter.js";
 import { verifyStoreKitJWS } from "./appstore.js";
+import { startMusicJob, getMusicJob, musicConfigured, musicCostForDuration } from "./music.js";
 
 const app = express();
 app.use(express.json({ limit: "12mb" }));
@@ -858,6 +859,63 @@ app.post("/v1/onboarding/synthesize", requireUser, async (req, res) => {
 
 app.get("/v1/voice/current", requireUser, (req, res) => {
   res.json({ voiceTag: activeVoiceTag() });
+});
+
+// Kick off a song generation job. Debits treats up front (refunded via the
+// job's outcome callback if the pipeline fails), returns a jobId to poll.
+app.post("/v1/music/generate", requireUser, async (req, res) => {
+  if (!musicConfigured()) return res.status(503).json({ error: "music_not_configured" });
+
+  const { genre, durationSec, lyrics, description, words, language } = req.body || {};
+  if (!genre || typeof genre !== "string" || !genre.trim()) {
+    return res.status(400).json({ error: "missing_genre" });
+  }
+  const duration = [30, 60, 120].includes(Number(durationSec)) ? Number(durationSec) : 30;
+  const cleanWords = Array.isArray(words)
+    ? words.filter(w => typeof w === "string" && w.trim()).map(w => w.trim()).slice(0, 30)
+    : [];
+
+  const cost = musicCostForDuration(duration);
+  const pre = await debit(req.user.id, cost, "music_song", { genre: genre.trim(), durationSec: duration });
+  if (!pre.ok && pre.error === "insufficient_treats") {
+    return res.status(402).json({ error: "insufficient_treats", balance: pre.balance });
+  }
+
+  const job = startMusicJob({
+    userId: req.user.id,
+    genre: genre.trim().slice(0, 80),
+    durationSec: duration,
+    lyrics: typeof lyrics === "string" ? lyrics.slice(0, 4000) : "",
+    description: typeof description === "string" ? description.slice(0, 2000) : "",
+    words: cleanWords,
+    language: language === "uk" ? "uk" : "en"
+  }, async (outcome) => {
+    if (outcome.ok) {
+      // Rough per-song COGS placeholder until real GPU seconds are measured.
+      await record({
+        userId: req.user.id,
+        kind: "music",
+        provider: "ace-step",
+        seconds: duration,
+        rawCostUsd: 0.02 * (duration / 30),
+        treatsCharged: cost
+      });
+    } else if (pre.enforced) {
+      await credit(req.user.id, cost, "refund", "music_song_failed", {});
+    }
+  });
+
+  // Cold Cloud Run instance loads the model first; warm ones answer fast.
+  res.json({ jobId: job.id, treatsCharged: cost, etaSeconds: duration >= 120 ? 180 : 120 });
+});
+
+app.get("/v1/music/job/:id", requireUser, (req, res) => {
+  const job = getMusicJob(req.params.id, req.user.id);
+  if (!job) return res.status(404).json({ error: "job_not_found" });
+  const payload = { jobId: job.id, status: job.status };
+  if (job.status === "failed") payload.error = job.error || "generation_failed";
+  if (job.status === "done" && job.song) payload.song = job.song;
+  res.json(payload);
 });
 
 app.use((req, res) => res.status(404).json({ error: "not_found" }));
