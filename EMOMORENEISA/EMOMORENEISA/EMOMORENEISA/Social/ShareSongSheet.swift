@@ -299,7 +299,7 @@ struct ShareSongSheet: View {
         sceneImages.load(scenes: song.scenes, cards: Array(memoryCards))
         await sceneImages.waitUntilLoaded()
 
-        let input = KaraokeVideoExporter.Input(
+        let input = KaraokeVideoExporter.makeInput(
             song: song,
             images: sceneImages.images,
             highlightTargets: saved.pickedWords + song.scenes.map(\.word)
