@@ -48,6 +48,12 @@ final class KaraokeSceneImages {
         loadTask = nil
     }
 
+    /// Awaits the in-flight load (no-op when nothing is loading) — the video
+    /// exporter needs every picture on hand before rendering frames.
+    func waitUntilLoaded() async {
+        await loadTask?.value
+    }
+
     private static func key(_ scene: ProxyClient.MusicScene) -> String {
         "\(normalize(scene.spanish))|\(normalize(scene.english))"
     }

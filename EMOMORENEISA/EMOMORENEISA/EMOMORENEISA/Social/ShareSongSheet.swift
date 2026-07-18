@@ -1,11 +1,16 @@
 import SwiftUI
+import SwiftData
 
 /// Share a saved song with friends (multi-select) and/or a typed email.
 /// Sharing is free. Emails without an account still get a share reference
 /// (it materializes when they onboard) plus an invite link to send along.
+/// Also exports the song as a 9:16 karaoke video for Instagram & co.
 struct ShareSongSheet: View {
     @Environment(\.dismiss) private var dismiss
     let saved: SavedSong
+
+    @Query(filter: #Predicate<MemoryCard> { !$0.isArchived }, sort: \MemoryCard.createdAt, order: .reverse)
+    private var memoryCards: [MemoryCard]
 
     @State private var friends: [ProxyClient.Friend] = []
     @State private var selected: Set<String> = []
@@ -15,6 +20,12 @@ struct ShareSongSheet: View {
     @State private var didSend = false
     @State private var failed = false
     @State private var inviteLinks: [(email: String, url: String)] = []
+
+    // Video export
+    @State private var sceneImages = KaraokeSceneImages()
+    @State private var exportProgress: Double? = nil
+    @State private var exportedVideoURL: URL? = nil
+    @State private var exportFailed = false
 
     var body: some View {
         NavigationStack {
@@ -28,6 +39,7 @@ struct ShareSongSheet: View {
                         } else {
                             pickerView
                         }
+                        videoSection
                     }
                     .padding(20)
                 }
@@ -210,6 +222,97 @@ struct ShareSongSheet: View {
             .overlay(RoundedRectangle(cornerRadius: 16).stroke(AppColors.cardBorder, lineWidth: 1))
             .clipShape(RoundedRectangle(cornerRadius: 16))
         }
+    }
+
+    // MARK: - Video clip
+
+    @ViewBuilder
+    private var videoSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(L("Post it anywhere"))
+                .font(.system(size: 14, weight: .bold, design: .rounded))
+                .foregroundColor(AppColors.textTertiary)
+
+            if let url = exportedVideoURL {
+                ShareLink(item: url, preview: SharePreview(saved.title)) {
+                    HStack(spacing: 10) {
+                        Image(systemName: "square.and.arrow.up")
+                            .font(.system(size: 16, weight: .bold, design: .rounded))
+                        Text(L("Share Video"))
+                            .font(.system(size: 16, weight: .bold, design: .rounded))
+                    }
+                    .foregroundColor(.black)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 14)
+                    .background(Color.yellow)
+                    .clipShape(RoundedRectangle(cornerRadius: 14))
+                }
+            } else if let progress = exportProgress {
+                VStack(spacing: 8) {
+                    ProgressView(value: progress)
+                        .tint(.yellow)
+                    Text(L("Rendering your karaoke video…"))
+                        .font(.system(size: 13, weight: .medium, design: .rounded))
+                        .foregroundColor(AppColors.textTertiary)
+                }
+                .padding(.vertical, 6)
+            } else {
+                Button {
+                    Task { await exportVideo() }
+                } label: {
+                    HStack(spacing: 10) {
+                        Image(systemName: "film")
+                            .font(.system(size: 16, weight: .bold, design: .rounded))
+                        Text(L("Create Video Clip"))
+                            .font(.system(size: 16, weight: .bold, design: .rounded))
+                    }
+                    .foregroundColor(.yellow)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 14)
+                    .background(RoundedRectangle(cornerRadius: 14).stroke(Color.yellow.opacity(0.5), lineWidth: 1.5))
+                }
+                .buttonStyle(.plain)
+                Text(L("A karaoke video with pictures and synced lyrics — ready for Instagram, TikTok, or your camera roll."))
+                    .font(.system(size: 12, weight: .regular, design: .rounded))
+                    .foregroundColor(AppColors.textTertiary)
+            }
+
+            if exportFailed {
+                Text(L("Video export failed. Please try again."))
+                    .font(.system(size: 13, weight: .medium, design: .rounded))
+                    .foregroundColor(.red.opacity(0.85))
+            }
+        }
+        .padding(.top, 6)
+    }
+
+    private func exportVideo() async {
+        guard let song = saved.asMusicSong() else {
+            exportFailed = true
+            return
+        }
+        exportFailed = false
+        exportProgress = 0
+
+        // Pictures may not be downloaded yet on this screen — kick the same
+        // progressive loader karaoke uses and wait for it to finish.
+        sceneImages.load(scenes: song.scenes, cards: Array(memoryCards))
+        await sceneImages.waitUntilLoaded()
+
+        let input = KaraokeVideoExporter.Input(
+            song: song,
+            images: sceneImages.images,
+            highlightTargets: saved.pickedWords + song.scenes.map(\.word)
+        )
+        do {
+            let url = try await KaraokeVideoExporter.export(input) { p in
+                Task { @MainActor in exportProgress = p }
+            }
+            exportedVideoURL = url
+        } catch {
+            exportFailed = true
+        }
+        exportProgress = nil
     }
 
     // MARK: - Action

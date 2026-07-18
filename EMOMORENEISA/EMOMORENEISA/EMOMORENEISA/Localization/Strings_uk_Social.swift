@@ -61,6 +61,14 @@ let ukSocialStrings: [String: String] = [
     "Share Invite Link": "Поділитися запрошенням",
     "Shared by %@": "Поділився(-лася) %@",
 
+    // Video clip export
+    "Post it anywhere": "Опублікуйте будь-де",
+    "Share Video": "Поділитися відео",
+    "Rendering your karaoke video…": "Створюємо ваше караоке-відео…",
+    "Create Video Clip": "Створити відеокліп",
+    "A karaoke video with pictures and synced lyrics — ready for Instagram, TikTok, or your camera roll.": "Караоке-відео з картинками та синхронним текстом — готове для Instagram, TikTok чи вашої галереї.",
+    "Video export failed. Please try again.": "Не вдалося створити відео. Спробуйте ще раз.",
+
     // Notifications hub
     "Shared with You": "Поділилися з вами",
     "App News": "Новини застосунку",
