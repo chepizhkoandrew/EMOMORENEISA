@@ -2,7 +2,7 @@
   "cleanUrls": true,
   "trailingSlash": false,
   "rewrites": [
-    { "source": "/invite/:token", "destination": "/invite.html" }
+    { "source": "/invite/:token", "destination": "/invite" }
   ],
   "headers": [
     {
