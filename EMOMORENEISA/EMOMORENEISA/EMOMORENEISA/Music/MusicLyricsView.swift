@@ -12,6 +12,7 @@ struct MusicLyricsView: View {
 
     @FocusState private var lyricsFocused: Bool
     @State private var showKaraoke = false
+    @State private var showShare = false
     /// Preloading starts the moment the song is `.ready` (see `onChange`
     /// below), not when the user taps Play — by then most/all pictures are
     /// already downloaded and karaoke starts smoothly from the first second.
@@ -34,7 +35,17 @@ struct MusicLyricsView: View {
         }
         .fullScreenCover(isPresented: $showKaraoke) {
             if let song = model.song {
-                MusicKaraokeView(song: song, memoryCards: Array(memoryCards), sceneImages: sceneImages)
+                MusicKaraokeView(
+                    song: song,
+                    memoryCards: Array(memoryCards),
+                    sceneImages: sceneImages,
+                    onShare: model.savedSong == nil ? nil : { showShare = true }
+                )
+            }
+        }
+        .sheet(isPresented: $showShare) {
+            if let saved = model.savedSong {
+                ShareSongSheet(saved: saved)
             }
         }
         .onChange(of: model.phase) { _, newPhase in
@@ -365,9 +376,12 @@ struct MusicLyricsView: View {
                     .padding(.vertical, 8)
 
                     if !song.lyrics.isEmpty {
+                        // Picked words are the source of truth for highlighting;
+                        // scene words alone miss any picked word the storyboard
+                        // didn't dedicate a scene to.
                         LyricsHighlight.highlightedLyrics(
                             song.lyrics,
-                            targets: song.scenes.map(\.word),
+                            targets: model.selectedWords + song.scenes.map(\.word),
                             baseColor: .white.opacity(0.85),
                             highlightColor: LyricsHighlight.highlightColor
                         )
@@ -379,17 +393,37 @@ struct MusicLyricsView: View {
                         .overlay(RoundedRectangle(cornerRadius: 18).stroke(Color.white.opacity(0.10), lineWidth: 1))
                     }
 
-                    Button {
-                        model.startOver()
-                    } label: {
-                        Text(L("Create another"))
-                            .font(.system(size: 16, weight: .heavy, design: .rounded))
-                            .foregroundColor(.yellow)
-                            .padding(.horizontal, 22)
-                            .padding(.vertical, 12)
-                            .background(Capsule().stroke(Color.yellow.opacity(0.5), lineWidth: 1.5))
+                    HStack(spacing: 14) {
+                        if model.savedSong != nil {
+                            Button {
+                                showShare = true
+                            } label: {
+                                HStack(spacing: 8) {
+                                    Image(systemName: "square.and.arrow.up")
+                                        .font(.system(size: 15, weight: .heavy, design: .rounded))
+                                    Text(L("Share"))
+                                        .font(.system(size: 16, weight: .heavy, design: .rounded))
+                                }
+                                .foregroundColor(.black)
+                                .padding(.horizontal, 22)
+                                .padding(.vertical, 12)
+                                .background(Capsule().fill(Color.yellow))
+                            }
+                            .buttonStyle(.plain)
+                        }
+
+                        Button {
+                            model.startOver()
+                        } label: {
+                            Text(L("Create another"))
+                                .font(.system(size: 16, weight: .heavy, design: .rounded))
+                                .foregroundColor(.yellow)
+                                .padding(.horizontal, 22)
+                                .padding(.vertical, 12)
+                                .background(Capsule().stroke(Color.yellow.opacity(0.5), lineWidth: 1.5))
+                        }
+                        .buttonStyle(.plain)
                     }
-                    .buttonStyle(.plain)
                     .padding(.bottom, 44)
                 }
             }

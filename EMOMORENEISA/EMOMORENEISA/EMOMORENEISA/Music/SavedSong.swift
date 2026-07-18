@@ -25,6 +25,10 @@ final class SavedSong {
     var sharedFromUserId: String?
     /// The song_shares row this song materialized from; guards re-downloads.
     var shareId: String?
+    /// The memory-queue words the user picked when generating — the source of
+    /// truth for lyric highlighting (scene words alone miss picked words the
+    /// storyboard didn't give a scene to). Optional for lightweight migration.
+    var pickedWordsJSON: Data?
 
     init(
         id: UUID = UUID(),
@@ -38,7 +42,8 @@ final class SavedSong {
         createdAt: Date = Date(),
         sharedByName: String? = nil,
         sharedFromUserId: String? = nil,
-        shareId: String? = nil
+        shareId: String? = nil,
+        pickedWordsJSON: Data? = nil
     ) {
         self.id = id
         self.title = title
@@ -52,6 +57,12 @@ final class SavedSong {
         self.sharedByName = sharedByName
         self.sharedFromUserId = sharedFromUserId
         self.shareId = shareId
+        self.pickedWordsJSON = pickedWordsJSON
+    }
+
+    var pickedWords: [String] {
+        guard let pickedWordsJSON else { return [] }
+        return (try? JSONDecoder().decode([String].self, from: pickedWordsJSON)) ?? []
     }
 
     private static var docs: URL {
@@ -70,7 +81,8 @@ final class SavedSong {
         in context: ModelContext,
         sharedByName: String? = nil,
         sharedFromUserId: String? = nil,
-        shareId: String? = nil
+        shareId: String? = nil,
+        pickedWords: [String] = []
     ) -> SavedSong? {
         // A shared song already materialized on this device: return it as-is
         // instead of writing a duplicate copy.
@@ -101,7 +113,8 @@ final class SavedSong {
                 scenesJSON: (try? JSONEncoder().encode(song.scenes)) ?? Data(),
                 sharedByName: sharedByName,
                 sharedFromUserId: sharedFromUserId,
-                shareId: shareId
+                shareId: shareId,
+                pickedWordsJSON: pickedWords.isEmpty ? nil : try? JSONEncoder().encode(pickedWords)
             )
             context.insert(saved)
             try context.save()

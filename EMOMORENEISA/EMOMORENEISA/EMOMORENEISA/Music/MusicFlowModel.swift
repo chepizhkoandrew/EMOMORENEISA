@@ -53,6 +53,9 @@ final class MusicFlowModel {
     /// Set by the view once the finished song is saved into "My Songs", so a
     /// view re-render can't save the same song twice.
     var songPersisted = false
+    /// The "My Songs" record for the finished song — what the result screen's
+    /// share button hands to ShareSongSheet.
+    var savedSong: SavedSong? = nil
 
     /// Server's own render-time estimate for the current job (returned at job
     /// creation — mirrors its `duration >= 120 ? 180 : 120` eta) plus the
@@ -123,6 +126,7 @@ final class MusicFlowModel {
         phase = .submitting
         song = nil
         songPersisted = false
+        savedSong = nil
 
         let text = lyricsText.trimmingCharacters(in: .whitespacesAndNewlines)
         let lyrics = useAsExactLyrics ? text : ""
@@ -183,6 +187,7 @@ final class MusicFlowModel {
     func startOver() {
         song = nil
         songPersisted = false
+        savedSong = nil
         phase = .editing
     }
 

@@ -281,7 +281,7 @@ struct SongDetailView: View {
                     if !saved.lyrics.isEmpty {
                         LyricsHighlight.highlightedLyrics(
                             saved.lyrics,
-                            targets: song?.scenes.map(\.word) ?? [],
+                            targets: saved.pickedWords + (song?.scenes.map(\.word) ?? []),
                             baseColor: .white.opacity(0.85),
                             highlightColor: LyricsHighlight.highlightColor
                         )

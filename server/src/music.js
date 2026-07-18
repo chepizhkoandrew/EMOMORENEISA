@@ -97,20 +97,10 @@ function sceneCap(durationSec) {
   return 14;
 }
 
-// Floor so a short/lazy scene plan doesn't leave a 30s clip with just 1-2
-// pictures — clamped against how many lines actually exist, since a scene
-// needs at least one distinct line range (a plan can't invent more scenes
-// than there are lines to assign them to).
-function sceneMin(durationSec, lineCount) {
-  const target = durationSec <= 30 ? 3 : durationSec <= 60 ? 5 : 7;
-  return Math.max(1, Math.min(target, lineCount));
-}
-
 function scenePlanPrompt({ lines, words, durationSec }) {
   const numbered = lines.map((l, i) => `${i}: ${l}`).join("\n");
   const wordList = (words || []).filter(Boolean).join(", ");
-  const min = sceneMin(durationSec, lines.length);
-  return `You plan the picture slideshow for a karaoke video of a Spanish-learning song. Each scene covers a contiguous range of lyric lines and shows ONE picture illustrating what those lines are about.
+  return `You plan the picture slideshow for a karaoke video of a Spanish-learning song. For EVERY sung lyric line, decide which ONE picture is on screen while that exact line is sung.
 
 Sung lyric lines (numbered):
 ${numbered}
@@ -118,16 +108,21 @@ ${numbered}
 ${wordList ? `Spanish words/phrases from the learner's memory queue (they already have a picture for each): ${wordList}` : "The learner selected no memory-queue words."}
 
 Rules:
-- Between ${min} and ${sceneCap(durationSec)} scenes (never fewer than ${min} unless there are literally fewer than ${min} lyric lines total), in order, covering ALL lines from first to last with no gaps (scene N+1 starts on the line after scene N ends). Do not lazily cover the whole song in one or two scenes — break it up so the picture actually changes as the song progresses.
-- When a range of lines features one of the memory-queue words, set "word" to that word EXACTLY as given above; otherwise "word" is "".
-- Every scene also gets a "spanish" phrase (2-6 words) naming the concrete thing to draw and an "english" translation. When "word" is set, "spanish" is centred on that word.
-- When the song returns to the same subject (e.g. a repeated chorus), REUSE the identical spanish+english pair so the same picture reappears.
+- Answer with exactly ONE entry per lyric line, in order, for every line 0..${lines.length - 1}.
+- Each entry: "word" is the memory-queue word EXACTLY as given above when this line features it, otherwise ""; "spanish" is a 2-6 word phrase naming the concrete thing pictured; "english" is its translation. When "word" is set, centre "spanish" on that word.
+- The picture must match what THAT line is about. When consecutive lines are about the same thing, give them the identical spanish+english pair (the picture holds). When a chorus alternates between subjects line by line, the picture must alternate line by line too — precision beats fewer switches.
+- Whenever ANY line returns to a subject already pictured earlier (repeated chorus, hook, reprise), REUSE the exact same spanish+english pair so the same picture reappears — never invent a near-duplicate phrasing for the same subject.
+- Use at most ${sceneCap(durationSec)} DISTINCT spanish+english pairs across the whole song; reuse pairs rather than exceeding that.
 
-Answer in JSON only: {"scenes":[{"fromLine":0,"toLine":2,"word":"","spanish":"...","english":"..."}]}`;
+Answer in JSON only: {"lines":[{"line":0,"word":"","spanish":"...","english":"..."}]}`;
 }
 
-// Best-effort storyboard: Gemini maps lyric lines to scenes; on failure the
-// selected queue words become evenly-spread scenes (their pictures already
+// Best-effort storyboard: Gemini assigns a picture to EVERY sung line (so the
+// slide always matches what's being sung — a chorus alternating subjects flips
+// pictures line by line), then adjacent lines with the identical subject merge
+// into one scene. Repeated subjects reuse the identical spanish+english pair,
+// so the image cache renders each distinct picture exactly once. On failure
+// the selected queue words become evenly-spread scenes (their pictures already
 // exist client-side), and with no words the karaoke simply has no slideshow.
 async function composeScenePlan({ lyrics, words, durationSec }) {
   const lines = sungLines(lyrics);
@@ -136,21 +131,59 @@ async function composeScenePlan({ lyrics, words, durationSec }) {
     prompt: scenePlanPrompt({ lines, words, durationSec }),
     model: config.music.lyricsModel,
     temperature: 0.4,
-    maxOutputTokens: 2048
+    maxOutputTokens: 4096
   });
   const cleaned = r.text.trim().replace(/```json/g, "").replace(/```/g, "").trim();
   const obj = JSON.parse(cleaned);
-  if (!Array.isArray(obj.scenes) || !obj.scenes.length) return null;
-  return obj.scenes
-    .map(s => ({
-      fromLine: Math.max(0, Math.min(lines.length - 1, Number(s.fromLine) || 0)),
-      toLine: Math.max(0, Math.min(lines.length - 1, Number(s.toLine) || 0)),
-      word: typeof s.word === "string" ? s.word.trim() : "",
-      spanish: typeof s.spanish === "string" ? s.spanish.trim() : "",
-      english: typeof s.english === "string" ? s.english.trim() : ""
-    }))
-    .filter(s => s.spanish)
-    .slice(0, sceneCap(durationSec));
+  if (!Array.isArray(obj.lines) || !obj.lines.length) return null;
+
+  // Per-line assignments; any line the model skipped inherits its predecessor.
+  const byLine = new Array(lines.length).fill(null);
+  for (const entry of obj.lines) {
+    const i = Number(entry.line);
+    if (!Number.isInteger(i) || i < 0 || i >= lines.length) continue;
+    const spanish = typeof entry.spanish === "string" ? entry.spanish.trim() : "";
+    if (!spanish) continue;
+    byLine[i] = {
+      word: typeof entry.word === "string" ? entry.word.trim() : "",
+      spanish,
+      english: typeof entry.english === "string" ? entry.english.trim() : ""
+    };
+  }
+  for (let i = 0; i < byLine.length; i++) {
+    if (!byLine[i]) byLine[i] = i > 0 ? byLine[i - 1] : null;
+  }
+  const firstAssigned = byLine.find(Boolean);
+  if (!firstAssigned) return null;
+  for (let i = 0; i < byLine.length; i++) {
+    if (!byLine[i]) byLine[i] = firstAssigned;
+  }
+
+  // Hard cap on DISTINCT pictures (each one is an illustration render): once
+  // the cap is hit, an unseen subject holds the previous line's picture.
+  const maxDistinct = sceneCap(durationSec);
+  const seen = new Map();
+  for (let i = 0; i < byLine.length; i++) {
+    const key = `${byLine[i].spanish}|${byLine[i].english}`.toLowerCase();
+    if (!seen.has(key) && seen.size >= maxDistinct) {
+      byLine[i] = i > 0 ? byLine[i - 1] : seen.values().next().value;
+    } else if (!seen.has(key)) {
+      seen.set(key, byLine[i]);
+    }
+  }
+
+  // Merge consecutive identical subjects into contiguous scenes.
+  const scenes = [];
+  for (let i = 0; i < byLine.length; i++) {
+    const prev = scenes[scenes.length - 1];
+    const key = `${byLine[i].spanish}|${byLine[i].english}`.toLowerCase();
+    if (prev && prev.key === key) {
+      prev.toLine = i;
+    } else {
+      scenes.push({ key, fromLine: i, toLine: i, ...byLine[i] });
+    }
+  }
+  return scenes.map(({ key, ...s }) => s);
 }
 
 // Resolves with `fallback` if `promise` hasn't settled within `ms` — used so

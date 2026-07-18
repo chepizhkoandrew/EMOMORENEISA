@@ -346,8 +346,11 @@ struct MusicKaraokeView: View {
                         Rectangle().frame(width: geo.size.width * fraction)
                     }
                 )
+            // Same font as the white/yellow layers — a heavier weight here
+            // changes glyph widths, so the red layer's line wrapping drifts
+            // out of register and double-prints over neighboring words.
             if let highlight {
-                highlight.font(font).fontWeight(.black)
+                highlight.font(font)
             }
         }
     }

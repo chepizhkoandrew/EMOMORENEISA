@@ -61,7 +61,7 @@ struct MusicFlowView: View {
         .onChange(of: model.phase) { _, newPhase in
             if case .ready = newPhase, let song = model.song, !model.songPersisted {
                 model.songPersisted = true
-                SavedSong.persist(song, in: modelContext)
+                model.savedSong = SavedSong.persist(song, in: modelContext, pickedWords: model.selectedWords)
             }
         }
         .onDisappear {
