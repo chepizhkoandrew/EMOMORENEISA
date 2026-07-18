@@ -102,34 +102,46 @@ export async function geminiTTS(text, model = config.models.ttsGemini) {
 // Gemini text completion via generativelanguage generateContent. Used by the
 // onboarding reasoning routes (probe passes + synthesis). Returns the raw
 // text body — callers are responsible for JSON.parse and validation.
-export async function geminiText({ prompt, model, temperature = 0.4, maxOutputTokens = 1024, disableThinking = true }) {
+export async function geminiText({ prompt, model, temperature = 0.4, maxOutputTokens = 1024, disableThinking = true, timeoutMs = 40000 }) {
   if (!config.geminiKey) {
     const err = new Error("gemini_not_configured");
     err.status = 503;
     throw err;
   }
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${config.geminiKey}`;
-  const resp = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      contents: [{ role: "user", parts: [{ text: prompt }] }],
-      generationConfig: {
-        temperature,
-        maxOutputTokens,
-        responseMimeType: "application/json",
-        // gemini-2.5-flash reserves part of maxOutputTokens for internal
-        // "thinking" tokens by default. For the short structured JSON the
-        // onboarding probe uses this for, that reasoning budget was starving
-        // the actual visible answer (empty/truncated text -> JSON parse
-        // failure -> silent fallback to the generic question every time).
-        // BUT gemini-2.5-pro (onboarding synthesis) rejects thinkingBudget:0
-        // outright ("Budget 0 is invalid. This model only works in thinking
-        // mode.") — so this must be opt-out per call, not blanket-disabled.
-        ...(disableThinking ? { thinkingConfig: { thinkingBudget: 0 } } : {})
-      }
-    })
-  });
+  // Plain fetch has no timeout of its own — a slow/rate-limited response used
+  // to be able to hang a caller indefinitely (discovered via the music-job
+  // scene-plan call silently stretching "generating" well past when the song
+  // was actually ready). Every caller now gets a bounded wait by default.
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  let resp;
+  try {
+    resp = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+        generationConfig: {
+          temperature,
+          maxOutputTokens,
+          responseMimeType: "application/json",
+          // gemini-2.5-flash reserves part of maxOutputTokens for internal
+          // "thinking" tokens by default. For the short structured JSON the
+          // onboarding probe uses this for, that reasoning budget was starving
+          // the actual visible answer (empty/truncated text -> JSON parse
+          // failure -> silent fallback to the generic question every time).
+          // BUT gemini-2.5-pro (onboarding synthesis) rejects thinkingBudget:0
+          // outright ("Budget 0 is invalid. This model only works in thinking
+          // mode.") — so this must be opt-out per call, not blanket-disabled.
+          ...(disableThinking ? { thinkingConfig: { thinkingBudget: 0 } } : {})
+        }
+      }),
+      signal: controller.signal
+    });
+  } finally {
+    clearTimeout(timer);
+  }
   if (!resp.ok) {
     let detail = "";
     try { detail = (await resp.text()).slice(0, 300); } catch (_) {}
@@ -404,9 +416,10 @@ const ILLUSTRATION_STYLE_ANCHOR =
   "Consistent art style for every image: a warm, flat vector children's-book " +
   "illustration with bold clean outlines, soft cel shading, and a cheerful " +
   "sunny pastel palette. One clear central subject on a simple, uncluttered " +
-  "background, centered square composition, cute and highly expressive. " +
-  "Absolutely no text, letters, numbers, speech bubbles, or words anywhere in " +
-  "the image.";
+  "background, tall PORTRAIT composition with the subject centered and clear " +
+  "headroom above and below it (never a square or landscape crop), cute and " +
+  "highly expressive. Absolutely no text, letters, numbers, speech bubbles, " +
+  "or words anywhere in the image.";
 
 // Builds the prompt for a phrase. Only the SUBJECT block varies; the style
 // anchor is constant so every picture looks like it belongs to the same set.
@@ -437,7 +450,10 @@ export function buildIllustrationPrompt(spanish, english) {
 // Calls Vertex :generateContent asking for an IMAGE modality. Returns
 // { base64, mime } on success or null on any failure (429/5xx/empty) so the
 // caller can degrade to the seagull pose without ever throwing.
-export async function generateIllustration(prompt) {
+// `aspectRatio` defaults to the memorization-illustration portrait shape;
+// callers generating something else (e.g. square menu-card icons via
+// scripts/gen_menu_icons.mjs) pass "1:1" explicitly.
+export async function generateIllustration(prompt, aspectRatio = "3:4") {
   const cfg = config.vertexImage;
   if (!cfg.enabled || !cfg.projectId) return null;
   const client = gcpJwtClient();
@@ -470,7 +486,7 @@ export async function generateIllustration(prompt) {
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify({
         contents: [{ role: "user", parts: [{ text: prompt }] }],
-        generationConfig: { responseModalities: ["IMAGE"] }
+        generationConfig: { responseModalities: ["IMAGE"], imageConfig: { aspectRatio } }
       }),
       signal: ac.signal
     });

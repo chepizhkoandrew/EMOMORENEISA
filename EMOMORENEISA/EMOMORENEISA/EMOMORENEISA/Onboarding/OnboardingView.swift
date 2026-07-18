@@ -18,6 +18,7 @@ struct OnboardingView: View {
     @State private var thinkingProgressTask: Task<Void, Never>? = nil
     @State private var arrowScale: CGFloat = 1.0
     @State private var arrowSpinCount: Int = 0
+    @FocusState private var transcriptFocused: Bool
 
     var body: some View {
         ZStack {
@@ -500,12 +501,25 @@ struct OnboardingView: View {
                         get: { coordinator.lastTranscriptPreview },
                         set: { coordinator.updateTranscript($0) }
                     ))
+                    .focused($transcriptFocused)
                     .scrollContentBackground(.hidden)
                     .background(Color.clear)
                     .font(.system(size: 17, weight: .medium, design: .rounded))
                     .foregroundColor(.white.opacity(0.95))
                     .frame(maxHeight: 160)
                     .tint(.yellow)
+                    // TextEditor has no Return-to-submit and nothing else on
+                    // this screen resigned it — same class of "stuck in the
+                    // text field with no way out" bug fixed in the music
+                    // lyrics editor, fixed the same way (a keyboard-adjacent
+                    // Done button always stays reachable).
+                    .toolbar {
+                        ToolbarItemGroup(placement: .keyboard) {
+                            Spacer()
+                            Button(L("Done")) { transcriptFocused = false }
+                                .fontWeight(.bold)
+                        }
+                    }
                 }
                 Button {
                     Task { await coordinator.confirmAndAdvance() }

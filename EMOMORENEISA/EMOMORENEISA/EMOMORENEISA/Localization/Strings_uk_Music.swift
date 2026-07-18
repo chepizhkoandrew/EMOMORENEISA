@@ -6,16 +6,16 @@ import Foundation
 let ukMusicStrings: [String: String] = [
     // Step 1 — setup
     "Create a Song": "Створи пісню",
-    "Pick a genre and a length — then tell me what to sing about.": "Обери жанр і тривалість — а потім розкажи, про що співати.",
-    "Genre": "Жанр",
+    "Choose Genre": "Обери жанр",
     "More genres…": "Більше жанрів…",
-    "Song length": "Тривалість пісні",
+    "Song Length": "Тривалість пісні",
     "30 seconds": "30 секунд",
     "1 minute": "1 хвилина",
     "2 minutes": "2 хвилини",
     "a quick hook": "короткий хук",
     "verse and chorus": "куплет і приспів",
     "a full little song": "ціла маленька пісня",
+    "Pick Lyrics": "До тексту пісні",
 
     // Genre picker sheet
     "Your own genre…": "Свій власний жанр…",
@@ -26,20 +26,27 @@ let ukMusicStrings: [String: String] = [
     // Step 2 — lyrics
     "What should it sing?": "Про що співати?",
     "Words from your memory queue": "Слова з твоєї черги запам'ятовування",
-    "Describe the song, or paste your lyrics": "Опиши пісню або встав свій текст",
     "e.g. a happy song about ordering food at the beach…": "напр., весела пісня про замовлення їжі на пляжі…",
-    "These are the exact lyrics — sing them as written": "Це готовий текст — співати як написано",
     "Listening… tap to stop": "Слухаю… торкнись, щоб зупинити",
-    "Or tap and say what the song should be about": "Або натисни й скажи, про що має бути пісня",
     "Create my song": "Створити пісню",
 
-    // Generation states
-    "Sending to the studio…": "Надсилаю в студію…",
+    // Working screen — rotating fun stages
+    "Warming up the studio…": "Розігріваю студію…",
+    "Tuning the instruments…": "Налаштовую інструменти…",
     "Writing your lyrics…": "Пишу текст пісні…",
-    "Recording your song…": "Записую твою пісню…",
-    "First song of the day can take a couple of minutes — the studio is warming up.": "Перша пісня за день може зайняти кілька хвилин — студія розігрівається.",
+    "Finding the melody…": "Шукаю мелодію…",
+    "Recording the vocals…": "Записую вокал…",
+    "Mixing the final track…": "Зводжу фінальний трек…",
+
     "Your song is ready!": "Твоя пісня готова!",
     "Create another": "Створити ще одну",
+
+    // My Songs list (mirrors My Chats)
+    "My Songs": "Мої пісні",
+    "No songs yet": "Пісень поки немає",
+    "Turn the words you're learning\ninto your first Spanish song.": "Перетвори слова, які вчиш,\nна свою першу іспанську пісню.",
+    "Create First Song": "Створити першу пісню",
+    "This song's audio file is gone from this device.": "Аудіофайл цієї пісні зник із цього пристрою.",
     "That take didn't work out — your treats were refunded.": "Цей дубль не вдався — смаколики повернуто.",
     "Tweak something and try again.": "Зміни щось і спробуй ще раз.",
 

@@ -169,6 +169,14 @@ Create v1.2 in App Store Connect (now that v1.1 is READY_FOR_SALE and its train 
 
 Create v1.1, cancel old submissions, attach latest build + all 3 IAPs, and submit for App Store review
 
+### ios submit_v12
+
+```sh
+[bundle exec] fastlane ios submit_v12
+```
+
+Submit v1.2 for review — pass build_number: (defaults to latest VALID build tagged 1.2). Run `metadata` first.
+
 ### ios fix_review_notes
 
 ```sh

@@ -110,11 +110,27 @@ struct LoroMemorizeHubView: View {
             now = Date()
         }
         .onAppear { startLoroTypewriter() }
-        .onDisappear {
-            loroTypeTask?.cancel()
-            loroBubblePlayer?.stop()
-            loroBubblePlayer = nil
+        .onDisappear { stopLoroAmbient() }
+        // `fullScreenCover` never fires `.onDisappear` on the view it covers
+        // — this screen stays mounted underneath, so relying on `onDisappear`
+        // alone left the seagull's narration running (and audible) right
+        // through the queue playback it just launched. Each presentation
+        // needs its own explicit stop, mirroring the home screen's dog.
+        .onChange(of: showSession) { _, isShowing in
+            if isShowing { stopLoroAmbient() } else { startLoroTypewriter() }
         }
+        .onChange(of: showChat) { _, isShowing in
+            if isShowing { stopLoroAmbient() } else { startLoroTypewriter() }
+        }
+        .onChange(of: replayCard) { _, card in
+            if card != nil { stopLoroAmbient() } else { startLoroTypewriter() }
+        }
+    }
+
+    private func stopLoroAmbient() {
+        loroTypeTask?.cancel()
+        loroBubblePlayer?.stop()
+        loroBubblePlayer = nil
     }
 
     private var header: some View {

@@ -2,12 +2,18 @@ import Foundation
 
 enum Tense: String, CaseIterable, Identifiable {
     case present = "Present"
+    case preterite = "Preterite"
+    case imperfect = "Imperfect"
+    case future = "Future"
 
     var id: String { rawValue }
 
     var displayLabel: String {
         switch self {
         case .present: return "Presente"
+        case .preterite: return "Pretérito"
+        case .imperfect: return "Imperfecto"
+        case .future: return "Futuro"
         }
     }
 }
@@ -29,7 +35,7 @@ struct Round {
         var cells: [GameCell] = []
         for pronoun in Pronoun.allCases {
             for verb in verbs {
-                cells.append(GameCell(pronoun: pronoun, verb: verb))
+                cells.append(GameCell(pronoun: pronoun, verb: verb, tense: tense))
             }
         }
         cells.shuffle()

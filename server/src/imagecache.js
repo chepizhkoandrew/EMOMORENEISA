@@ -9,7 +9,10 @@ const JPEG_MIME = "image/jpeg";
 // Bump when the style anchor / prompt shape changes so the cache never serves
 // an image rendered in a now-stale style.
 // v2: mnemonic-focused prompt + refined style anchor (stronger association).
-const STYLE_ANCHOR_VERSION = "v2";
+// v3: switched from square (1:1, unset -> defaulted square) to 3:4 portrait
+// — square images looked stretched/cropped everywhere they're shown full-bleed
+// (karaoke background, memory-card hero).
+const STYLE_ANCHOR_VERSION = "v3";
 
 let bucketReady = false;
 

@@ -85,7 +85,7 @@ let ukMemorizeStrings: [String: String] = [
     "This permanently deletes every memory card. Seagull Steven will forget all his words. This cannot be undone.": "Це назавжди видалить усі картки пам’яті. Чайка Стівен забуде всі свої слова. Скасувати буде неможливо.",
 
     // Memory sub-menu (Home)
-    "Your Words Calendar": "Календар твоїх слів",
+    "Remember with Repetition": "Запам'ятовуй повторенням",
     "Remember with Music": "Запам'ятовуй з музикою",
     "learn vocabulary through songs": "вчи слова через пісні",
 

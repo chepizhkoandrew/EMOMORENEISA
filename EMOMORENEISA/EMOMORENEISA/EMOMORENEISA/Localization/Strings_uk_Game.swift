@@ -2,6 +2,7 @@ import Foundation
 
 // Ukrainian translations for the verb-conjugation Game UI.
 let ukGameStrings: [String: String] = [
+    "Choose a tense": "Обери час",
     "NEW ROUND": "НОВИЙ РАУНД",
     "STOP": "СТОП",
     "REVIEW": "РОЗБІР",

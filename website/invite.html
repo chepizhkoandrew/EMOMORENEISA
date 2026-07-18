@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>You're invited — Professor Madrid</title>
+  <!-- Smart App Banner: opens the app (or the App Store) with the invite URL as argument -->
+  <meta name="apple-itunes-app" content="app-id=6782026883">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --gold: #F5A623;
+      --gold-glow: rgba(245, 166, 35, 0.35);
+      --purple-deep: #050712;
+      --text: #FFFFFF;
+      --text-muted: rgba(255, 255, 255, 0.55);
+    }
+
+    html, body {
+      width: 100%;
+      min-height: 100%;
+      font-family: 'DM Sans', system-ui, -apple-system, sans-serif;
+      background: var(--purple-deep);
+      color: var(--text);
+      overflow-x: hidden;
+    }
+
+    .page {
+      position: relative;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 2rem 1.25rem 3rem;
+      background: radial-gradient(ellipse 90% 80% at 55% 30%, #2D1B4E 0%, #180A35 45%, #070818 100%);
+    }
+
+    .dog {
+      width: min(46vw, 240px);
+      height: auto;
+      margin-bottom: 1.5rem;
+      filter: drop-shadow(0 12px 40px rgba(0, 0, 0, 0.6));
+    }
+
+    .invite-line {
+      font-family: 'Fredoka', sans-serif;
+      font-size: clamp(1.6rem, 5.5vw, 2.6rem);
+      font-weight: 600;
+      line-height: 1.25;
+      max-width: 22ch;
+      margin-bottom: 0.9rem;
+      text-shadow: 0 2px 18px rgba(0, 0, 0, 0.9);
+    }
+
+    .invite-line .name { color: var(--gold); text-shadow: 0 0 18px var(--gold-glow); }
+
+    .explain {
+      font-size: clamp(1rem, 3.4vw, 1.2rem);
+      color: var(--text-muted);
+      max-width: 34ch;
+      line-height: 1.5;
+      margin-bottom: 2rem;
+    }
+
+    .cta {
+      display: inline-block;
+      font-family: 'Fredoka', sans-serif;
+      font-size: clamp(1.1rem, 3.8vw, 1.35rem);
+      font-weight: 600;
+      color: #1a1200;
+      background: var(--gold);
+      border-radius: 999px;
+      padding: 0.95rem 2.4rem;
+      text-decoration: none;
+      box-shadow: 0 0 32px var(--gold-glow), 0 6px 22px rgba(0, 0, 0, 0.5);
+      transition: transform 0.15s ease;
+    }
+    .cta:active { transform: scale(0.97); }
+
+    .hint {
+      margin-top: 1.1rem;
+      font-size: 0.9rem;
+      color: rgba(255, 255, 255, 0.35);
+      max-width: 36ch;
+      line-height: 1.5;
+    }
+
+    .brand {
+      position: absolute;
+      top: 1.4rem;
+      left: 0;
+      right: 0;
+      font-family: 'Fredoka', sans-serif;
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      letter-spacing: 0.02em;
+    }
+    .brand a { color: inherit; text-decoration: none; }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="brand"><a href="/">Professor Madrid</a></div>
+    <img class="dog" src="/assets/professor_dog.png" alt="Professor Madrid the dog">
+    <h1 class="invite-line" id="headline">You've been invited to learn&nbsp;Spanish!</h1>
+    <p class="explain" id="explain">
+      Professor Madrid is a playful Spanish tutor — chat, songs, and memory games with
+      a very good dog. Get the app and click this link again to become friends.
+    </p>
+    <a class="cta" id="cta" href="https://apps.apple.com/app/id6782026883">Get the app</a>
+    <p class="hint">Already have the app? Opening this link on your iPhone takes you straight there.</p>
+  </div>
+
+  <script>
+    (function () {
+      // /invite/<token> — token is the last non-empty path segment.
+      var parts = location.pathname.split("/").filter(Boolean);
+      var token = parts.length >= 2 && parts[0] === "invite" ? parts[1] : null;
+      if (!token) return;
+
+      fetch("https://api.professormadrid.com/v1/invites/" + encodeURIComponent(token) + "/public")
+        .then(function (r) { return r.json(); })
+        .then(function (info) {
+          if (info && info.valid && info.inviterName) {
+            var h = document.getElementById("headline");
+            h.innerHTML = "";
+            var name = document.createElement("span");
+            name.className = "name";
+            name.textContent = info.inviterName;
+            h.appendChild(name);
+            h.appendChild(document.createTextNode(" has invited you to learn Spanish together!"));
+          } else if (info && info.valid === false) {
+            document.getElementById("explain").textContent =
+              "This invite link is no longer active — but Professor Madrid is still happy to meet you.";
+          }
+        })
+        .catch(function () { /* keep the generic copy */ });
+    })();
+  </script>
+</body>
+</html>

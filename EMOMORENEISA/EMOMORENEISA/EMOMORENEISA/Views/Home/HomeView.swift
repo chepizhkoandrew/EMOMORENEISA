@@ -63,8 +63,6 @@ struct HomeView: View {
     @State private var showModeSelector: Bool = false
     @State private var showOnboarding: Bool = false
 
-    private var selectedTense: Tense { Tense(rawValue: selectedTenseName) ?? .present }
-
     var body: some View {
         ZStack {
             AppBackground()
@@ -100,9 +98,10 @@ struct HomeView: View {
                     // No extra audio setup needed here: the `.onAppear`/
                     // `.onChange` below already start background music
                     // unconditionally before this switch ever branches.
-                    ModeSelectorView(onVerbGame: {
+                    ModeSelectorView(onVerbGame: { tense in
                         engine.timerSeconds = timerSeconds
-                        engine.selectedTense = selectedTense
+                        engine.selectedTense = tense
+                        selectedTenseName = tense.rawValue
                         engine.startSpin()
                     })
                     .environment(authState)

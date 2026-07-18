@@ -15,90 +15,101 @@ struct AIDisclosureView: View {
         ZStack {
             Color.black.ignoresSafeArea()
 
-            VStack(spacing: 0) {
-                Spacer()
+            ScrollView {
+                VStack(spacing: 0) {
+                    Spacer().frame(height: 24)
 
-                VStack(spacing: 8) {
-                    Image(systemName: "sparkles")
-                        .font(.system(size: 40, design: .rounded))
-                        .foregroundColor(.yellow)
-                        .shadow(color: .yellow.opacity(0.5), radius: 16)
+                    VStack(spacing: 8) {
+                        Image(systemName: "sparkles")
+                            .font(.system(size: 40, design: .rounded))
+                            .foregroundColor(.yellow)
+                            .shadow(color: .yellow.opacity(0.5), radius: 16)
 
-                    Text("How Professor Madrid uses AI")
-                        .font(.system(size: 24, weight: .black, design: .monospaced))
-                        .foregroundColor(.yellow)
-                        .multilineTextAlignment(.center)
-                        .padding(.top, 8)
-                }
-                .padding(.horizontal, 32)
-
-                Spacer().frame(height: 36)
-
-                VStack(alignment: .leading, spacing: 18) {
-                    disclosureRow(
-                        icon: "mic.fill",
-                        text: L("Your voice recordings are sent to OpenAI to transcribe your speech into text.")
-                    )
-                    disclosureRow(
-                        icon: "speaker.wave.2.fill",
-                        text: L("The tutor's spoken replies are generated mainly by Google's text-to-speech service, with OpenAI used only as an automatic backup if Google's service is temporarily unavailable.")
-                    )
-                    disclosureRow(
-                        icon: "camera.fill",
-                        text: L("Photos you take in Street View mode are sent to OpenAI to identify and describe what's in them.")
-                    )
-                    disclosureRow(
-                        icon: "text.bubble.fill",
-                        text: L("Your chat messages are sent to OpenAI to generate the tutor's responses.")
-                    )
-                    disclosureRow(
-                        icon: "person.fill.questionmark",
-                        text: L("Your answers during setup are sent to Google's Gemini AI to personalize your lessons.")
-                    )
-                }
-                .padding(.horizontal, 32)
-
-                Spacer().frame(height: 20)
-
-                Text(L("None of this content is stored by these providers beyond processing your request."))
-                    .font(.system(size: 12, weight: .regular, design: .monospaced))
-                    .foregroundColor(.white.opacity(0.45))
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 32)
-
-                Spacer().frame(height: 32)
-
-                if isLoading {
-                    ProgressView()
-                        .tint(.yellow)
-                        .scaleEffect(1.4)
-                } else {
-                    Button(action: handleAccept) {
-                        Text(L("I Understand & Continue"))
-                            .font(.system(size: 16, weight: .bold, design: .monospaced))
-                            .foregroundColor(.black)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 16)
-                            .background(Color.yellow)
-                            .clipShape(RoundedRectangle(cornerRadius: 14))
+                        Text("How Professor Madrid uses AI")
+                            .font(.system(size: 24, weight: .black, design: .monospaced))
+                            .foregroundColor(.yellow)
+                            .multilineTextAlignment(.center)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .padding(.top, 8)
                     }
                     .padding(.horizontal, 32)
-                }
 
-                if let error = errorMessage {
-                    Text(error)
+                    Spacer().frame(height: 36)
+
+                    VStack(alignment: .leading, spacing: 18) {
+                        disclosureRow(
+                            icon: "mic.fill",
+                            text: L("Your voice recordings are sent to OpenAI to transcribe your speech into text.")
+                        )
+                        disclosureRow(
+                            icon: "speaker.wave.2.fill",
+                            text: L("The tutor's spoken replies are generated mainly by Google's text-to-speech service, with OpenAI used only as an automatic backup if Google's service is temporarily unavailable.")
+                        )
+                        disclosureRow(
+                            icon: "camera.fill",
+                            text: L("Photos you take in Street View mode are sent to OpenAI to identify and describe what's in them.")
+                        )
+                        disclosureRow(
+                            icon: "text.bubble.fill",
+                            text: L("Your chat messages are sent to OpenAI to generate the tutor's responses.")
+                        )
+                        disclosureRow(
+                            icon: "person.fill.questionmark",
+                            text: L("Your answers during setup are sent to Google's Gemini AI to personalize your lessons.")
+                        )
+                        disclosureRow(
+                            icon: "photo.fill",
+                            text: L("Words and phrases in your memory queue are sent to Google's Gemini to generate a picture that helps you remember them.")
+                        )
+                        disclosureRow(
+                            icon: "music.note",
+                            text: L("When you create a song, your chosen words and any lyrics you write are sent to Google's Gemini to compose the lyrics and plan the pictures, and to our music-generation service to create the audio.")
+                        )
+                    }
+                    .padding(.horizontal, 32)
+
+                    Spacer().frame(height: 20)
+
+                    Text(L("None of this content is stored by these providers beyond processing your request."))
                         .font(.system(size: 12, weight: .regular, design: .monospaced))
-                        .foregroundColor(.red.opacity(0.8))
+                        .foregroundColor(.white.opacity(0.45))
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 32)
-                        .padding(.top, 12)
+
+                    Spacer().frame(height: 32)
+
+                    if isLoading {
+                        ProgressView()
+                            .tint(.yellow)
+                            .scaleEffect(1.4)
+                    } else {
+                        Button(action: handleAccept) {
+                            Text(L("I Understand & Continue"))
+                                .font(.system(size: 16, weight: .bold, design: .monospaced))
+                                .foregroundColor(.black)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 16)
+                                .background(Color.yellow)
+                                .clipShape(RoundedRectangle(cornerRadius: 14))
+                        }
+                        .padding(.horizontal, 32)
+                    }
+
+                    if let error = errorMessage {
+                        Text(error)
+                            .font(.system(size: 12, weight: .regular, design: .monospaced))
+                            .foregroundColor(.red.opacity(0.8))
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 32)
+                            .padding(.top, 12)
+                    }
+
+                    privacyLink
+                        .padding(.horizontal, 32)
+                        .padding(.top, 20)
+
+                    Spacer().frame(height: 24)
                 }
-
-                privacyLink
-                    .padding(.horizontal, 32)
-                    .padding(.top, 20)
-
-                Spacer()
             }
         }
     }

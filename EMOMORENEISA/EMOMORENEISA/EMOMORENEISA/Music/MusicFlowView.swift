@@ -6,6 +6,7 @@ import SwiftUI
 /// the shared BackButton mirrors the rest of the app.
 struct MusicFlowView: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var modelContext
     @State private var model = MusicFlowModel()
     @State private var page = 0
 
@@ -26,7 +27,16 @@ struct MusicFlowView: View {
                     .tag(1)
             }
             .tabViewStyle(.page(indexDisplayMode: .never))
+            // A page-style TabView doesn't reliably honor a per-page
+            // `.ignoresSafeArea()` call — the paging container establishes
+            // each page's bounds before the page's own content gets a say,
+            // so MusicLyricsView's bottom-anchored dog was landing short of
+            // the true bottom edge with a visible gap below it. Ignoring the
+            // safe area here, on the container, gives every page the full
+            // bleed to begin with.
+            .ignoresSafeArea(edges: .bottom)
         }
+        .withBurgerMenu()
         .overlay(alignment: .topLeading) {
             BackButton {
                 if page == 1 {
@@ -44,6 +54,15 @@ struct MusicFlowView: View {
         }
         .onChange(of: page) { _, _ in
             hideKeyboard()
+        }
+        // A finished generation immediately lands in "My Songs" (mirrors how a
+        // new chat lands in the sessions list). The flag stops a re-render of
+        // `.ready` from saving twice.
+        .onChange(of: model.phase) { _, newPhase in
+            if case .ready = newPhase, let song = model.song, !model.songPersisted {
+                model.songPersisted = true
+                SavedSong.persist(song, in: modelContext)
+            }
         }
         .onDisappear {
             model.tearDown()
@@ -76,21 +95,22 @@ struct MusicSetupView: View {
 
     var body: some View {
         ScrollView(showsIndicators: false) {
-            VStack(alignment: .leading, spacing: 22) {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text(L("Create a Song"))
-                        .font(.system(size: 30, weight: .heavy, design: .rounded))
-                        .foregroundColor(.white)
-                    Text(L("Pick a genre and a length — then tell me what to sing about."))
-                        .font(.system(size: 14, weight: .medium, design: .rounded))
-                        .foregroundColor(.white.opacity(0.6))
-                }
-                .padding(.top, 64)
+            VStack(alignment: .leading, spacing: 18) {
+                Text(L("Create a Song"))
+                    .font(.system(size: 30, weight: .heavy, design: .rounded))
+                    .foregroundColor(.white)
+                    .padding(.top, 118)
 
-                VStack(alignment: .leading, spacing: 12) {
-                    Text(L("Genre"))
-                        .font(.system(size: 17, weight: .bold, design: .rounded))
-                        .foregroundColor(.white)
+                sectionCard {
+                    HStack(alignment: .firstTextBaseline) {
+                        Text(L("Choose Genre"))
+                            .font(.system(size: 17, weight: .bold, design: .rounded))
+                            .foregroundColor(.white)
+                        Spacer()
+                        Text("\(model.selectedGenres.count)/\(MusicFlowModel.maxGenres)")
+                            .font(.system(size: 13, weight: .bold, design: .rounded))
+                            .foregroundColor(.white.opacity(0.4))
+                    }
 
                     ChipFlowLayout(spacing: 8) {
                         ForEach(featuredGenres, id: \.self) { genre in
@@ -100,13 +120,15 @@ struct MusicSetupView: View {
                     }
                 }
 
-                VStack(alignment: .leading, spacing: 12) {
-                    Text(L("Song length"))
+                sectionCard {
+                    Text(L("Song Length"))
                         .font(.system(size: 17, weight: .bold, design: .rounded))
                         .foregroundColor(.white)
 
-                    ForEach(SongLength.allCases) { option in
-                        lengthRow(option)
+                    VStack(spacing: 10) {
+                        ForEach(SongLength.allCases) { option in
+                            lengthRow(option)
+                        }
                     }
                 }
 
@@ -117,35 +139,55 @@ struct MusicSetupView: View {
             .padding(.horizontal, HomeLayout.hPadding)
         }
         .sheet(isPresented: $showGenrePicker) {
-            GenrePickerSheet(selected: $model.selectedGenre)
+            GenrePickerSheet(model: model)
         }
     }
 
-    /// Featured chips, plus the current selection when it came from the full
-    /// catalog or a custom entry (so it never looks unselected).
+    /// A visually distinct block (fill + border) so genre and length read as
+    /// two separate groups instead of one long list.
+    @ViewBuilder
+    private func sectionCard<Content: View>(@ViewBuilder content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            content()
+        }
+        .padding(16)
+        .background(RoundedRectangle(cornerRadius: 20, style: .continuous).fill(Color.black.opacity(0.28)))
+        .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).stroke(Color.white.opacity(0.08), lineWidth: 1))
+    }
+
+    /// Featured chips, plus any current selections that came from the full
+    /// catalog or a custom entry (so they never look unselected).
     private var featuredGenres: [String] {
         var names = MusicGenreCatalog.featured
-        if let sel = model.selectedGenre, !names.contains(sel) {
+        for sel in model.selectedGenres where !names.contains(sel) {
             names.insert(sel, at: 0)
         }
         return names
     }
 
     private func genreChip(_ genre: String) -> some View {
-        let isSelected = model.selectedGenre == genre
+        let isSelected = model.selectedGenres.contains(genre)
+        let atCap = model.selectedGenres.count >= MusicFlowModel.maxGenres
         return Button {
-            model.selectedGenre = isSelected ? nil : genre
+            model.toggleGenre(genre)
         } label: {
-            Text(genre)
-                .font(.system(size: 14, weight: .bold, design: .rounded))
-                .foregroundColor(isSelected ? .black : .white)
-                .padding(.horizontal, 14)
-                .padding(.vertical, 9)
-                .background(isSelected ? Color.yellow : Color.white.opacity(0.09))
-                .clipShape(Capsule())
-                .overlay(Capsule().stroke(Color.white.opacity(isSelected ? 0 : 0.18), lineWidth: 1))
+            HStack(spacing: 5) {
+                if isSelected {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 10, weight: .black))
+                }
+                Text(genre)
+                    .font(.system(size: 14, weight: .bold, design: .rounded))
+            }
+            .foregroundColor(isSelected ? .black : (atCap ? .white.opacity(0.3) : .white))
+            .padding(.horizontal, 14)
+            .padding(.vertical, 9)
+            .background(isSelected ? Color.yellow : Color.white.opacity(0.09))
+            .clipShape(Capsule())
+            .overlay(Capsule().stroke(Color.white.opacity(isSelected ? 0 : 0.18), lineWidth: 1))
         }
         .buttonStyle(.plain)
+        .disabled(!isSelected && atCap)
     }
 
     private var moreGenresChip: some View {
@@ -219,15 +261,17 @@ struct MusicSetupView: View {
     private var continueButton: some View {
         Button(action: onContinue) {
             HStack(spacing: 8) {
-                Text(L("Continue"))
+                Text(L("Pick Lyrics"))
                     .font(.system(size: 18, weight: .heavy, design: .rounded))
                 Image(systemName: "arrow.right")
                     .font(.system(size: 15, weight: .heavy))
             }
-            .foregroundColor(.black)
+            // Disabled text was pure black on a near-black fill — unreadable.
+            // Lit it up instead of just dimming the background.
+            .foregroundColor(model.canContinue ? .black : .white.opacity(0.45))
             .frame(maxWidth: .infinity)
             .padding(.vertical, 16)
-            .background(model.canContinue ? Color.yellow : Color.white.opacity(0.18))
+            .background(model.canContinue ? Color.yellow : Color.white.opacity(0.14))
             .clipShape(Capsule())
         }
         .buttonStyle(.plain)
@@ -237,55 +281,79 @@ struct MusicSetupView: View {
 
 // MARK: - Full genre catalog sheet
 
+/// Multi-select (up to `MusicFlowModel.maxGenres`) — tapping a row toggles it
+/// and the sheet stays open so a second or third pick doesn't need reopening.
 struct GenrePickerSheet: View {
-    @Binding var selected: String?
+    @Bindable var model: MusicFlowModel
     @Environment(\.dismiss) private var dismiss
 
     @State private var query = ""
     @State private var customGenre = ""
 
     private var results: [MusicGenre] { MusicGenreCatalog.search(query) }
+    private var atCap: Bool { model.selectedGenres.count >= MusicFlowModel.maxGenres }
 
     var body: some View {
         NavigationStack {
             List {
+                // `.searchable` wasn't rendering as a visible bar in this
+                // inline-title sheet, so the search field is manual here —
+                // first thing in the list, where "Your own genre" used to be.
+                Section {
+                    HStack(spacing: 10) {
+                        Image(systemName: "magnifyingglass")
+                            .foregroundColor(.secondary)
+                        TextField(L("Search genres"), text: $query)
+                            .autocorrectionDisabled()
+                        if !query.isEmpty {
+                            Button {
+                                query = ""
+                            } label: {
+                                Image(systemName: "xmark.circle.fill")
+                                    .foregroundColor(.secondary)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                }
+
                 Section {
                     HStack {
                         TextField(L("Your own genre…"), text: $customGenre)
                             .autocorrectionDisabled()
                         Button(L("Use")) {
                             let g = customGenre.trimmingCharacters(in: .whitespacesAndNewlines)
-                            guard !g.isEmpty else { return }
-                            selected = g
-                            dismiss()
+                            guard !g.isEmpty, !atCap else { return }
+                            model.toggleGenre(g)
+                            customGenre = ""
                         }
                         .font(.system(size: 14, weight: .bold, design: .rounded))
-                        .disabled(customGenre.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                        .disabled(customGenre.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || atCap)
                     }
                 }
 
                 ForEach(groupedResults, id: \.category) { group in
                     Section(group.category) {
                         ForEach(group.genres) { genre in
+                            let isSelected = model.selectedGenres.contains(genre.name)
                             Button {
-                                selected = genre.name
-                                dismiss()
+                                model.toggleGenre(genre.name)
                             } label: {
                                 HStack {
                                     Text(genre.name)
                                         .foregroundColor(.primary)
                                     Spacer()
-                                    if selected == genre.name {
+                                    if isSelected {
                                         Image(systemName: "checkmark")
                                             .foregroundColor(.yellow)
                                     }
                                 }
                             }
+                            .disabled(!isSelected && atCap)
                         }
                     }
                 }
             }
-            .searchable(text: $query, prompt: L("Search genres"))
             .navigationTitle(L("All genres"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

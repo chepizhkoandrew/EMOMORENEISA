@@ -356,6 +356,28 @@ final class ProxyClient {
         let durationSec: Int
         let audioData: Data
         let mime: String
+        /// Sung lyric lines with start/end seconds (whisper-aligned server-side,
+        /// heuristic when alignment failed). Empty for songs from older servers.
+        let lines: [MusicLyricLine]
+        /// Karaoke slideshow plan: which picture to show when. Empty when the
+        /// storyboard step failed — karaoke then runs lyrics-only.
+        let scenes: [MusicScene]
+    }
+
+    struct MusicLyricLine: Codable {
+        let text: String
+        let startSec: Double
+        let endSec: Double
+    }
+
+    struct MusicScene: Codable {
+        let startSec: Double
+        let endSec: Double
+        /// The memory-queue word this scene illustrates ("" when it's a new
+        /// scene invented for the lyrics) — used to reuse the card's picture.
+        let word: String
+        let spanish: String
+        let english: String
     }
 
     enum MusicJobState {
@@ -400,13 +422,33 @@ final class ProxyClient {
             guard let song = json["song"] as? [String: Any],
                   let b64 = song["audioBase64"] as? String,
                   let data = Data(base64Encoded: b64) else { throw ProxyError.decoding }
+            let lines: [MusicLyricLine] = ((song["lines"] as? [[String: Any]]) ?? []).compactMap { obj in
+                guard let text = obj["text"] as? String,
+                      let start = (obj["startSec"] as? NSNumber)?.doubleValue,
+                      let end = (obj["endSec"] as? NSNumber)?.doubleValue else { return nil }
+                return MusicLyricLine(text: text, startSec: start, endSec: end)
+            }
+            let scenes: [MusicScene] = ((song["scenes"] as? [[String: Any]]) ?? []).compactMap { obj in
+                guard let start = (obj["startSec"] as? NSNumber)?.doubleValue,
+                      let end = (obj["endSec"] as? NSNumber)?.doubleValue,
+                      let spanish = obj["spanish"] as? String else { return nil }
+                return MusicScene(
+                    startSec: start,
+                    endSec: end,
+                    word: (obj["word"] as? String) ?? "",
+                    spanish: spanish,
+                    english: (obj["english"] as? String) ?? ""
+                )
+            }
             return .done(MusicSong(
                 title: (song["title"] as? String) ?? "",
                 lyrics: (song["lyrics"] as? String) ?? "",
                 genre: (song["genre"] as? String) ?? "",
                 durationSec: (song["durationSec"] as? NSNumber)?.intValue ?? 0,
                 audioData: data,
-                mime: (song["mime"] as? String) ?? "audio/mpeg"
+                mime: (song["mime"] as? String) ?? "audio/mpeg",
+                lines: lines,
+                scenes: scenes
             ))
         default:
             throw ProxyError.decoding
@@ -423,6 +465,204 @@ final class ProxyClient {
             balanceTreats: (json["balanceTreats"] as? NSNumber)?.intValue ?? 0,
             hasPaid: json["hasPaid"] as? Bool ?? false,
             trialGranted: json["trialGranted"] as? Bool ?? false
+        )
+    }
+
+    // MARK: - Social (friends, invites, song sharing)
+
+    struct Friend: Identifiable {
+        let friendshipId: String
+        let userId: String
+        let displayName: String
+        var id: String { friendshipId }
+    }
+
+    struct FriendLists {
+        let friends: [Friend]
+        /// Incoming invites awaiting my accept/decline.
+        let pending: [Friend]
+        /// Invites I sent that the other person hasn't answered.
+        let outgoing: [Friend]
+    }
+
+    private func friendList(_ json: [String: Any], _ key: String) -> [Friend] {
+        ((json[key] as? [[String: Any]]) ?? []).compactMap { obj in
+            guard let fid = obj["friendshipId"] as? String,
+                  let uid = obj["userId"] as? String else { return nil }
+            return Friend(
+                friendshipId: fid,
+                userId: uid,
+                displayName: (obj["displayName"] as? String) ?? "Learner"
+            )
+        }
+    }
+
+    func friends() async throws -> FriendLists {
+        let json = try await getJSON(path: "/v1/friends")
+        return FriendLists(
+            friends: friendList(json, "friends"),
+            pending: friendList(json, "pending"),
+            outgoing: friendList(json, "outgoing")
+        )
+    }
+
+    enum InviteResult {
+        /// The email already has an account: an in-app invite was sent.
+        case invited
+        case alreadyFriends
+        /// No account with that email — share this link through your own channels.
+        case link(url: String)
+    }
+
+    func inviteFriend(email: String, mode: String) async throws -> InviteResult {
+        let json = try await postJSON(path: "/v1/friends/invite", body: ["email": email, "mode": mode])
+        switch json["status"] as? String {
+        case "invited": return .invited
+        case "already_friends": return .alreadyFriends
+        case "link":
+            guard let url = json["url"] as? String else { throw ProxyError.decoding }
+            return .link(url: url)
+        default:
+            throw ProxyError.decoding
+        }
+    }
+
+    /// A bare personal invite link with no target email.
+    func createInviteLink(mode: String) async throws -> String {
+        let json = try await postJSON(path: "/v1/invites", body: ["mode": mode])
+        guard let url = json["url"] as? String else { throw ProxyError.decoding }
+        return url
+    }
+
+    func claimInvite(token: String) async throws -> (result: String, inviterName: String?) {
+        let json = try await postJSON(path: "/v1/invites/claim", body: ["token": token])
+        return ((json["result"] as? String) ?? "dead_link", json["inviterName"] as? String)
+    }
+
+    func respondToFriendInvite(friendshipId: String, accept: Bool) async throws {
+        _ = try await postJSON(path: "/v1/friends/\(friendshipId)/\(accept ? "accept" : "decline")", body: [:])
+    }
+
+    func unfriend(friendshipId: String) async throws {
+        _ = try await deleteJSON(path: "/v1/friends/\(friendshipId)")
+    }
+
+    func blockUser(userId: String) async throws {
+        _ = try await postJSON(path: "/v1/blocks", body: ["userId": userId])
+    }
+
+    struct SharedSongItem: Identifiable {
+        let shareId: String
+        let sharerId: String
+        let sharedByName: String
+        let claimed: Bool
+        let title: String
+        let genre: String
+        let durationSec: Int
+        var id: String { shareId }
+    }
+
+    /// Share a saved song with friends and/or raw emails. Free (no treats).
+    /// Returns invite URLs for emails that don't have an account yet.
+    func shareSong(
+        sourceSongId: String,
+        title: String,
+        genre: String,
+        durationSec: Int,
+        lyrics: String,
+        lines: [MusicLyricLine],
+        scenes: [MusicScene],
+        audioData: Data,
+        friendUserIds: [String],
+        emails: [String]
+    ) async throws -> [(email: String, url: String)] {
+        let body: [String: Any] = [
+            "sourceSongId": sourceSongId,
+            "title": title,
+            "genre": genre,
+            "durationSec": durationSec,
+            "lyrics": lyrics,
+            "lines": lines.map { ["text": $0.text, "startSec": $0.startSec, "endSec": $0.endSec] },
+            "scenes": scenes.map {
+                ["startSec": $0.startSec, "endSec": $0.endSec, "word": $0.word,
+                 "spanish": $0.spanish, "english": $0.english]
+            },
+            "audioBase64": audioData.base64EncodedString(),
+            "recipients": ["friendUserIds": friendUserIds, "emails": emails]
+        ]
+        let json = try await postJSON(path: "/v1/songs/share", body: body, timeout: 120)
+        return ((json["inviteLinks"] as? [[String: Any]]) ?? []).compactMap { obj in
+            guard let email = obj["email"] as? String, let url = obj["url"] as? String else { return nil }
+            return (email, url)
+        }
+    }
+
+    func sharedSongs() async throws -> [SharedSongItem] {
+        let json = try await getJSON(path: "/v1/songs/shared")
+        return ((json["shares"] as? [[String: Any]]) ?? []).compactMap { obj in
+            guard let shareId = obj["shareId"] as? String,
+                  let song = obj["song"] as? [String: Any] else { return nil }
+            return SharedSongItem(
+                shareId: shareId,
+                sharerId: (obj["sharerId"] as? String) ?? "",
+                sharedByName: (obj["sharedByName"] as? String) ?? "A friend",
+                claimed: (obj["claimed"] as? Bool) ?? false,
+                title: (song["title"] as? String) ?? "",
+                genre: (song["genre"] as? String) ?? "",
+                durationSec: (song["durationSec"] as? NSNumber)?.intValue ?? 0
+            )
+        }
+    }
+
+    struct DownloadedSharedSong {
+        let song: MusicSong
+        let sharedByName: String
+        let sharerId: String
+    }
+
+    /// Materializes a shared song: marks it claimed server-side, then downloads
+    /// the mp3 from the returned signed URL.
+    func downloadSharedSong(shareId: String) async throws -> DownloadedSharedSong {
+        let json = try await postJSON(path: "/v1/songs/shared/\(shareId)/download", body: [:], timeout: 60)
+        guard let signedUrl = json["signedUrl"] as? String,
+              let url = URL(string: signedUrl),
+              let song = json["song"] as? [String: Any] else { throw ProxyError.decoding }
+
+        let (audioData, response) = try await URLSession.shared.data(from: url)
+        guard (response as? HTTPURLResponse)?.statusCode == 200, !audioData.isEmpty else {
+            throw ProxyError.decoding
+        }
+
+        let lines: [MusicLyricLine] = ((song["lines"] as? [[String: Any]]) ?? []).compactMap { obj in
+            guard let text = obj["text"] as? String,
+                  let start = (obj["startSec"] as? NSNumber)?.doubleValue,
+                  let end = (obj["endSec"] as? NSNumber)?.doubleValue else { return nil }
+            return MusicLyricLine(text: text, startSec: start, endSec: end)
+        }
+        let scenes: [MusicScene] = ((song["scenes"] as? [[String: Any]]) ?? []).compactMap { obj in
+            guard let start = (obj["startSec"] as? NSNumber)?.doubleValue,
+                  let end = (obj["endSec"] as? NSNumber)?.doubleValue,
+                  let spanish = obj["spanish"] as? String else { return nil }
+            return MusicScene(
+                startSec: start, endSec: end,
+                word: (obj["word"] as? String) ?? "",
+                spanish: spanish,
+                english: (obj["english"] as? String) ?? ""
+            )
+        }
+        return DownloadedSharedSong(
+            song: MusicSong(
+                title: (song["title"] as? String) ?? "",
+                lyrics: (song["lyrics"] as? String) ?? "",
+                genre: (song["genre"] as? String) ?? "",
+                durationSec: (song["durationSec"] as? NSNumber)?.intValue ?? 0,
+                audioData: audioData,
+                mime: "audio/mpeg",
+                lines: lines,
+                scenes: scenes
+            ),
+            sharedByName: (json["sharedByName"] as? String) ?? "A friend",
+            sharerId: (json["sharerId"] as? String) ?? ""
         )
     }
 
@@ -445,6 +685,10 @@ final class ProxyClient {
     private func postJSON(path: String, body: [String: Any], timeout: TimeInterval = 30) async throws -> [String: Any] {
         let data = try JSONSerialization.data(withJSONObject: body)
         return try await send(path: path, method: "POST", body: data, timeout: timeout)
+    }
+
+    private func deleteJSON(path: String, timeout: TimeInterval = 20) async throws -> [String: Any] {
+        try await send(path: path, method: "DELETE", body: nil, timeout: timeout)
     }
 
     private func send(path: String, method: String, body: Data?, timeout: TimeInterval) async throws -> [String: Any] {

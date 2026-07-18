@@ -11,6 +11,15 @@ import { supabase } from "./supabase.js";
 import { record } from "./meter.js";
 import { verifyStoreKitJWS } from "./appstore.js";
 import { startMusicJob, getMusicJob, musicConfigured, musicCostForDuration } from "./music.js";
+import {
+  claimPendingSocial, inviteByEmail, createInviteLink, claimInvite,
+  publicInviteInfo, listFriends, respondToInvite, unfriend, blockUser, unblockUser
+} from "./social.js";
+import { shareSong, listSharedSongs, downloadSharedSong } from "./shares.js";
+import {
+  requireAdmin, createAnnouncement, announceAnnouncement,
+  retireAnnouncement, bulkAckAnnouncement, fanOutPackPurchase
+} from "./notifications.js";
 
 const app = express();
 app.use(express.json({ limit: "12mb" }));
@@ -49,11 +58,41 @@ function walletPayload(userId, wallet) {
 }
 
 // Call right after sign-in: ensures wallet, grants the one-time trial, returns state.
+// Also binds any social references addressed to this email before the account
+// existed (song shares, targeted invite links) — idempotent, safe every sign-in.
 app.post("/v1/bootstrap", requireUser, async (req, res) => {
   await grantTrialIfNeeded(req.user.id);
+  await claimPendingSocial(req.user.id, req.user.email);
   const wallet = await getWallet(req.user.id);
   res.json(walletPayload(req.user.id, wallet));
 });
+
+// ---------------------------------------------------------------------------
+// Social: friend invites, friendships, blocks, song sharing, notifications.
+// All graph mutations run here (service_role); the client only reads via RLS.
+// ---------------------------------------------------------------------------
+
+app.post("/v1/friends/invite", requireUser, inviteByEmail);
+app.post("/v1/invites", requireUser, createInviteLink);
+app.post("/v1/invites/claim", requireUser, claimInvite);
+// Unauthenticated: feeds the professormadrid.com invite landing page.
+app.get("/v1/invites/:token/public", publicInviteInfo);
+
+app.get("/v1/friends", requireUser, listFriends);
+app.post("/v1/friends/:id/accept", requireUser, respondToInvite(true));
+app.post("/v1/friends/:id/decline", requireUser, respondToInvite(false));
+app.delete("/v1/friends/:id", requireUser, unfriend);
+app.post("/v1/blocks", requireUser, blockUser);
+app.delete("/v1/blocks/:userId", requireUser, unblockUser);
+
+app.post("/v1/songs/share", requireUser, shareSong);
+app.get("/v1/songs/shared", requireUser, listSharedSongs);
+app.post("/v1/songs/shared/:shareId/download", requireUser, downloadSharedSong);
+
+app.post("/v1/admin/announcements", requireAdmin, createAnnouncement);
+app.post("/v1/admin/announcements/:id/announce", requireAdmin, announceAnnouncement);
+app.post("/v1/admin/announcements/:id/retire", requireAdmin, retireAnnouncement);
+app.post("/v1/admin/announcements/:id/acks", requireAdmin, bulkAckAnnouncement);
 
 app.get("/v1/wallet", requireUser, async (req, res) => {
   const wallet = await getWallet(req.user.id);
@@ -622,6 +661,9 @@ app.post("/v1/topup", requireUser, async (req, res) => {
     return res.status(502).json({ error: "credit_failed", detail: result.error });
   }
   console.log(`[TOPUP] user=${req.user.id} credited productId=${payload.productId} treats=${pack.totalTreats} duplicate=${Boolean(result.duplicate)}`);
+
+  // Friends' activity feed ("X bought a pack") — detached, never blocks the purchase.
+  if (!result.duplicate) fanOutPackPurchase(req.user.id, payload.productId);
 
   const wallet = await getWallet(req.user.id);
   res.json({ ...walletPayload(req.user.id, wallet), duplicate: Boolean(result.duplicate), creditedTreats: result.duplicate ? 0 : pack.totalTreats });

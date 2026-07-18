@@ -1,5 +1,4 @@
 import Foundation
-import AVFoundation
 import Observation
 
 /// State for the two-step song creation flow: genre + length on step one,
@@ -9,13 +8,29 @@ import Observation
 final class MusicFlowModel {
 
     // MARK: Step 1 — genre & length
-    var selectedGenre: String? = nil
+    /// Up to 3 genres, blended into one style tag list for the model. Starts
+    /// pre-selected with a sensible default so "Pick Lyrics" is enabled the
+    /// instant the screen appears.
+    var selectedGenres: [String] = ["Reggaetón"]
+    static let maxGenres = 3
     var length: SongLength = .seconds30
 
     // MARK: Step 2 — lyrics
     /// Free-form field: explicit lyrics, a pasted text, or a description of
     /// what the song should be about. The server treats it as literal lyrics
-    /// when `useAsExactLyrics` is on, otherwise as a brief for the AI writer.
+    /// when `useAsExactLyrics` is on, otherwise as a brief for the AI writer
+    /// to expand into a full structured (multi-line, titled) song.
+    ///
+    /// Was forced permanently `true` earlier — turned out to silently starve
+    /// the whole karaoke system: with the text sung verbatim and no AI
+    /// expansion, a short one-sentence input became ONE unbroken lyric line,
+    /// which caps the picture-scene planner at exactly 1 scene (it operates
+    /// per line — no second line, no second scene, structurally), and the
+    /// title never got generated either (only the AI lyrics writer sets a
+    /// title; skipping it left the title showing the genre list instead).
+    /// Defaults OFF so the common case — a short typed brief — gets expanded
+    /// into a proper song; ON is for someone pasting/dictating complete,
+    /// already-multi-line lyrics they want sung exactly as written.
     var lyricsText: String = ""
     var useAsExactLyrics: Bool = false
     /// Spanish words/phrases picked from the memorize queue.
@@ -35,13 +50,28 @@ final class MusicFlowModel {
     }
     var phase: Phase = .editing
     var song: ProxyClient.MusicSong? = nil
-    var isPlaying = false
+    /// Set by the view once the finished song is saved into "My Songs", so a
+    /// view re-render can't save the same song twice.
+    var songPersisted = false
 
-    private var player: AVAudioPlayer? = nil
+    /// Server's own render-time estimate for the current job (returned at job
+    /// creation — mirrors its `duration >= 120 ? 180 : 120` eta) plus the
+    /// alignment pass, and when the working screen started, so the progress
+    /// bar can ramp toward this instead of guessing client-side.
+    var etaSeconds: Int = 120
+    var workingStartedAt: Date? = nil
+
     private var pollTask: Task<Void, Never>? = nil
-    private var playerWatchdog: Timer? = nil
 
-    var canContinue: Bool { selectedGenre != nil }
+    var canContinue: Bool { !selectedGenres.isEmpty }
+
+    func toggleGenre(_ genre: String) {
+        if let idx = selectedGenres.firstIndex(of: genre) {
+            selectedGenres.remove(at: idx)
+        } else if selectedGenres.count < Self.maxGenres {
+            selectedGenres.append(genre)
+        }
+    }
 
     var canGenerate: Bool {
         guard case .editing = phase, canContinue else {
@@ -88,10 +118,11 @@ final class MusicFlowModel {
     // MARK: - Generation
 
     func generate() {
-        guard let genre = selectedGenre, canGenerate else { return }
-        stopPlayback()
+        guard canContinue, canGenerate else { return }
+        let genre = selectedGenres.joined(separator: ", ")
         phase = .submitting
         song = nil
+        songPersisted = false
 
         let text = lyricsText.trimmingCharacters(in: .whitespacesAndNewlines)
         let lyrics = useAsExactLyrics ? text : ""
@@ -101,7 +132,7 @@ final class MusicFlowModel {
         pollTask = Task { [weak self] in
             guard let self else { return }
             do {
-                let (jobId, _) = try await ProxyClient.shared.musicGenerate(
+                let (jobId, eta) = try await ProxyClient.shared.musicGenerate(
                     genre: genre,
                     durationSec: length.seconds,
                     lyrics: lyrics,
@@ -109,6 +140,10 @@ final class MusicFlowModel {
                     words: selectedWords,
                     language: LocalizationManager.shared.language.rawValue
                 )
+                // +20s pads the server's render-only eta for the whisper
+                // alignment pass that runs after the audio finishes.
+                self.etaSeconds = eta + 20
+                self.workingStartedAt = Date()
                 self.phase = .working(stage: "queued")
                 await WalletManager.shared.refresh()
                 try await self.poll(jobId: jobId)
@@ -145,54 +180,14 @@ final class MusicFlowModel {
         phase = .failed(message: "timeout")
     }
 
-    // MARK: - Playback
-
-    func togglePlayback() {
-        guard let song else { return }
-        if isPlaying {
-            player?.pause()
-            isPlaying = false
-            return
-        }
-        if player == nil {
-            try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .default)
-            try? AVAudioSession.sharedInstance().setActive(true)
-            player = try? AVAudioPlayer(data: song.audioData)
-            player?.prepareToPlay()
-        }
-        player?.play()
-        isPlaying = true
-        // AVAudioPlayer has no async completion; a light watchdog flips the
-        // button back when the song ends.
-        playerWatchdog?.invalidate()
-        playerWatchdog = Timer.scheduledTimer(withTimeInterval: 0.25, repeats: true) { [weak self] timer in
-            Task { @MainActor [weak self] in
-                guard let self else { timer.invalidate(); return }
-                if let p = self.player, !p.isPlaying, self.isPlaying {
-                    self.isPlaying = false
-                    timer.invalidate()
-                }
-            }
-        }
-    }
-
     func startOver() {
-        stopPlayback()
         song = nil
+        songPersisted = false
         phase = .editing
-    }
-
-    func stopPlayback() {
-        playerWatchdog?.invalidate()
-        playerWatchdog = nil
-        player?.stop()
-        player = nil
-        isPlaying = false
     }
 
     func tearDown() {
         pollTask?.cancel()
         recorder.cancel()
-        stopPlayback()
     }
 }

@@ -273,7 +273,8 @@ struct BackButton: View {
 
 enum HomeLayout {
     static let cardHeight: CGFloat = 96
-    static let illustrationHeight: CGFloat = 78
+    // 78 * 1.2 — menu card icons bumped 20% larger per explicit request.
+    static let illustrationHeight: CGFloat = 94
     static let cardSpacing: CGFloat = 14
     static let hPadding: CGFloat = 20
 
@@ -289,6 +290,12 @@ struct HomeModeCard<Illustration: View>: View {
     let subtitle: String
     var badge: Int = 0
     var pressed: Bool = false
+    /// Crossfades the title/subtitle/illustration when this changes, WITHOUT
+    /// touching the card's own background/frame. Used when the same on-screen
+    /// slot swaps to a different destination's content (e.g. switching home
+    /// menu levels) — only the words and icon fade; the frame itself never
+    /// slides, appears, or disappears.
+    var contentID: AnyHashable? = nil
     @ViewBuilder var illustration: () -> Illustration
 
     var body: some View {
@@ -328,11 +335,16 @@ struct HomeModeCard<Illustration: View>: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
+                .id(contentID)
+                .transition(.opacity)
 
                 illustration()
+                    .id(contentID)
+                    .transition(.opacity)
             }
             .padding(.leading, 20)
             .padding(.trailing, 16)
+            .animation(.easeInOut(duration: 0.22), value: contentID)
         }
         .frame(height: HomeLayout.cardHeight)
         .scaleEffect(pressed ? 0.97 : 1.0)

@@ -13,14 +13,13 @@ KEY_PATH  = File.expand_path("../appstore/keys/AuthKey_V86ZAHA4K5.p8", __dir__)
 # both the `metadata` lane (deliver) and the `fix_review_notes` lane (direct API
 # patch), so the two never drift out of sync again the way they did before.
 REVIEW_NOTES_V1_2 =
-  "ACCOUNT: Sign in with Apple (or Google) is required to reach the app - use the built-in Sign in with Apple button with any Apple ID. No demo account needed; creating an account is free. The name Apple's Authentication Services supplies is used automatically - onboarding no longer asks for it again.\n\n" \
-  "AI DISCLOSURE: Immediately after sign-in, every user (new and returning) sees a dedicated screen naming exactly which third-party AI service each data type goes to before anything is sent: voice recordings -> OpenAI (transcription only); chat messages and Street View photos -> OpenAI; spoken replies -> mainly Google TTS, OpenAI only as an automatic backup; onboarding-quiz answers -> Google Gemini. The user must tap 'I Understand & Continue' before any of this happens - separate from, and in addition to, the Privacy Policy.\n\n" \
-  "BUSINESS MODEL: Every new account gets a one-time free grant of \"treats\" (in-app credit) so every AI feature can be tested without paying - there is no recurring free allowance. Treats are required for chat (~5), voice (~2), Street View photo chat (~9) and labelling (~6), adding to Memorise (~3), and Verbs & Times checks (~2); signing in and reviewing past content are free. The server checks the balance BEFORE calling any AI provider and blocks the action outright if insufficient (no charge for a request that didn't happen). Treats are now sold EXCLUSIVELY via three CONSUMABLE StoreKit IAPs - no external purchase link, and no other mechanism of any kind. Full costs: Profile -> treats balance -> Get Treats -> Full pricing details, and Terms & Conditions section 4 at https://professormadrid.com/terms.\n\n" \
-  "This submission fixes the issue raised in the previous review (Guideline 2.1(a): \"app froze on the tutorial screen after completing the recording\"). We reproduced the mechanism and fixed two real bugs in the voice onboarding tutorial:\n\n" \
-  "1) After the final recording, the app builds the learner profile via a server request. If that request failed or timed out, the app landed in an error state that rendered NO message and NO controls - visually a frozen screen. That dead end no longer exists: the request now retries automatically, and if it still fails the app builds the profile locally from the captured answers and always continues to the main app. A visible \"Try again\" card was also added for any remaining error state, so the tutorial can never show a screen without a way forward.\n\n" \
-  "2) Audio playback of the next prompt, started immediately after a recording ends, could fail to start (audio-session handoff) and leave the app waiting forever for a playback-finished callback that never fires - which presents exactly as a freeze right after completing a recording. Playback start is now checked, and a watchdog guarantees the flow always advances even if the callback never arrives.\n\n" \
-  "Also hardened server-side: the profile-synthesis endpoint now retries once on a malformed model response instead of returning an error, and the client allows the synthesis request more time to complete. With these changes every failure path in the tutorial either retries, falls back locally, or shows an explicit retry button - there is no state left that can render a stuck screen.\n\n" \
-  "We take reports like this seriously and treat each one as a signal to re-verify, not just patch and hope: after making the fix, we manually reproduced the original steps (voice onboarding tutorial, complete a recording) on a real device via TestFlight build 96 and confirmed the flow now completes without freezing, in addition to the code-level fix described above. Thank you for the detailed reproduction steps (device, OS version, exact step) in the previous review - they made this fast to find and fix precisely."
+  "ACCOUNT: Sign in with Apple (or Google) is required - use the built-in Sign in with Apple button with any Apple ID. No demo account needed; creating an account is free. Onboarding no longer re-asks for the name Apple's Authentication Services already supplies.\n\n" \
+  "AI DISCLOSURE: Immediately after sign-in, every user sees a dedicated screen naming exactly which third-party AI service each data type goes to before anything is sent: voice recordings -> OpenAI (transcription only); chat messages and Street View photos -> OpenAI; spoken replies -> mainly Google TTS, OpenAI as an automatic backup; onboarding-quiz answers -> Google Gemini; memory-queue words -> Google Gemini (illustrations); and, new in this version, song creation -> Google Gemini (lyrics + picture planning) and our own self-hosted music-generation service (audio synthesis). The user must tap 'I Understand & Continue' before anything is sent - separate from the Privacy Policy. This screen is versioned: a user who accepted an earlier version (before the two new rows above existed) is shown it again and must accept the current version before continuing - acceptance of an older version never silently carries forward to newly-added AI usage.\n\n" \
+  "BUSINESS MODEL: New accounts get a one-time free grant of \"treats\" (in-app credit) to test every AI feature - there is no recurring free allowance. Treats are required per AI action: chat (~5), voice (~2), Street View photo chat (~9) and labelling (~6), adding to Memorise (~3), Verbs & Times checks (~2), and song creation (~15-45 depending on length); signing in and reviewing past content are free. The server checks the balance BEFORE calling any AI provider and blocks the action if insufficient (no charge for a request that didn't happen). Treats are sold EXCLUSIVELY via three CONSUMABLE StoreKit IAPs - no external purchase link, no other mechanism. Full pricing: Profile -> treats balance -> Get Treats, and Terms & Conditions section 4 at https://professormadrid.com/terms.\n\n" \
+  "WHAT'S NEW IN THIS SUBMISSION (since the last approved version, 1.1): three changes.\n\n" \
+  "1) A new \"Remember with Music\" feature (Memory tab): the learner picks a genre and length, then either selects words from their memory queue, types a brief, or dictates one via the same speech-to-text used elsewhere in the app. The app writes a short original Spanish song built around those words, renders the audio, and plays it back karaoke-style - lyrics highlighted in sync with the music, alongside a slideshow of AI-generated pictures illustrating what's being sung. Gated by the same treat-balance check as every other AI feature (debited up front, automatically refunded if generation fails); its two AI calls (Gemini for lyrics/pictures, our own hosted service for the audio) are now named in the AI Disclosure screen above.\n\n" \
+  "2) The home screen's menu was reorganized (clearer labels, restructured navigation between the Speaking/Memory/Grammar sections) - a layout and labeling change only, no new data collection or account behavior.\n\n" \
+  "3) While adding the AI Disclosure rows for this release, we proactively audited how re-consent is handled for EXISTING users and found a gap worth closing before submitting rather than waiting for it to be raised: the screen's version stamp was logged on every acceptance, but the app never actually checked it, so a user who accepted an earlier version (before today's two new rows) would never be shown the current one, despite never having consented to the AI usage those rows describe. This is now fixed - acceptance is checked against the current version, so anyone on an older version sees this disclosure again and must accept the current version before continuing. No account or business-model changes; this purely tightens an existing compliance mechanism we found and corrected ourselves before it reached review."
 
 api_key = nil
 
@@ -1540,6 +1539,210 @@ platform :ios do
     case code
     when 200, 201
       UI.success("🎉  Submitted v#{v_str} (build #{build_num}) + #{our_iaps.size} IAPs for App Store review!")
+      UI.success("    Submission ID: #{submission_id}")
+    else
+      errs = (final_resp["errors"] || []).map { |e| e["detail"] || e["title"] }.join("; ")
+      UI.error("❌  Submit failed: HTTP #{code}: #{errs}")
+      UI.message("    #{JSON.generate(final_resp)[0..800]}")
+    end
+  end
+
+  desc "Submit v1.2 for review — pass build_number: (defaults to latest VALID build tagged 1.2). Run `metadata` first."
+  lane :submit_v12 do |options|
+    require "net/http"
+    require "uri"
+    require "json"
+    require "openssl"
+    require "jwt"
+
+    target_version = "1.2"
+
+    private_key = OpenSSL::PKey::EC.new(File.read(KEY_PATH))
+    now   = Time.now.to_i
+    token = JWT.encode(
+      { iss: ISSUER_ID, iat: now, exp: now + 1200, aud: "appstoreconnect-v1" },
+      private_key, "ES256", { kid: KEY_ID }
+    )
+    base    = "https://api.appstoreconnect.apple.com/v1"
+    headers = { "Authorization" => "Bearer #{token}", "Content-Type" => "application/json" }
+
+    asc_get = lambda do |path|
+      uri  = URI("#{base}#{path}")
+      req  = Net::HTTP::Get.new(uri)
+      headers.each { |k, v| req[k] = v }
+      resp = Net::HTTP.start(uri.hostname, uri.port, use_ssl: true) { |http| http.request(req) }
+      JSON.parse(resp.body)
+    end
+    asc_post = lambda do |path, body|
+      uri  = URI("#{base}#{path}")
+      req  = Net::HTTP::Post.new(uri)
+      headers.each { |k, v| req[k] = v }
+      req.body = JSON.generate(body)
+      resp = Net::HTTP.start(uri.hostname, uri.port, use_ssl: true) { |http| http.request(req) }
+      parsed = begin; JSON.parse(resp.body); rescue; {}; end
+      [resp.code.to_i, parsed]
+    end
+    asc_patch = lambda do |path, body|
+      uri  = URI("#{base}#{path}")
+      req  = Net::HTTP::Patch.new(uri)
+      headers.each { |k, v| req[k] = v }
+      req.body = JSON.generate(body)
+      resp = Net::HTTP.start(uri.hostname, uri.port, use_ssl: true) { |http| http.request(req) }
+      parsed = begin; JSON.parse(resp.body); rescue; {}; end
+      [resp.code.to_i, parsed]
+    end
+
+    # 1. Find the build: explicit build_number: option, or latest VALID
+    # non-expired build tagged pre-release version "1.2".
+    UI.message("Finding build...")
+    builds_resp = asc_get.call("/builds?filter%5Bapp%5D=#{APPLE_ID}&limit=20&sort=-version")
+    all_builds = builds_resp["data"] || []
+    build =
+      if options[:build_number]
+        all_builds.find { |b| b.dig("attributes", "version") == options[:build_number].to_s }
+      else
+        all_builds.find { |b|
+          next false unless b.dig("attributes", "processingState") == "VALID" && !b.dig("attributes", "expired")
+          prv = asc_get.call("/builds/#{b['id']}/preReleaseVersion") rescue {}
+          prv.dig("data", "attributes", "version") == target_version
+        }
+      end
+    unless build
+      UI.error("No matching build found (target version #{target_version}, requested #{options[:build_number] || 'latest'}). Run: bundle exec fastlane beta")
+      next
+    end
+    build_id  = build["id"]
+    build_num = build.dig("attributes", "version")
+    UI.success("Using build #{build_num} (id: #{build_id}, state: #{build.dig('attributes', 'processingState')})")
+
+    # 2. IAPs — all 3 treats packs were approved in the v1.1 cycle and don't
+    # need re-review for an unrelated version bump. Just confirm none has
+    # regressed to a not-ready state (would be unusual, but cheap to check).
+    known_ids = %w[treats_starter_599 treats_plus_1199 treats_pro_2499]
+    iap_resp  = asc_get.call("/apps/#{APPLE_ID}/inAppPurchasesV2?limit=50")
+    our_iaps  = (iap_resp["data"] || []).select { |i| known_ids.include?(i.dig("attributes", "productId")) }
+    ready_states = %w[READY_TO_SUBMIT WAITING_FOR_REVIEW IN_REVIEW APPROVED READY_FOR_SALE]
+    not_ready = our_iaps.reject { |i| ready_states.include?(i.dig("attributes", "state")) }
+    if not_ready.any?
+      UI.error("IAPs not ready: #{not_ready.map { |i| "#{i.dig('attributes','productId')}=#{i.dig('attributes','state')}" }.join(', ')}")
+      next
+    end
+    need_submit = our_iaps.select { |i| i.dig("attributes", "state") == "READY_TO_SUBMIT" }
+    UI.success("IAPs: #{our_iaps.size} total, #{need_submit.size} need submitting this round.")
+
+    # 3. Cancel any other open review submissions first (required before
+    # adding a new item). The known stale empty submission 375ade06 404s or
+    # 409s on cancel — harmless, already-observed, not a blocker.
+    UI.message("Cleaning up open review submissions...")
+    subs_resp0 = asc_get.call("/apps/#{APPLE_ID}/reviewSubmissions?limit=10")
+    (subs_resp0["data"] || []).each do |sub|
+      sub_state = sub.dig("attributes", "state") || ""
+      next unless %w[UNRESOLVED_ISSUES READY_FOR_REVIEW].include?(sub_state)
+      sub_id = sub["id"]
+      UI.message("  Cancelling submission #{sub_id} (#{sub_state})...")
+      code, _ = asc_patch.call("/reviewSubmissions/#{sub_id}", {
+        data: { type: "reviewSubmissions", id: sub_id, attributes: { canceled: true } }
+      })
+      UI.message("  → HTTP #{code}")
+      sleep 3
+    end
+
+    # 4. Find v1.2's appStoreVersion — created fresh via create_v12, so this
+    # should just be the one already in PREPARE_FOR_SUBMISSION, no "reuse an
+    # old version" workaround needed (that was v1.1-specific: see submit_v11).
+    all_v = asc_get.call("/apps/#{APPLE_ID}/appStoreVersions?filter%5Bplatform%5D=IOS&limit=10")
+    submittable_states = %w[PREPARE_FOR_SUBMISSION WAITING_FOR_REVIEW REJECTED DEVELOPER_REJECTED]
+    version = (all_v["data"] || []).find { |v|
+      v.dig("attributes", "versionString") == target_version &&
+      submittable_states.include?(v.dig("attributes", "appStoreState"))
+    }
+    unless version
+      UI.error("No v#{target_version} in a submittable state. Run create_v12 first, or check its current state.")
+      next
+    end
+    version_id = version["id"]
+    UI.success("Using v#{target_version} (state: #{version.dig('attributes', 'appStoreState')}, id: #{version_id})")
+
+    # 5. Link the build.
+    UI.message("Linking build #{build_num} to v#{target_version}...")
+    code, _ = asc_patch.call("/appStoreVersions/#{version_id}", {
+      data: {
+        type: "appStoreVersions", id: version_id,
+        relationships: { build: { data: { type: "builds", id: build_id } } }
+      }
+    })
+    case code
+    when 200, 204 then UI.success("  ✅  Build linked")
+    when 409      then UI.message("  ⚠️   Build already linked")
+    else               UI.error("  ❌  Link failed: HTTP #{code} — continuing, `metadata`/deliver may have already set it")
+    end
+
+    # 6. Create the review submission and add v1.2 to it.
+    UI.message("Creating review submission...")
+    code, sub_resp = asc_post.call("/reviewSubmissions", {
+      data: {
+        type: "reviewSubmissions",
+        attributes: { platform: "IOS" },
+        relationships: { app: { data: { type: "apps", id: APPLE_ID } } }
+      }
+    })
+    unless [200, 201].include?(code)
+      errs = (sub_resp["errors"] || []).map { |e| e["detail"] || e["title"] }.join("; ")
+      UI.error("Failed to create review submission: HTTP #{code}: #{errs}")
+      next
+    end
+    submission_id = sub_resp.dig("data", "id")
+    UI.success("Created submission #{submission_id}")
+    sleep 2
+
+    UI.message("Adding v#{target_version} to submission...")
+    code, item_resp = asc_post.call("/reviewSubmissionItems", {
+      data: {
+        type: "reviewSubmissionItems",
+        relationships: {
+          reviewSubmission: { data: { type: "reviewSubmissions", id: submission_id } },
+          appStoreVersion:  { data: { type: "appStoreVersions",  id: version_id } }
+        }
+      }
+    })
+    case code
+    when 200, 201 then UI.success("  ✅  v#{target_version} added (item: #{item_resp.dig('data','id')})")
+    when 409      then UI.message("  ⚠️   v#{target_version} already in submission")
+    else
+      errs = (item_resp["errors"] || []).map { |e| e["detail"] || e["title"] }.join("; ")
+      UI.error("  ❌  v#{target_version} HTTP #{code}: #{errs}")
+      next
+    end
+
+    # 7. Submit any IAP still at READY_TO_SUBMIT (none expected this round —
+    # all 3 are APPROVED already — but stay correct if that ever changes).
+    need_submit.each do |iap|
+      pid    = iap.dig("attributes", "productId")
+      iap_id = iap["id"]
+      code, item_resp = asc_post.call("/inAppPurchaseSubmissions", {
+        data: { type: "inAppPurchaseSubmissions", relationships: { inAppPurchaseV2: { data: { type: "inAppPurchases", id: iap_id } } } }
+      })
+      case code
+      when 200, 201 then UI.success("  ✅  #{pid} submitted")
+      else
+        errs = (item_resp["errors"] || []).map { |e| e["detail"] || e["title"] }.join("; ")
+        UI.message("  ⚠️   #{pid} HTTP #{code}: #{errs}")
+      end
+    end
+
+    # 8. Verify, then finalize.
+    items = asc_get.call("/reviewSubmissions/#{submission_id}/items")["data"] || []
+    if items.empty?
+      UI.error("❌  App version item missing from submission — aborting submit.")
+      next
+    end
+    UI.message("Submitting v#{target_version} (build #{build_num}) for review...")
+    code, final_resp = asc_patch.call("/reviewSubmissions/#{submission_id}", {
+      data: { type: "reviewSubmissions", id: submission_id, attributes: { submitted: true } }
+    })
+    case code
+    when 200, 201
+      UI.success("🎉  Submitted v#{target_version} (build #{build_num}) for App Store review!")
       UI.success("    Submission ID: #{submission_id}")
     else
       errs = (final_resp["errors"] || []).map { |e| e["detail"] || e["title"] }.join("; ")

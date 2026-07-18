@@ -28,10 +28,17 @@ final class AuthState {
     /// quiz, which itself sends recordings to Gemini). Apple 5.1.1(i)/
     /// 5.1.2(i) requires this be a dedicated in-app step, not just wording
     /// inside the Terms/Privacy Policy.
+    ///
+    /// Re-triggers on a CONTENT change, not just for first-time acceptance:
+    /// someone who accepted before a new row was added (e.g. music
+    /// generation) never actually consented to that AI usage, so an
+    /// acceptance older than the current `aiDisclosureVersionDate` doesn't
+    /// count — they see the (now current) screen again once.
     var needsAIDisclosure: Bool {
         guard isSignedIn else { return false }
         guard let p = profile else { return false }
-        return p.aiDisclosureAcceptedAt == nil
+        guard let acceptedAt = p.aiDisclosureAcceptedAt else { return true }
+        return acceptedAt < AuthService.aiDisclosureVersionDate
     }
 
     static let shared = AuthState()

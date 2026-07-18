@@ -3,8 +3,7 @@ import SwiftData
 
 /// Step 2 of the song flow — styled like the onboarding quiz (same background
 /// family, the smiling dog, a mic orb) but focused on collecting the song's
-/// content: words from the memorize queue, typed/pasted lyrics or a free-form
-/// description, or a spoken brief via the same STT pipeline the quiz uses.
+/// content: words from the memorize queue, and typed/pasted/spoken lyrics.
 struct MusicLyricsView: View {
     @Bindable var model: MusicFlowModel
 
@@ -12,6 +11,11 @@ struct MusicLyricsView: View {
     private var memoryCards: [MemoryCard]
 
     @FocusState private var lyricsFocused: Bool
+    @State private var showKaraoke = false
+    /// Preloading starts the moment the song is `.ready` (see `onChange`
+    /// below), not when the user taps Play — by then most/all pictures are
+    /// already downloaded and karaoke starts smoothly from the first second.
+    @State private var sceneImages = KaraokeSceneImages()
 
     var body: some View {
         GeometryReader { geo in
@@ -28,6 +32,16 @@ struct MusicLyricsView: View {
                 }
             }
         }
+        .fullScreenCover(isPresented: $showKaraoke) {
+            if let song = model.song {
+                MusicKaraokeView(song: song, memoryCards: Array(memoryCards), sceneImages: sceneImages)
+            }
+        }
+        .onChange(of: model.phase) { _, newPhase in
+            if case .ready = newPhase, let song = model.song {
+                sceneImages.load(scenes: song.scenes, cards: memoryCards)
+            }
+        }
     }
 
     // MARK: - Editor
@@ -39,8 +53,8 @@ struct MusicLyricsView: View {
                     Text(L("What should it sing?"))
                         .font(.system(size: 26, weight: .heavy, design: .rounded))
                         .foregroundColor(.white)
-                    if let genre = model.selectedGenre {
-                        Text("\(genre) · \(L(model.length.titleKey))")
+                    if !model.selectedGenres.isEmpty {
+                        Text("\(model.selectedGenres.joined(separator: ", ")) · \(L(model.length.titleKey))")
                             .font(.system(size: 14, weight: .bold, design: .rounded))
                             .foregroundColor(.yellow)
                     }
@@ -53,55 +67,27 @@ struct MusicLyricsView: View {
                             .font(.system(size: 15, weight: .bold, design: .rounded))
                             .foregroundColor(.white.opacity(0.85))
 
-                        ChipFlowLayout(spacing: 8) {
-                            ForEach(memoryCards.prefix(24), id: \.id) { card in
-                                wordChip(card)
+                        // Fixed to ~6 lines and scrollable — a big queue would
+                        // otherwise push the lyrics box far down the screen.
+                        ScrollView(showsIndicators: true) {
+                            ChipFlowLayout(spacing: 8) {
+                                ForEach(memoryCards, id: \.id) { card in
+                                    wordChip(card)
+                                }
                             }
                         }
+                        .frame(height: 230)
                     }
                 }
 
-                VStack(alignment: .leading, spacing: 10) {
-                    Text(L("Describe the song, or paste your lyrics"))
-                        .font(.system(size: 15, weight: .bold, design: .rounded))
-                        .foregroundColor(.white.opacity(0.85))
+                lyricsBox
 
-                    ZStack(alignment: .topLeading) {
-                        TextEditor(text: $model.lyricsText)
-                            .focused($lyricsFocused)
-                            .scrollContentBackground(.hidden)
-                            .font(.system(size: 15, weight: .medium, design: .rounded))
-                            .foregroundColor(.white)
-                            .frame(minHeight: 120)
-                            .padding(10)
-
-                        if model.lyricsText.isEmpty {
-                            Text(L("e.g. a happy song about ordering food at the beach…"))
-                                .font(.system(size: 15, weight: .medium, design: .rounded))
-                                .foregroundColor(.white.opacity(0.35))
-                                .padding(.horizontal, 15)
-                                .padding(.vertical, 18)
-                                .allowsHitTesting(false)
-                        }
-                    }
-                    .background(
-                        RoundedRectangle(cornerRadius: 18)
-                            .fill(Color.black.opacity(0.42))
-                    )
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 18)
-                            .stroke(Color.white.opacity(0.10), lineWidth: 1)
-                    )
-
-                    Toggle(isOn: $model.useAsExactLyrics) {
-                        Text(L("These are the exact lyrics — sing them as written"))
-                            .font(.system(size: 13, weight: .medium, design: .rounded))
-                            .foregroundColor(.white.opacity(0.7))
-                    }
-                    .tint(.yellow)
+                Toggle(isOn: $model.useAsExactLyrics) {
+                    Text(L("These are the exact lyrics — sing them as written"))
+                        .font(.system(size: 13, weight: .medium, design: .rounded))
+                        .foregroundColor(.white.opacity(0.7))
                 }
-
-                speakRow
+                .tint(.yellow)
 
                 if case .failed(let message) = model.phase {
                     failedCard(message)
@@ -112,6 +98,11 @@ struct MusicLyricsView: View {
                     .padding(.bottom, 44)
             }
             .padding(.horizontal, HomeLayout.hPadding)
+            // Tapping any empty space (not a chip, not the text box itself —
+            // those consume their own tap first) also dismisses the keyboard,
+            // as a second path alongside the keyboard toolbar's Done button.
+            .contentShape(Rectangle())
+            .onTapGesture { lyricsFocused = false }
         }
         .scrollDismissesKeyboard(.interactively)
     }
@@ -140,44 +131,93 @@ struct MusicLyricsView: View {
         .buttonStyle(.plain)
     }
 
-    // MARK: - Speak row (same pipeline as the quiz mic)
+    // MARK: - Lyrics box (text field + inline mic — self-explanatory, no header)
 
-    private var speakRow: some View {
-        HStack(spacing: 14) {
-            Button {
-                Task { await model.toggleMic() }
-            } label: {
-                ZStack {
-                    Circle()
-                        .fill(model.recorder.isRecording ? Color.red : Color.yellow)
-                        .frame(width: 64, height: 64)
-                        .shadow(color: .black.opacity(0.35), radius: 10, y: 4)
-                    if model.recorder.isRecording {
-                        EdgeEqualizerRing(level: model.recorder.audioLevel,
-                                          color: .white.opacity(0.9),
-                                          diameter: 64)
+    private var lyricsBox: some View {
+        ZStack(alignment: .bottomTrailing) {
+            ZStack(alignment: .topLeading) {
+                TextEditor(text: $model.lyricsText)
+                    .focused($lyricsFocused)
+                    .scrollContentBackground(.hidden)
+                    .font(.system(size: 15, weight: .medium, design: .rounded))
+                    .foregroundColor(.white)
+                    .frame(minHeight: 130)
+                    .padding(10)
+                    .padding(.trailing, 46) // room for the mic button
+                    .padding(.bottom, 20)
+                    // TextEditor has no Return-to-submit and, unlike a plain
+                    // background tap, this is reachable even when the
+                    // keyboard is covering everything below it (as it does
+                    // on a 30s-song-sized screen) — without this there was no
+                    // way at all to get the keyboard back down.
+                    .toolbar {
+                        ToolbarItemGroup(placement: .keyboard) {
+                            Spacer()
+                            Button(L("Done")) { lyricsFocused = false }
+                                .fontWeight(.bold)
+                        }
                     }
-                    if model.isTranscribing {
-                        ProgressView().tint(.black)
-                    } else {
-                        Image(systemName: model.recorder.isRecording ? "stop.fill" : "mic.fill")
-                            .font(.system(size: 22, weight: .bold))
-                            .foregroundColor(.black)
-                    }
+
+                if model.lyricsText.isEmpty {
+                    Text(L("e.g. a happy song about ordering food at the beach…"))
+                        .font(.system(size: 15, weight: .medium, design: .rounded))
+                        .foregroundColor(.white.opacity(0.35))
+                        .padding(.horizontal, 15)
+                        .padding(.vertical, 18)
+                        .allowsHitTesting(false)
+                }
+
+                if model.recorder.isRecording {
+                    Text(L("Listening… tap to stop"))
+                        .font(.system(size: 12, weight: .bold, design: .rounded))
+                        .foregroundColor(.red.opacity(0.9))
+                        .padding(.horizontal, 12)
+                        .padding(.bottom, 8)
+                        .frame(maxHeight: .infinity, alignment: .bottom)
                 }
             }
-            .buttonStyle(.plain)
-            .disabled(model.isTranscribing)
 
-            Text(model.recorder.isRecording
-                 ? L("Listening… tap to stop")
-                 : L("Or tap and say what the song should be about"))
-                .font(.system(size: 13, weight: .medium, design: .rounded))
-                .foregroundColor(.white.opacity(0.7))
-                .fixedSize(horizontal: false, vertical: true)
-
-            Spacer(minLength: 0)
+            micButton
+                .padding(8)
         }
+        .background(
+            RoundedRectangle(cornerRadius: 18)
+                .fill(Color.black.opacity(0.42))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 18)
+                .stroke(Color.white.opacity(0.10), lineWidth: 1)
+        )
+    }
+
+    /// Combined into the lyrics box itself (trailing edge) rather than a
+    /// separate row with instructional copy — the placeholder text already
+    /// explains what to type, and a mic icon is self-explanatory.
+    private var micButton: some View {
+        Button {
+            Task { await model.toggleMic() }
+        } label: {
+            ZStack {
+                Circle()
+                    .fill(model.recorder.isRecording ? Color.red : Color.yellow)
+                    .frame(width: 40, height: 40)
+                    .shadow(color: .black.opacity(0.3), radius: 6, y: 3)
+                if model.recorder.isRecording {
+                    EdgeEqualizerRing(level: model.recorder.audioLevel,
+                                      color: .white.opacity(0.9),
+                                      diameter: 40)
+                }
+                if model.isTranscribing {
+                    ProgressView().tint(.black)
+                } else {
+                    Image(systemName: model.recorder.isRecording ? "stop.fill" : "mic.fill")
+                        .font(.system(size: 15, weight: .bold))
+                        .foregroundColor(.black)
+                }
+            }
+        }
+        .buttonStyle(.plain)
+        .disabled(model.isTranscribing)
     }
 
     // MARK: - Generate
@@ -205,48 +245,90 @@ struct MusicLyricsView: View {
                 .background(Color.black.opacity(0.18))
                 .clipShape(Capsule())
             }
-            .foregroundColor(.black)
+            .foregroundColor(model.canGenerate ? .black : .white.opacity(0.45))
             .frame(maxWidth: .infinity)
             .padding(.vertical, 16)
-            .background(model.canGenerate ? Color.yellow : Color.white.opacity(0.18))
+            .background(model.canGenerate ? Color.yellow : Color.white.opacity(0.14))
             .clipShape(Capsule())
         }
         .buttonStyle(.plain)
         .disabled(!model.canGenerate)
     }
 
-    // MARK: - Working / result / failure states
+    // MARK: - Working state (real progress bar + rotating fun stages)
 
-    private var workingCard: some View {
-        VStack(spacing: 18) {
-            PulsingEqualizerView(color: .yellow, barCount: 9,
-                                 maxHeight: 52, barWidth: 4.5, spacing: 4.5)
-                .frame(height: 60)
+    /// (elapsed fraction of the estimate, what to say) — up to 6 stages. Text
+    /// is deliberately playful; the fraction just needs to feel roughly right,
+    /// not be exact, since the bar itself is what the user is watching.
+    private static let workingStages: [(threshold: Double, text: String)] = [
+        (0.00, "Warming up the studio…"),
+        (0.14, "Tuning the instruments…"),
+        (0.30, "Writing your lyrics…"),
+        (0.52, "Finding the melody…"),
+        (0.74, "Recording the vocals…"),
+        (0.90, "Mixing the final track…")
+    ]
 
-            Text(workingText)
-                .font(.system(size: 20, weight: .bold, design: .rounded))
-                .foregroundColor(.white)
-                .multilineTextAlignment(.center)
-
-            Text(L("First song of the day can take a couple of minutes — the studio is warming up."))
-                .font(.system(size: 13, weight: .medium, design: .rounded))
-                .foregroundColor(.white.opacity(0.6))
-                .multilineTextAlignment(.center)
-        }
-        .padding(28)
-        .background(RoundedRectangle(cornerRadius: 22).fill(Color.black.opacity(0.5)))
-        .overlay(RoundedRectangle(cornerRadius: 22).stroke(Color.white.opacity(0.10), lineWidth: 1))
-        .padding(.horizontal, 32)
+    /// Purely elapsed-time-based — smooth and monotonic — and deliberately
+    /// NEVER touched by the server's reported stage. It used to jump to a
+    /// hard floor (0.55) the moment the server reported "generating", which
+    /// looked fine when composeLyrics took real time first, but once exact
+    /// lyrics became the permanent default, the server skips straight to
+    /// "generating" within a few seconds of any job starting — so the number
+    /// would jump from ~1% to 55% almost instantly and then sit there doing
+    /// nothing until elapsed time genuinely caught back up. A progress
+    /// number the user is staring at has to move evenly; the real stage is
+    /// still useful, it just belongs on the caption below, not the number.
+    private func workingFraction(now: Date) -> Double {
+        guard let started = model.workingStartedAt else { return 0 }
+        let elapsed = now.timeIntervalSince(started)
+        return min(0.95, max(0, elapsed / Double(max(1, model.etaSeconds))))
     }
 
-    private var workingText: String {
-        switch model.phase {
-        case .working(let stage) where stage == "writing_lyrics":
-            return L("Writing your lyrics…")
-        case .working(let stage) where stage == "generating":
-            return L("Recording your song…")
-        default:
-            return L("Sending to the studio…")
+    /// The caption can jump ahead of the time-based fraction when the server
+    /// confirms we're genuinely past a milestone (e.g. straight to
+    /// "generating" because exact lyrics skipped the writing stage) — an
+    /// instant text swap reads as "oh, further along than the bar suggests",
+    /// not as broken the way a stalled progress *number* would.
+    private func workingStageText(fraction: Double) -> String {
+        let timeIndex = Self.workingStages.lastIndex { fraction >= $0.threshold } ?? 0
+        var floorIndex = 0
+        if case .working(let stage) = model.phase {
+            if stage == "writing_lyrics" { floorIndex = 2 } // "Writing your lyrics…"
+            if stage == "generating" { floorIndex = 4 }     // "Recording the vocals…"
+        }
+        let index = min(max(timeIndex, floorIndex), Self.workingStages.count - 1)
+        return Self.workingStages[index].text
+    }
+
+    private var workingCard: some View {
+        TimelineView(.animation) { context in
+            let fraction = workingFraction(now: context.date)
+            VStack(spacing: 18) {
+                Text(L(workingStageText(fraction: fraction)))
+                    .font(.system(size: 20, weight: .bold, design: .rounded))
+                    .foregroundColor(.white)
+                    .multilineTextAlignment(.center)
+                    .contentTransition(.opacity)
+                    .animation(.easeInOut(duration: 0.4), value: workingStageText(fraction: fraction))
+
+                GeometryReader { geo in
+                    ZStack(alignment: .leading) {
+                        Capsule().fill(Color.white.opacity(0.15))
+                        Capsule().fill(Color.yellow)
+                            .frame(width: geo.size.width * fraction)
+                    }
+                }
+                .frame(height: 8)
+
+                Text("\(Int(fraction * 100))%")
+                    .font(.system(size: 13, weight: .bold, design: .rounded))
+                    .foregroundColor(.white.opacity(0.5))
+            }
+            .padding(28)
+            .background(RoundedRectangle(cornerRadius: 22).fill(Color.black.opacity(0.5)))
+            .overlay(RoundedRectangle(cornerRadius: 22).stroke(Color.white.opacity(0.10), lineWidth: 1))
+            .padding(.horizontal, 32)
         }
     }
 
@@ -264,15 +346,17 @@ struct MusicLyricsView: View {
                         .font(.system(size: 14, weight: .bold, design: .rounded))
                         .foregroundColor(.yellow)
 
+                    // One control: Play means karaoke — pictures + synced
+                    // lyrics — there's no separate silent-audio preview anymore.
                     Button {
-                        model.togglePlayback()
+                        showKaraoke = true
                     } label: {
                         ZStack {
                             Circle()
                                 .fill(Color.yellow)
                                 .frame(width: 96, height: 96)
                                 .shadow(color: .black.opacity(0.35), radius: 14, y: 6)
-                            Image(systemName: model.isPlaying ? "pause.fill" : "play.fill")
+                            Image(systemName: "play.fill")
                                 .font(.system(size: 36, weight: .heavy))
                                 .foregroundColor(.black)
                         }
@@ -281,14 +365,18 @@ struct MusicLyricsView: View {
                     .padding(.vertical, 8)
 
                     if !song.lyrics.isEmpty {
-                        Text(song.lyrics)
-                            .font(.system(size: 15, weight: .medium, design: .rounded))
-                            .foregroundColor(.white.opacity(0.85))
-                            .multilineTextAlignment(.center)
-                            .padding(18)
-                            .frame(maxWidth: .infinity)
-                            .background(RoundedRectangle(cornerRadius: 18).fill(Color.black.opacity(0.42)))
-                            .overlay(RoundedRectangle(cornerRadius: 18).stroke(Color.white.opacity(0.10), lineWidth: 1))
+                        LyricsHighlight.highlightedLyrics(
+                            song.lyrics,
+                            targets: song.scenes.map(\.word),
+                            baseColor: .white.opacity(0.85),
+                            highlightColor: LyricsHighlight.highlightColor
+                        )
+                        .font(.system(size: 15, weight: .medium, design: .rounded))
+                        .multilineTextAlignment(.center)
+                        .padding(18)
+                        .frame(maxWidth: .infinity)
+                        .background(RoundedRectangle(cornerRadius: 18).fill(Color.black.opacity(0.42)))
+                        .overlay(RoundedRectangle(cornerRadius: 18).stroke(Color.white.opacity(0.10), lineWidth: 1))
                     }
 
                     Button {

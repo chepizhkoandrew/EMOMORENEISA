@@ -14,7 +14,24 @@ final class AuthService {
     /// version of the document the user actually saw.
     static let termsVersion = "2026-07-14"
     static let privacyVersion = "2026-07-03"
-    static let aiDisclosureVersion = "2026-07-11"
+    /// AIDisclosureView's own source of truth is the in-app screen (no
+    /// webpage) — bump this whenever a row is added/changed there. Unlike
+    /// terms/privacy, this ALSO drives re-gating (see `aiDisclosureVersionDate`
+    /// below + `AuthState.needsAIDisclosure`): someone who already accepted
+    /// an older version has not actually consented to whatever new AI usage
+    /// the current version added, so they need to see it again, not just
+    /// once at signup. 2026-07-18: added illustration generation + the new
+    /// music-generation feature's two AI calls.
+    static let aiDisclosureVersion = "2026-07-18"
+
+    /// `aiDisclosureVersion` parsed as a date — an acceptance timestamp
+    /// older than this predates the current wording.
+    static var aiDisclosureVersionDate: Date {
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd"
+        f.timeZone = TimeZone(identifier: "UTC")
+        return f.date(from: aiDisclosureVersion) ?? .distantPast
+    }
 
     @MainActor
     func signInWithApple(idToken: String, nonce: String, displayName: String?) async throws {

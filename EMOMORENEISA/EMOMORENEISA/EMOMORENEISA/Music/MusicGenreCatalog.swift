@@ -168,13 +168,13 @@ enum MusicGenreCatalog {
         all.filter { $0.category == category }
     }
 
+    /// Name-only — matching on `category` too used to mean searching
+    /// "hardcore" pulled in every genre under "Punk & Hardcore" (Ska Punk,
+    /// Emo, Post-Punk...), not just genres actually named for it.
     static func search(_ query: String) -> [MusicGenre] {
         let q = query.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !q.isEmpty else { return all }
-        return all.filter {
-            $0.name.localizedCaseInsensitiveContains(q) ||
-            $0.category.localizedCaseInsensitiveContains(q)
-        }
+        return all.filter { $0.name.localizedCaseInsensitiveContains(q) }
     }
 }
 

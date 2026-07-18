@@ -12,7 +12,31 @@
         "vosotros": "habláis",
         "ellos": "hablan"
       },
-      "translation": "to speak"
+      "translation": "to speak",
+      "imperfect": {
+        "yo": "hablaba",
+        "tu": "hablabas",
+        "el": "hablaba",
+        "nosotros": "hablábamos",
+        "vosotros": "hablabais",
+        "ellos": "hablaban"
+      },
+      "future": {
+        "yo": "hablaré",
+        "tu": "hablarás",
+        "el": "hablará",
+        "nosotros": "hablaremos",
+        "vosotros": "hablaréis",
+        "ellos": "hablarán"
+      },
+      "preterite": {
+        "yo": "hablé",
+        "tu": "hablaste",
+        "el": "habló",
+        "nosotros": "hablamos",
+        "vosotros": "hablasteis",
+        "ellos": "hablaron"
+      }
     },
     {
       "infinitive": "caminar",
@@ -26,7 +50,31 @@
         "vosotros": "camináis",
         "ellos": "caminan"
       },
-      "translation": "to walk"
+      "translation": "to walk",
+      "imperfect": {
+        "yo": "caminaba",
+        "tu": "caminabas",
+        "el": "caminaba",
+        "nosotros": "caminábamos",
+        "vosotros": "caminabais",
+        "ellos": "caminaban"
+      },
+      "future": {
+        "yo": "caminaré",
+        "tu": "caminarás",
+        "el": "caminará",
+        "nosotros": "caminaremos",
+        "vosotros": "caminaréis",
+        "ellos": "caminarán"
+      },
+      "preterite": {
+        "yo": "caminé",
+        "tu": "caminaste",
+        "el": "caminó",
+        "nosotros": "caminamos",
+        "vosotros": "caminasteis",
+        "ellos": "caminaron"
+      }
     },
     {
       "infinitive": "bailar",
@@ -40,7 +88,31 @@
         "vosotros": "bailáis",
         "ellos": "bailan"
       },
-      "translation": "to dance"
+      "translation": "to dance",
+      "imperfect": {
+        "yo": "bailaba",
+        "tu": "bailabas",
+        "el": "bailaba",
+        "nosotros": "bailábamos",
+        "vosotros": "bailabais",
+        "ellos": "bailaban"
+      },
+      "future": {
+        "yo": "bailaré",
+        "tu": "bailarás",
+        "el": "bailará",
+        "nosotros": "bailaremos",
+        "vosotros": "bailaréis",
+        "ellos": "bailarán"
+      },
+      "preterite": {
+        "yo": "bailé",
+        "tu": "bailaste",
+        "el": "bailó",
+        "nosotros": "bailamos",
+        "vosotros": "bailasteis",
+        "ellos": "bailaron"
+      }
     },
     {
       "infinitive": "trabajar",
@@ -54,7 +126,31 @@
         "vosotros": "trabajáis",
         "ellos": "trabajan"
       },
-      "translation": "to work"
+      "translation": "to work",
+      "imperfect": {
+        "yo": "trabajaba",
+        "tu": "trabajabas",
+        "el": "trabajaba",
+        "nosotros": "trabajábamos",
+        "vosotros": "trabajabais",
+        "ellos": "trabajaban"
+      },
+      "future": {
+        "yo": "trabajaré",
+        "tu": "trabajarás",
+        "el": "trabajará",
+        "nosotros": "trabajaremos",
+        "vosotros": "trabajaréis",
+        "ellos": "trabajarán"
+      },
+      "preterite": {
+        "yo": "trabajé",
+        "tu": "trabajaste",
+        "el": "trabajó",
+        "nosotros": "trabajamos",
+        "vosotros": "trabajasteis",
+        "ellos": "trabajaron"
+      }
     },
     {
       "infinitive": "escuchar",
@@ -68,7 +164,31 @@
         "vosotros": "escucháis",
         "ellos": "escuchan"
       },
-      "translation": "to listen"
+      "translation": "to listen",
+      "imperfect": {
+        "yo": "escuchaba",
+        "tu": "escuchabas",
+        "el": "escuchaba",
+        "nosotros": "escuchábamos",
+        "vosotros": "escuchabais",
+        "ellos": "escuchaban"
+      },
+      "future": {
+        "yo": "escucharé",
+        "tu": "escucharás",
+        "el": "escuchará",
+        "nosotros": "escucharemos",
+        "vosotros": "escucharéis",
+        "ellos": "escucharán"
+      },
+      "preterite": {
+        "yo": "escuché",
+        "tu": "escuchaste",
+        "el": "escuchó",
+        "nosotros": "escuchamos",
+        "vosotros": "escuchasteis",
+        "ellos": "escucharon"
+      }
     },
     {
       "infinitive": "mirar",
@@ -82,7 +202,31 @@
         "vosotros": "miráis",
         "ellos": "miran"
       },
-      "translation": "to look"
+      "translation": "to look",
+      "imperfect": {
+        "yo": "miraba",
+        "tu": "mirabas",
+        "el": "miraba",
+        "nosotros": "mirábamos",
+        "vosotros": "mirabais",
+        "ellos": "miraban"
+      },
+      "future": {
+        "yo": "miraré",
+        "tu": "mirarás",
+        "el": "mirará",
+        "nosotros": "miraremos",
+        "vosotros": "miraréis",
+        "ellos": "mirarán"
+      },
+      "preterite": {
+        "yo": "miré",
+        "tu": "miraste",
+        "el": "miró",
+        "nosotros": "miramos",
+        "vosotros": "mirasteis",
+        "ellos": "miraron"
+      }
     },
     {
       "infinitive": "comprar",
@@ -96,7 +240,31 @@
         "vosotros": "compráis",
         "ellos": "compran"
       },
-      "translation": "to buy"
+      "translation": "to buy",
+      "imperfect": {
+        "yo": "compraba",
+        "tu": "comprabas",
+        "el": "compraba",
+        "nosotros": "comprábamos",
+        "vosotros": "comprabais",
+        "ellos": "compraban"
+      },
+      "future": {
+        "yo": "compraré",
+        "tu": "comprarás",
+        "el": "comprará",
+        "nosotros": "compraremos",
+        "vosotros": "compraréis",
+        "ellos": "comprarán"
+      },
+      "preterite": {
+        "yo": "compré",
+        "tu": "compraste",
+        "el": "compró",
+        "nosotros": "compramos",
+        "vosotros": "comprasteis",
+        "ellos": "compraron"
+      }
     },
     {
       "infinitive": "llegar",
@@ -110,7 +278,31 @@
         "vosotros": "llegáis",
         "ellos": "llegan"
       },
-      "translation": "to arrive"
+      "translation": "to arrive",
+      "imperfect": {
+        "yo": "llegaba",
+        "tu": "llegabas",
+        "el": "llegaba",
+        "nosotros": "llegábamos",
+        "vosotros": "llegabais",
+        "ellos": "llegaban"
+      },
+      "future": {
+        "yo": "llegaré",
+        "tu": "llegarás",
+        "el": "llegará",
+        "nosotros": "llegaremos",
+        "vosotros": "llegaréis",
+        "ellos": "llegarán"
+      },
+      "preterite": {
+        "yo": "llegué",
+        "tu": "llegaste",
+        "el": "llegó",
+        "nosotros": "llegamos",
+        "vosotros": "llegasteis",
+        "ellos": "llegaron"
+      }
     },
     {
       "infinitive": "tomar",
@@ -124,7 +316,31 @@
         "vosotros": "tomáis",
         "ellos": "toman"
       },
-      "translation": "to take"
+      "translation": "to take",
+      "imperfect": {
+        "yo": "tomaba",
+        "tu": "tomabas",
+        "el": "tomaba",
+        "nosotros": "tomábamos",
+        "vosotros": "tomabais",
+        "ellos": "tomaban"
+      },
+      "future": {
+        "yo": "tomaré",
+        "tu": "tomarás",
+        "el": "tomará",
+        "nosotros": "tomaremos",
+        "vosotros": "tomaréis",
+        "ellos": "tomarán"
+      },
+      "preterite": {
+        "yo": "tomé",
+        "tu": "tomaste",
+        "el": "tomó",
+        "nosotros": "tomamos",
+        "vosotros": "tomasteis",
+        "ellos": "tomaron"
+      }
     },
     {
       "infinitive": "usar",
@@ -138,7 +354,31 @@
         "vosotros": "usáis",
         "ellos": "usan"
       },
-      "translation": "to use"
+      "translation": "to use",
+      "imperfect": {
+        "yo": "usaba",
+        "tu": "usabas",
+        "el": "usaba",
+        "nosotros": "usábamos",
+        "vosotros": "usabais",
+        "ellos": "usaban"
+      },
+      "future": {
+        "yo": "usaré",
+        "tu": "usarás",
+        "el": "usará",
+        "nosotros": "usaremos",
+        "vosotros": "usaréis",
+        "ellos": "usarán"
+      },
+      "preterite": {
+        "yo": "usé",
+        "tu": "usaste",
+        "el": "usó",
+        "nosotros": "usamos",
+        "vosotros": "usasteis",
+        "ellos": "usaron"
+      }
     },
     {
       "infinitive": "entrar",
@@ -152,7 +392,31 @@
         "vosotros": "entráis",
         "ellos": "entran"
       },
-      "translation": "to enter"
+      "translation": "to enter",
+      "imperfect": {
+        "yo": "entraba",
+        "tu": "entrabas",
+        "el": "entraba",
+        "nosotros": "entrábamos",
+        "vosotros": "entrabais",
+        "ellos": "entraban"
+      },
+      "future": {
+        "yo": "entraré",
+        "tu": "entrarás",
+        "el": "entrará",
+        "nosotros": "entraremos",
+        "vosotros": "entraréis",
+        "ellos": "entrarán"
+      },
+      "preterite": {
+        "yo": "entré",
+        "tu": "entraste",
+        "el": "entró",
+        "nosotros": "entramos",
+        "vosotros": "entrasteis",
+        "ellos": "entraron"
+      }
     },
     {
       "infinitive": "esperar",
@@ -166,7 +430,31 @@
         "vosotros": "esperáis",
         "ellos": "esperan"
       },
-      "translation": "to wait"
+      "translation": "to wait",
+      "imperfect": {
+        "yo": "esperaba",
+        "tu": "esperabas",
+        "el": "esperaba",
+        "nosotros": "esperábamos",
+        "vosotros": "esperabais",
+        "ellos": "esperaban"
+      },
+      "future": {
+        "yo": "esperaré",
+        "tu": "esperarás",
+        "el": "esperará",
+        "nosotros": "esperaremos",
+        "vosotros": "esperaréis",
+        "ellos": "esperarán"
+      },
+      "preterite": {
+        "yo": "esperé",
+        "tu": "esperaste",
+        "el": "esperó",
+        "nosotros": "esperamos",
+        "vosotros": "esperasteis",
+        "ellos": "esperaron"
+      }
     },
     {
       "infinitive": "llamar",
@@ -180,7 +468,31 @@
         "vosotros": "llamáis",
         "ellos": "llaman"
       },
-      "translation": "to call"
+      "translation": "to call",
+      "imperfect": {
+        "yo": "llamaba",
+        "tu": "llamabas",
+        "el": "llamaba",
+        "nosotros": "llamábamos",
+        "vosotros": "llamabais",
+        "ellos": "llamaban"
+      },
+      "future": {
+        "yo": "llamaré",
+        "tu": "llamarás",
+        "el": "llamará",
+        "nosotros": "llamaremos",
+        "vosotros": "llamaréis",
+        "ellos": "llamarán"
+      },
+      "preterite": {
+        "yo": "llamé",
+        "tu": "llamaste",
+        "el": "llamó",
+        "nosotros": "llamamos",
+        "vosotros": "llamasteis",
+        "ellos": "llamaron"
+      }
     },
     {
       "infinitive": "pasar",
@@ -194,7 +506,31 @@
         "vosotros": "pasáis",
         "ellos": "pasan"
       },
-      "translation": "to happen"
+      "translation": "to happen",
+      "imperfect": {
+        "yo": "pasaba",
+        "tu": "pasabas",
+        "el": "pasaba",
+        "nosotros": "pasábamos",
+        "vosotros": "pasabais",
+        "ellos": "pasaban"
+      },
+      "future": {
+        "yo": "pasaré",
+        "tu": "pasarás",
+        "el": "pasará",
+        "nosotros": "pasaremos",
+        "vosotros": "pasaréis",
+        "ellos": "pasarán"
+      },
+      "preterite": {
+        "yo": "pasé",
+        "tu": "pasaste",
+        "el": "pasó",
+        "nosotros": "pasamos",
+        "vosotros": "pasasteis",
+        "ellos": "pasaron"
+      }
     },
     {
       "infinitive": "necesitar",
@@ -208,7 +544,31 @@
         "vosotros": "necesitáis",
         "ellos": "necesitan"
       },
-      "translation": "to need"
+      "translation": "to need",
+      "imperfect": {
+        "yo": "necesitaba",
+        "tu": "necesitabas",
+        "el": "necesitaba",
+        "nosotros": "necesitábamos",
+        "vosotros": "necesitabais",
+        "ellos": "necesitaban"
+      },
+      "future": {
+        "yo": "necesitaré",
+        "tu": "necesitarás",
+        "el": "necesitará",
+        "nosotros": "necesitaremos",
+        "vosotros": "necesitaréis",
+        "ellos": "necesitarán"
+      },
+      "preterite": {
+        "yo": "necesité",
+        "tu": "necesitaste",
+        "el": "necesitó",
+        "nosotros": "necesitamos",
+        "vosotros": "necesitasteis",
+        "ellos": "necesitaron"
+      }
     },
     {
       "infinitive": "dejar",
@@ -222,7 +582,31 @@
         "vosotros": "dejáis",
         "ellos": "dejan"
       },
-      "translation": "to leave"
+      "translation": "to leave",
+      "imperfect": {
+        "yo": "dejaba",
+        "tu": "dejabas",
+        "el": "dejaba",
+        "nosotros": "dejábamos",
+        "vosotros": "dejabais",
+        "ellos": "dejaban"
+      },
+      "future": {
+        "yo": "dejaré",
+        "tu": "dejarás",
+        "el": "dejará",
+        "nosotros": "dejaremos",
+        "vosotros": "dejaréis",
+        "ellos": "dejarán"
+      },
+      "preterite": {
+        "yo": "dejé",
+        "tu": "dejaste",
+        "el": "dejó",
+        "nosotros": "dejamos",
+        "vosotros": "dejasteis",
+        "ellos": "dejaron"
+      }
     },
     {
       "infinitive": "buscar",
@@ -236,7 +620,31 @@
         "vosotros": "buscáis",
         "ellos": "buscan"
       },
-      "translation": "to look for"
+      "translation": "to look for",
+      "imperfect": {
+        "yo": "buscaba",
+        "tu": "buscabas",
+        "el": "buscaba",
+        "nosotros": "buscábamos",
+        "vosotros": "buscabais",
+        "ellos": "buscaban"
+      },
+      "future": {
+        "yo": "buscaré",
+        "tu": "buscarás",
+        "el": "buscará",
+        "nosotros": "buscaremos",
+        "vosotros": "buscaréis",
+        "ellos": "buscarán"
+      },
+      "preterite": {
+        "yo": "busqué",
+        "tu": "buscaste",
+        "el": "buscó",
+        "nosotros": "buscamos",
+        "vosotros": "buscasteis",
+        "ellos": "buscaron"
+      }
     },
     {
       "infinitive": "ayudar",
@@ -250,7 +658,31 @@
         "vosotros": "ayudáis",
         "ellos": "ayudan"
       },
-      "translation": "to help"
+      "translation": "to help",
+      "imperfect": {
+        "yo": "ayudaba",
+        "tu": "ayudabas",
+        "el": "ayudaba",
+        "nosotros": "ayudábamos",
+        "vosotros": "ayudabais",
+        "ellos": "ayudaban"
+      },
+      "future": {
+        "yo": "ayudaré",
+        "tu": "ayudarás",
+        "el": "ayudará",
+        "nosotros": "ayudaremos",
+        "vosotros": "ayudaréis",
+        "ellos": "ayudarán"
+      },
+      "preterite": {
+        "yo": "ayudé",
+        "tu": "ayudaste",
+        "el": "ayudó",
+        "nosotros": "ayudamos",
+        "vosotros": "ayudasteis",
+        "ellos": "ayudaron"
+      }
     },
     {
       "infinitive": "estudiar",
@@ -264,7 +696,31 @@
         "vosotros": "estudiáis",
         "ellos": "estudian"
       },
-      "translation": "to study"
+      "translation": "to study",
+      "imperfect": {
+        "yo": "estudiaba",
+        "tu": "estudiabas",
+        "el": "estudiaba",
+        "nosotros": "estudiábamos",
+        "vosotros": "estudiabais",
+        "ellos": "estudiaban"
+      },
+      "future": {
+        "yo": "estudiaré",
+        "tu": "estudiarás",
+        "el": "estudiará",
+        "nosotros": "estudiaremos",
+        "vosotros": "estudiaréis",
+        "ellos": "estudiarán"
+      },
+      "preterite": {
+        "yo": "estudié",
+        "tu": "estudiaste",
+        "el": "estudió",
+        "nosotros": "estudiamos",
+        "vosotros": "estudiasteis",
+        "ellos": "estudiaron"
+      }
     },
     {
       "infinitive": "terminar",
@@ -278,7 +734,31 @@
         "vosotros": "termináis",
         "ellos": "terminan"
       },
-      "translation": "to finish"
+      "translation": "to finish",
+      "imperfect": {
+        "yo": "terminaba",
+        "tu": "terminabas",
+        "el": "terminaba",
+        "nosotros": "terminábamos",
+        "vosotros": "terminabais",
+        "ellos": "terminaban"
+      },
+      "future": {
+        "yo": "terminaré",
+        "tu": "terminarás",
+        "el": "terminará",
+        "nosotros": "terminaremos",
+        "vosotros": "terminaréis",
+        "ellos": "terminarán"
+      },
+      "preterite": {
+        "yo": "terminé",
+        "tu": "terminaste",
+        "el": "terminó",
+        "nosotros": "terminamos",
+        "vosotros": "terminasteis",
+        "ellos": "terminaron"
+      }
     },
     {
       "infinitive": "preguntar",
@@ -292,7 +772,31 @@
         "vosotros": "preguntáis",
         "ellos": "preguntan"
       },
-      "translation": "to ask"
+      "translation": "to ask",
+      "imperfect": {
+        "yo": "preguntaba",
+        "tu": "preguntabas",
+        "el": "preguntaba",
+        "nosotros": "preguntábamos",
+        "vosotros": "preguntabais",
+        "ellos": "preguntaban"
+      },
+      "future": {
+        "yo": "preguntaré",
+        "tu": "preguntarás",
+        "el": "preguntará",
+        "nosotros": "preguntaremos",
+        "vosotros": "preguntaréis",
+        "ellos": "preguntarán"
+      },
+      "preterite": {
+        "yo": "pregunté",
+        "tu": "preguntaste",
+        "el": "preguntó",
+        "nosotros": "preguntamos",
+        "vosotros": "preguntasteis",
+        "ellos": "preguntaron"
+      }
     },
     {
       "infinitive": "ganar",
@@ -306,7 +810,31 @@
         "vosotros": "ganáis",
         "ellos": "ganan"
       },
-      "translation": "to win"
+      "translation": "to win",
+      "imperfect": {
+        "yo": "ganaba",
+        "tu": "ganabas",
+        "el": "ganaba",
+        "nosotros": "ganábamos",
+        "vosotros": "ganabais",
+        "ellos": "ganaban"
+      },
+      "future": {
+        "yo": "ganaré",
+        "tu": "ganarás",
+        "el": "ganará",
+        "nosotros": "ganaremos",
+        "vosotros": "ganaréis",
+        "ellos": "ganarán"
+      },
+      "preterite": {
+        "yo": "gané",
+        "tu": "ganaste",
+        "el": "ganó",
+        "nosotros": "ganamos",
+        "vosotros": "ganasteis",
+        "ellos": "ganaron"
+      }
     },
     {
       "infinitive": "preparar",
@@ -320,7 +848,31 @@
         "vosotros": "preparáis",
         "ellos": "preparan"
       },
-      "translation": "to prepare"
+      "translation": "to prepare",
+      "imperfect": {
+        "yo": "preparaba",
+        "tu": "preparabas",
+        "el": "preparaba",
+        "nosotros": "preparábamos",
+        "vosotros": "preparabais",
+        "ellos": "preparaban"
+      },
+      "future": {
+        "yo": "prepararé",
+        "tu": "prepararás",
+        "el": "preparará",
+        "nosotros": "prepararemos",
+        "vosotros": "prepararéis",
+        "ellos": "prepararán"
+      },
+      "preterite": {
+        "yo": "preparé",
+        "tu": "preparaste",
+        "el": "preparó",
+        "nosotros": "preparamos",
+        "vosotros": "preparasteis",
+        "ellos": "prepararon"
+      }
     },
     {
       "infinitive": "enseñar",
@@ -334,7 +886,31 @@
         "vosotros": "enseñáis",
         "ellos": "enseñan"
       },
-      "translation": "to teach"
+      "translation": "to teach",
+      "imperfect": {
+        "yo": "enseñaba",
+        "tu": "enseñabas",
+        "el": "enseñaba",
+        "nosotros": "enseñábamos",
+        "vosotros": "enseñabais",
+        "ellos": "enseñaban"
+      },
+      "future": {
+        "yo": "enseñaré",
+        "tu": "enseñarás",
+        "el": "enseñará",
+        "nosotros": "enseñaremos",
+        "vosotros": "enseñaréis",
+        "ellos": "enseñarán"
+      },
+      "preterite": {
+        "yo": "enseñé",
+        "tu": "enseñaste",
+        "el": "enseñó",
+        "nosotros": "enseñamos",
+        "vosotros": "enseñasteis",
+        "ellos": "enseñaron"
+      }
     },
     {
       "infinitive": "descansar",
@@ -348,7 +924,31 @@
         "vosotros": "descansáis",
         "ellos": "descansan"
       },
-      "translation": "to rest"
+      "translation": "to rest",
+      "imperfect": {
+        "yo": "descansaba",
+        "tu": "descansabas",
+        "el": "descansaba",
+        "nosotros": "descansábamos",
+        "vosotros": "descansabais",
+        "ellos": "descansaban"
+      },
+      "future": {
+        "yo": "descansaré",
+        "tu": "descansarás",
+        "el": "descansará",
+        "nosotros": "descansaremos",
+        "vosotros": "descansaréis",
+        "ellos": "descansarán"
+      },
+      "preterite": {
+        "yo": "descansé",
+        "tu": "descansaste",
+        "el": "descansó",
+        "nosotros": "descansamos",
+        "vosotros": "descansasteis",
+        "ellos": "descansaron"
+      }
     },
     {
       "infinitive": "comer",
@@ -362,7 +962,31 @@
         "vosotros": "coméis",
         "ellos": "comen"
       },
-      "translation": "to eat"
+      "translation": "to eat",
+      "imperfect": {
+        "yo": "comía",
+        "tu": "comías",
+        "el": "comía",
+        "nosotros": "comíamos",
+        "vosotros": "comíais",
+        "ellos": "comían"
+      },
+      "future": {
+        "yo": "comeré",
+        "tu": "comerás",
+        "el": "comerá",
+        "nosotros": "comeremos",
+        "vosotros": "comeréis",
+        "ellos": "comerán"
+      },
+      "preterite": {
+        "yo": "comí",
+        "tu": "comiste",
+        "el": "comió",
+        "nosotros": "comimos",
+        "vosotros": "comisteis",
+        "ellos": "comieron"
+      }
     },
     {
       "infinitive": "beber",
@@ -376,7 +1000,31 @@
         "vosotros": "bebéis",
         "ellos": "beben"
       },
-      "translation": "to drink"
+      "translation": "to drink",
+      "imperfect": {
+        "yo": "bebía",
+        "tu": "bebías",
+        "el": "bebía",
+        "nosotros": "bebíamos",
+        "vosotros": "bebíais",
+        "ellos": "bebían"
+      },
+      "future": {
+        "yo": "beberé",
+        "tu": "beberás",
+        "el": "beberá",
+        "nosotros": "beberemos",
+        "vosotros": "beberéis",
+        "ellos": "beberán"
+      },
+      "preterite": {
+        "yo": "bebí",
+        "tu": "bebiste",
+        "el": "bebió",
+        "nosotros": "bebimos",
+        "vosotros": "bebisteis",
+        "ellos": "bebieron"
+      }
     },
     {
       "infinitive": "correr",
@@ -390,7 +1038,31 @@
         "vosotros": "corréis",
         "ellos": "corren"
       },
-      "translation": "to run"
+      "translation": "to run",
+      "imperfect": {
+        "yo": "corría",
+        "tu": "corrías",
+        "el": "corría",
+        "nosotros": "corríamos",
+        "vosotros": "corríais",
+        "ellos": "corrían"
+      },
+      "future": {
+        "yo": "correré",
+        "tu": "correrás",
+        "el": "correrá",
+        "nosotros": "correremos",
+        "vosotros": "correréis",
+        "ellos": "correrán"
+      },
+      "preterite": {
+        "yo": "corrí",
+        "tu": "corriste",
+        "el": "corrió",
+        "nosotros": "corrimos",
+        "vosotros": "corristeis",
+        "ellos": "corrieron"
+      }
     },
     {
       "infinitive": "vender",
@@ -404,7 +1076,31 @@
         "vosotros": "vendéis",
         "ellos": "venden"
       },
-      "translation": "to sell"
+      "translation": "to sell",
+      "imperfect": {
+        "yo": "vendía",
+        "tu": "vendías",
+        "el": "vendía",
+        "nosotros": "vendíamos",
+        "vosotros": "vendíais",
+        "ellos": "vendían"
+      },
+      "future": {
+        "yo": "venderé",
+        "tu": "venderás",
+        "el": "venderá",
+        "nosotros": "venderemos",
+        "vosotros": "venderéis",
+        "ellos": "venderán"
+      },
+      "preterite": {
+        "yo": "vendí",
+        "tu": "vendiste",
+        "el": "vendió",
+        "nosotros": "vendimos",
+        "vosotros": "vendisteis",
+        "ellos": "vendieron"
+      }
     },
     {
       "infinitive": "leer",
@@ -418,7 +1114,31 @@
         "vosotros": "leéis",
         "ellos": "leen"
       },
-      "translation": "to read"
+      "translation": "to read",
+      "imperfect": {
+        "yo": "leía",
+        "tu": "leías",
+        "el": "leía",
+        "nosotros": "leíamos",
+        "vosotros": "leíais",
+        "ellos": "leían"
+      },
+      "future": {
+        "yo": "leeré",
+        "tu": "leerás",
+        "el": "leerá",
+        "nosotros": "leeremos",
+        "vosotros": "leeréis",
+        "ellos": "leerán"
+      },
+      "preterite": {
+        "yo": "leí",
+        "tu": "leíste",
+        "el": "leyó",
+        "nosotros": "leímos",
+        "vosotros": "leísteis",
+        "ellos": "leyeron"
+      }
     },
     {
       "infinitive": "aprender",
@@ -432,7 +1152,31 @@
         "vosotros": "aprendéis",
         "ellos": "aprenden"
       },
-      "translation": "to learn"
+      "translation": "to learn",
+      "imperfect": {
+        "yo": "aprendía",
+        "tu": "aprendías",
+        "el": "aprendía",
+        "nosotros": "aprendíamos",
+        "vosotros": "aprendíais",
+        "ellos": "aprendían"
+      },
+      "future": {
+        "yo": "aprenderé",
+        "tu": "aprenderás",
+        "el": "aprenderá",
+        "nosotros": "aprenderemos",
+        "vosotros": "aprenderéis",
+        "ellos": "aprenderán"
+      },
+      "preterite": {
+        "yo": "aprendí",
+        "tu": "aprendiste",
+        "el": "aprendió",
+        "nosotros": "aprendimos",
+        "vosotros": "aprendisteis",
+        "ellos": "aprendieron"
+      }
     },
     {
       "infinitive": "comprender",
@@ -446,7 +1190,31 @@
         "vosotros": "comprendéis",
         "ellos": "comprenden"
       },
-      "translation": "to understand"
+      "translation": "to understand",
+      "imperfect": {
+        "yo": "comprendía",
+        "tu": "comprendías",
+        "el": "comprendía",
+        "nosotros": "comprendíamos",
+        "vosotros": "comprendíais",
+        "ellos": "comprendían"
+      },
+      "future": {
+        "yo": "comprenderé",
+        "tu": "comprenderás",
+        "el": "comprenderá",
+        "nosotros": "comprenderemos",
+        "vosotros": "comprenderéis",
+        "ellos": "comprenderán"
+      },
+      "preterite": {
+        "yo": "comprendí",
+        "tu": "comprendiste",
+        "el": "comprendió",
+        "nosotros": "comprendimos",
+        "vosotros": "comprendisteis",
+        "ellos": "comprendieron"
+      }
     },
     {
       "infinitive": "responder",
@@ -460,7 +1228,31 @@
         "vosotros": "respondéis",
         "ellos": "responden"
       },
-      "translation": "to respond"
+      "translation": "to respond",
+      "imperfect": {
+        "yo": "respondía",
+        "tu": "respondías",
+        "el": "respondía",
+        "nosotros": "respondíamos",
+        "vosotros": "respondíais",
+        "ellos": "respondían"
+      },
+      "future": {
+        "yo": "responderé",
+        "tu": "responderás",
+        "el": "responderá",
+        "nosotros": "responderemos",
+        "vosotros": "responderéis",
+        "ellos": "responderán"
+      },
+      "preterite": {
+        "yo": "respondí",
+        "tu": "respondiste",
+        "el": "respondió",
+        "nosotros": "respondimos",
+        "vosotros": "respondisteis",
+        "ellos": "respondieron"
+      }
     },
     {
       "infinitive": "prometer",
@@ -474,7 +1266,31 @@
         "vosotros": "prometéis",
         "ellos": "prometen"
       },
-      "translation": "to promise"
+      "translation": "to promise",
+      "imperfect": {
+        "yo": "prometía",
+        "tu": "prometías",
+        "el": "prometía",
+        "nosotros": "prometíamos",
+        "vosotros": "prometíais",
+        "ellos": "prometían"
+      },
+      "future": {
+        "yo": "prometeré",
+        "tu": "prometerás",
+        "el": "prometerá",
+        "nosotros": "prometeremos",
+        "vosotros": "prometeréis",
+        "ellos": "prometerán"
+      },
+      "preterite": {
+        "yo": "prometí",
+        "tu": "prometiste",
+        "el": "prometió",
+        "nosotros": "prometimos",
+        "vosotros": "prometisteis",
+        "ellos": "prometieron"
+      }
     },
     {
       "infinitive": "meter",
@@ -488,7 +1304,31 @@
         "vosotros": "metéis",
         "ellos": "meten"
       },
-      "translation": "to put in"
+      "translation": "to put in",
+      "imperfect": {
+        "yo": "metía",
+        "tu": "metías",
+        "el": "metía",
+        "nosotros": "metíamos",
+        "vosotros": "metíais",
+        "ellos": "metían"
+      },
+      "future": {
+        "yo": "meteré",
+        "tu": "meterás",
+        "el": "meterá",
+        "nosotros": "meteremos",
+        "vosotros": "meteréis",
+        "ellos": "meterán"
+      },
+      "preterite": {
+        "yo": "metí",
+        "tu": "metiste",
+        "el": "metió",
+        "nosotros": "metimos",
+        "vosotros": "metisteis",
+        "ellos": "metieron"
+      }
     },
     {
       "infinitive": "romper",
@@ -502,7 +1342,31 @@
         "vosotros": "rompéis",
         "ellos": "rompen"
       },
-      "translation": "to break"
+      "translation": "to break",
+      "imperfect": {
+        "yo": "rompía",
+        "tu": "rompías",
+        "el": "rompía",
+        "nosotros": "rompíamos",
+        "vosotros": "rompíais",
+        "ellos": "rompían"
+      },
+      "future": {
+        "yo": "romperé",
+        "tu": "romperás",
+        "el": "romperá",
+        "nosotros": "romperemos",
+        "vosotros": "romperéis",
+        "ellos": "romperán"
+      },
+      "preterite": {
+        "yo": "rompí",
+        "tu": "rompiste",
+        "el": "rompió",
+        "nosotros": "rompimos",
+        "vosotros": "rompisteis",
+        "ellos": "rompieron"
+      }
     },
     {
       "infinitive": "barrer",
@@ -516,7 +1380,31 @@
         "vosotros": "barréis",
         "ellos": "barren"
       },
-      "translation": "to sweep"
+      "translation": "to sweep",
+      "imperfect": {
+        "yo": "barría",
+        "tu": "barrías",
+        "el": "barría",
+        "nosotros": "barríamos",
+        "vosotros": "barríais",
+        "ellos": "barrían"
+      },
+      "future": {
+        "yo": "barreré",
+        "tu": "barrerás",
+        "el": "barrerá",
+        "nosotros": "barreremos",
+        "vosotros": "barreréis",
+        "ellos": "barrerán"
+      },
+      "preterite": {
+        "yo": "barrí",
+        "tu": "barriste",
+        "el": "barrió",
+        "nosotros": "barrimos",
+        "vosotros": "barristeis",
+        "ellos": "barrieron"
+      }
     },
     {
       "infinitive": "coser",
@@ -530,7 +1418,31 @@
         "vosotros": "coséis",
         "ellos": "cosen"
       },
-      "translation": "to sew"
+      "translation": "to sew",
+      "imperfect": {
+        "yo": "cosía",
+        "tu": "cosías",
+        "el": "cosía",
+        "nosotros": "cosíamos",
+        "vosotros": "cosíais",
+        "ellos": "cosían"
+      },
+      "future": {
+        "yo": "coseré",
+        "tu": "coserás",
+        "el": "coserá",
+        "nosotros": "coseremos",
+        "vosotros": "coseréis",
+        "ellos": "coserán"
+      },
+      "preterite": {
+        "yo": "cosí",
+        "tu": "cosiste",
+        "el": "cosió",
+        "nosotros": "cosimos",
+        "vosotros": "cosisteis",
+        "ellos": "cosieron"
+      }
     },
     {
       "infinitive": "toser",
@@ -544,7 +1456,31 @@
         "vosotros": "toséis",
         "ellos": "tosen"
       },
-      "translation": "to cough"
+      "translation": "to cough",
+      "imperfect": {
+        "yo": "tosía",
+        "tu": "tosías",
+        "el": "tosía",
+        "nosotros": "tosíamos",
+        "vosotros": "tosíais",
+        "ellos": "tosían"
+      },
+      "future": {
+        "yo": "toseré",
+        "tu": "toserás",
+        "el": "toserá",
+        "nosotros": "toseremos",
+        "vosotros": "toseréis",
+        "ellos": "toserán"
+      },
+      "preterite": {
+        "yo": "tosí",
+        "tu": "tosiste",
+        "el": "tosió",
+        "nosotros": "tosimos",
+        "vosotros": "tosisteis",
+        "ellos": "tosieron"
+      }
     },
     {
       "infinitive": "sorprender",
@@ -558,7 +1494,31 @@
         "vosotros": "sorprendéis",
         "ellos": "sorprenden"
       },
-      "translation": "to surprise"
+      "translation": "to surprise",
+      "imperfect": {
+        "yo": "sorprendía",
+        "tu": "sorprendías",
+        "el": "sorprendía",
+        "nosotros": "sorprendíamos",
+        "vosotros": "sorprendíais",
+        "ellos": "sorprendían"
+      },
+      "future": {
+        "yo": "sorprenderé",
+        "tu": "sorprenderás",
+        "el": "sorprenderá",
+        "nosotros": "sorprenderemos",
+        "vosotros": "sorprenderéis",
+        "ellos": "sorprenderán"
+      },
+      "preterite": {
+        "yo": "sorprendí",
+        "tu": "sorprendiste",
+        "el": "sorprendió",
+        "nosotros": "sorprendimos",
+        "vosotros": "sorprendisteis",
+        "ellos": "sorprendieron"
+      }
     },
     {
       "infinitive": "depender",
@@ -572,7 +1532,31 @@
         "vosotros": "dependéis",
         "ellos": "dependen"
       },
-      "translation": "to depend"
+      "translation": "to depend",
+      "imperfect": {
+        "yo": "dependía",
+        "tu": "dependías",
+        "el": "dependía",
+        "nosotros": "dependíamos",
+        "vosotros": "dependíais",
+        "ellos": "dependían"
+      },
+      "future": {
+        "yo": "dependeré",
+        "tu": "dependerás",
+        "el": "dependerá",
+        "nosotros": "dependeremos",
+        "vosotros": "dependeréis",
+        "ellos": "dependerán"
+      },
+      "preterite": {
+        "yo": "dependí",
+        "tu": "dependiste",
+        "el": "dependió",
+        "nosotros": "dependimos",
+        "vosotros": "dependisteis",
+        "ellos": "dependieron"
+      }
     },
     {
       "infinitive": "vivir",
@@ -586,7 +1570,31 @@
         "vosotros": "vivís",
         "ellos": "viven"
       },
-      "translation": "to live"
+      "translation": "to live",
+      "imperfect": {
+        "yo": "vivía",
+        "tu": "vivías",
+        "el": "vivía",
+        "nosotros": "vivíamos",
+        "vosotros": "vivíais",
+        "ellos": "vivían"
+      },
+      "future": {
+        "yo": "viviré",
+        "tu": "vivirás",
+        "el": "vivirá",
+        "nosotros": "viviremos",
+        "vosotros": "viviréis",
+        "ellos": "vivirán"
+      },
+      "preterite": {
+        "yo": "viví",
+        "tu": "viviste",
+        "el": "vivió",
+        "nosotros": "vivimos",
+        "vosotros": "vivisteis",
+        "ellos": "vivieron"
+      }
     },
     {
       "infinitive": "escribir",
@@ -600,7 +1608,31 @@
         "vosotros": "escribís",
         "ellos": "escriben"
       },
-      "translation": "to write"
+      "translation": "to write",
+      "imperfect": {
+        "yo": "escribía",
+        "tu": "escribías",
+        "el": "escribía",
+        "nosotros": "escribíamos",
+        "vosotros": "escribíais",
+        "ellos": "escribían"
+      },
+      "future": {
+        "yo": "escribiré",
+        "tu": "escribirás",
+        "el": "escribirá",
+        "nosotros": "escribiremos",
+        "vosotros": "escribiréis",
+        "ellos": "escribirán"
+      },
+      "preterite": {
+        "yo": "escribí",
+        "tu": "escribiste",
+        "el": "escribió",
+        "nosotros": "escribimos",
+        "vosotros": "escribisteis",
+        "ellos": "escribieron"
+      }
     },
     {
       "infinitive": "subir",
@@ -614,7 +1646,31 @@
         "vosotros": "subís",
         "ellos": "suben"
       },
-      "translation": "to go up"
+      "translation": "to go up",
+      "imperfect": {
+        "yo": "subía",
+        "tu": "subías",
+        "el": "subía",
+        "nosotros": "subíamos",
+        "vosotros": "subíais",
+        "ellos": "subían"
+      },
+      "future": {
+        "yo": "subiré",
+        "tu": "subirás",
+        "el": "subirá",
+        "nosotros": "subiremos",
+        "vosotros": "subiréis",
+        "ellos": "subirán"
+      },
+      "preterite": {
+        "yo": "subí",
+        "tu": "subiste",
+        "el": "subió",
+        "nosotros": "subimos",
+        "vosotros": "subisteis",
+        "ellos": "subieron"
+      }
     },
     {
       "infinitive": "abrir",
@@ -628,7 +1684,31 @@
         "vosotros": "abrís",
         "ellos": "abren"
       },
-      "translation": "to open"
+      "translation": "to open",
+      "imperfect": {
+        "yo": "abría",
+        "tu": "abrías",
+        "el": "abría",
+        "nosotros": "abríamos",
+        "vosotros": "abríais",
+        "ellos": "abrían"
+      },
+      "future": {
+        "yo": "abriré",
+        "tu": "abrirás",
+        "el": "abrirá",
+        "nosotros": "abriremos",
+        "vosotros": "abriréis",
+        "ellos": "abrirán"
+      },
+      "preterite": {
+        "yo": "abrí",
+        "tu": "abriste",
+        "el": "abrió",
+        "nosotros": "abrimos",
+        "vosotros": "abristeis",
+        "ellos": "abrieron"
+      }
     },
     {
       "infinitive": "partir",
@@ -642,7 +1722,31 @@
         "vosotros": "partís",
         "ellos": "parten"
       },
-      "translation": "to depart"
+      "translation": "to depart",
+      "imperfect": {
+        "yo": "partía",
+        "tu": "partías",
+        "el": "partía",
+        "nosotros": "partíamos",
+        "vosotros": "partíais",
+        "ellos": "partían"
+      },
+      "future": {
+        "yo": "partiré",
+        "tu": "partirás",
+        "el": "partirá",
+        "nosotros": "partiremos",
+        "vosotros": "partiréis",
+        "ellos": "partirán"
+      },
+      "preterite": {
+        "yo": "partí",
+        "tu": "partiste",
+        "el": "partió",
+        "nosotros": "partimos",
+        "vosotros": "partisteis",
+        "ellos": "partieron"
+      }
     },
     {
       "infinitive": "recibir",
@@ -656,7 +1760,31 @@
         "vosotros": "recibís",
         "ellos": "reciben"
       },
-      "translation": "to receive"
+      "translation": "to receive",
+      "imperfect": {
+        "yo": "recibía",
+        "tu": "recibías",
+        "el": "recibía",
+        "nosotros": "recibíamos",
+        "vosotros": "recibíais",
+        "ellos": "recibían"
+      },
+      "future": {
+        "yo": "recibiré",
+        "tu": "recibirás",
+        "el": "recibirá",
+        "nosotros": "recibiremos",
+        "vosotros": "recibiréis",
+        "ellos": "recibirán"
+      },
+      "preterite": {
+        "yo": "recibí",
+        "tu": "recibiste",
+        "el": "recibió",
+        "nosotros": "recibimos",
+        "vosotros": "recibisteis",
+        "ellos": "recibieron"
+      }
     },
     {
       "infinitive": "decidir",
@@ -670,7 +1798,31 @@
         "vosotros": "decidís",
         "ellos": "deciden"
       },
-      "translation": "to decide"
+      "translation": "to decide",
+      "imperfect": {
+        "yo": "decidía",
+        "tu": "decidías",
+        "el": "decidía",
+        "nosotros": "decidíamos",
+        "vosotros": "decidíais",
+        "ellos": "decidían"
+      },
+      "future": {
+        "yo": "decidiré",
+        "tu": "decidirás",
+        "el": "decidirá",
+        "nosotros": "decidiremos",
+        "vosotros": "decidiréis",
+        "ellos": "decidirán"
+      },
+      "preterite": {
+        "yo": "decidí",
+        "tu": "decidiste",
+        "el": "decidió",
+        "nosotros": "decidimos",
+        "vosotros": "decidisteis",
+        "ellos": "decidieron"
+      }
     },
     {
       "infinitive": "permitir",
@@ -684,7 +1836,31 @@
         "vosotros": "permitís",
         "ellos": "permiten"
       },
-      "translation": "to allow"
+      "translation": "to allow",
+      "imperfect": {
+        "yo": "permitía",
+        "tu": "permitías",
+        "el": "permitía",
+        "nosotros": "permitíamos",
+        "vosotros": "permitíais",
+        "ellos": "permitían"
+      },
+      "future": {
+        "yo": "permitiré",
+        "tu": "permitirás",
+        "el": "permitirá",
+        "nosotros": "permitiremos",
+        "vosotros": "permitiréis",
+        "ellos": "permitirán"
+      },
+      "preterite": {
+        "yo": "permití",
+        "tu": "permitiste",
+        "el": "permitió",
+        "nosotros": "permitimos",
+        "vosotros": "permitisteis",
+        "ellos": "permitieron"
+      }
     },
     {
       "infinitive": "añadir",
@@ -698,7 +1874,31 @@
         "vosotros": "añadís",
         "ellos": "añaden"
       },
-      "translation": "to add"
+      "translation": "to add",
+      "imperfect": {
+        "yo": "añadía",
+        "tu": "añadías",
+        "el": "añadía",
+        "nosotros": "añadíamos",
+        "vosotros": "añadíais",
+        "ellos": "añadían"
+      },
+      "future": {
+        "yo": "añadiré",
+        "tu": "añadirás",
+        "el": "añadirá",
+        "nosotros": "añadiremos",
+        "vosotros": "añadiréis",
+        "ellos": "añadirán"
+      },
+      "preterite": {
+        "yo": "añadí",
+        "tu": "añadiste",
+        "el": "añadió",
+        "nosotros": "añadimos",
+        "vosotros": "añadisteis",
+        "ellos": "añadieron"
+      }
     },
     {
       "infinitive": "discutir",
@@ -712,7 +1912,31 @@
         "vosotros": "discutís",
         "ellos": "discuten"
       },
-      "translation": "to argue"
+      "translation": "to argue",
+      "imperfect": {
+        "yo": "discutía",
+        "tu": "discutías",
+        "el": "discutía",
+        "nosotros": "discutíamos",
+        "vosotros": "discutíais",
+        "ellos": "discutían"
+      },
+      "future": {
+        "yo": "discutiré",
+        "tu": "discutirás",
+        "el": "discutirá",
+        "nosotros": "discutiremos",
+        "vosotros": "discutiréis",
+        "ellos": "discutirán"
+      },
+      "preterite": {
+        "yo": "discutí",
+        "tu": "discutiste",
+        "el": "discutió",
+        "nosotros": "discutimos",
+        "vosotros": "discutisteis",
+        "ellos": "discutieron"
+      }
     },
     {
       "infinitive": "existir",
@@ -726,7 +1950,31 @@
         "vosotros": "existís",
         "ellos": "existen"
       },
-      "translation": "to exist"
+      "translation": "to exist",
+      "imperfect": {
+        "yo": "existía",
+        "tu": "existías",
+        "el": "existía",
+        "nosotros": "existíamos",
+        "vosotros": "existíais",
+        "ellos": "existían"
+      },
+      "future": {
+        "yo": "existiré",
+        "tu": "existirás",
+        "el": "existirá",
+        "nosotros": "existiremos",
+        "vosotros": "existiréis",
+        "ellos": "existirán"
+      },
+      "preterite": {
+        "yo": "existí",
+        "tu": "exististe",
+        "el": "existió",
+        "nosotros": "existimos",
+        "vosotros": "exististeis",
+        "ellos": "existieron"
+      }
     },
     {
       "infinitive": "insistir",
@@ -740,7 +1988,31 @@
         "vosotros": "insistís",
         "ellos": "insisten"
       },
-      "translation": "to insist"
+      "translation": "to insist",
+      "imperfect": {
+        "yo": "insistía",
+        "tu": "insistías",
+        "el": "insistía",
+        "nosotros": "insistíamos",
+        "vosotros": "insistíais",
+        "ellos": "insistían"
+      },
+      "future": {
+        "yo": "insistiré",
+        "tu": "insistirás",
+        "el": "insistirá",
+        "nosotros": "insistiremos",
+        "vosotros": "insistiréis",
+        "ellos": "insistirán"
+      },
+      "preterite": {
+        "yo": "insistí",
+        "tu": "insististe",
+        "el": "insistió",
+        "nosotros": "insistimos",
+        "vosotros": "insististeis",
+        "ellos": "insistieron"
+      }
     },
     {
       "infinitive": "interrumpir",
@@ -754,7 +2026,31 @@
         "vosotros": "interrumpís",
         "ellos": "interrumpen"
       },
-      "translation": "to interrupt"
+      "translation": "to interrupt",
+      "imperfect": {
+        "yo": "interrumpía",
+        "tu": "interrumpías",
+        "el": "interrumpía",
+        "nosotros": "interrumpíamos",
+        "vosotros": "interrumpíais",
+        "ellos": "interrumpían"
+      },
+      "future": {
+        "yo": "interrumpiré",
+        "tu": "interrumpirás",
+        "el": "interrumpirá",
+        "nosotros": "interrumpiremos",
+        "vosotros": "interrumpiréis",
+        "ellos": "interrumpirán"
+      },
+      "preterite": {
+        "yo": "interrumpí",
+        "tu": "interrumpiste",
+        "el": "interrumpió",
+        "nosotros": "interrumpimos",
+        "vosotros": "interrumpisteis",
+        "ellos": "interrumpieron"
+      }
     },
     {
       "infinitive": "sufrir",
@@ -768,7 +2064,31 @@
         "vosotros": "sufrís",
         "ellos": "sufren"
       },
-      "translation": "to suffer"
+      "translation": "to suffer",
+      "imperfect": {
+        "yo": "sufría",
+        "tu": "sufrías",
+        "el": "sufría",
+        "nosotros": "sufríamos",
+        "vosotros": "sufríais",
+        "ellos": "sufrían"
+      },
+      "future": {
+        "yo": "sufriré",
+        "tu": "sufrirás",
+        "el": "sufrirá",
+        "nosotros": "sufriremos",
+        "vosotros": "sufriréis",
+        "ellos": "sufrirán"
+      },
+      "preterite": {
+        "yo": "sufrí",
+        "tu": "sufriste",
+        "el": "sufrió",
+        "nosotros": "sufrimos",
+        "vosotros": "sufristeis",
+        "ellos": "sufrieron"
+      }
     },
     {
       "infinitive": "unir",
@@ -782,7 +2102,31 @@
         "vosotros": "unís",
         "ellos": "unen"
       },
-      "translation": "to unite"
+      "translation": "to unite",
+      "imperfect": {
+        "yo": "unía",
+        "tu": "unías",
+        "el": "unía",
+        "nosotros": "uníamos",
+        "vosotros": "uníais",
+        "ellos": "unían"
+      },
+      "future": {
+        "yo": "uniré",
+        "tu": "unirás",
+        "el": "unirá",
+        "nosotros": "uniremos",
+        "vosotros": "uniréis",
+        "ellos": "unirán"
+      },
+      "preterite": {
+        "yo": "uní",
+        "tu": "uniste",
+        "el": "unió",
+        "nosotros": "unimos",
+        "vosotros": "unisteis",
+        "ellos": "unieron"
+      }
     },
     {
       "infinitive": "ser",
@@ -797,7 +2141,31 @@
         "vosotros": "sois",
         "ellos": "son"
       },
-      "translation": "to be"
+      "translation": "to be",
+      "imperfect": {
+        "yo": "era",
+        "tu": "eras",
+        "el": "era",
+        "nosotros": "éramos",
+        "vosotros": "erais",
+        "ellos": "eran"
+      },
+      "future": {
+        "yo": "seré",
+        "tu": "serás",
+        "el": "será",
+        "nosotros": "seremos",
+        "vosotros": "seréis",
+        "ellos": "serán"
+      },
+      "preterite": {
+        "yo": "fui",
+        "tu": "fuiste",
+        "el": "fue",
+        "nosotros": "fuimos",
+        "vosotros": "fuisteis",
+        "ellos": "fueron"
+      }
     },
     {
       "infinitive": "estar",
@@ -812,7 +2180,31 @@
         "vosotros": "estáis",
         "ellos": "están"
       },
-      "translation": "to be"
+      "translation": "to be",
+      "imperfect": {
+        "yo": "estaba",
+        "tu": "estabas",
+        "el": "estaba",
+        "nosotros": "estábamos",
+        "vosotros": "estabais",
+        "ellos": "estaban"
+      },
+      "future": {
+        "yo": "estaré",
+        "tu": "estarás",
+        "el": "estará",
+        "nosotros": "estaremos",
+        "vosotros": "estaréis",
+        "ellos": "estarán"
+      },
+      "preterite": {
+        "yo": "estuve",
+        "tu": "estuviste",
+        "el": "estuvo",
+        "nosotros": "estuvimos",
+        "vosotros": "estuvisteis",
+        "ellos": "estuvieron"
+      }
     },
     {
       "infinitive": "ir",
@@ -827,7 +2219,31 @@
         "vosotros": "vais",
         "ellos": "van"
       },
-      "translation": "to go"
+      "translation": "to go",
+      "imperfect": {
+        "yo": "iba",
+        "tu": "ibas",
+        "el": "iba",
+        "nosotros": "íbamos",
+        "vosotros": "ibais",
+        "ellos": "iban"
+      },
+      "future": {
+        "yo": "iré",
+        "tu": "irás",
+        "el": "irá",
+        "nosotros": "iremos",
+        "vosotros": "iréis",
+        "ellos": "irán"
+      },
+      "preterite": {
+        "yo": "fui",
+        "tu": "fuiste",
+        "el": "fue",
+        "nosotros": "fuimos",
+        "vosotros": "fuisteis",
+        "ellos": "fueron"
+      }
     },
     {
       "infinitive": "tener",
@@ -842,7 +2258,31 @@
         "vosotros": "tenéis",
         "ellos": "tienen"
       },
-      "translation": "to have"
+      "translation": "to have",
+      "imperfect": {
+        "yo": "tenía",
+        "tu": "tenías",
+        "el": "tenía",
+        "nosotros": "teníamos",
+        "vosotros": "teníais",
+        "ellos": "tenían"
+      },
+      "future": {
+        "yo": "tendré",
+        "tu": "tendrás",
+        "el": "tendrá",
+        "nosotros": "tendremos",
+        "vosotros": "tendréis",
+        "ellos": "tendrán"
+      },
+      "preterite": {
+        "yo": "tuve",
+        "tu": "tuviste",
+        "el": "tuvo",
+        "nosotros": "tuvimos",
+        "vosotros": "tuvisteis",
+        "ellos": "tuvieron"
+      }
     },
     {
       "infinitive": "haber",
@@ -857,7 +2297,31 @@
         "vosotros": "habéis",
         "ellos": "han"
       },
-      "translation": "to have (aux)"
+      "translation": "to have (aux)",
+      "imperfect": {
+        "yo": "había",
+        "tu": "habías",
+        "el": "había",
+        "nosotros": "habíamos",
+        "vosotros": "habíais",
+        "ellos": "habían"
+      },
+      "future": {
+        "yo": "habré",
+        "tu": "habrás",
+        "el": "habrá",
+        "nosotros": "habremos",
+        "vosotros": "habréis",
+        "ellos": "habrán"
+      },
+      "preterite": {
+        "yo": "hube",
+        "tu": "hubiste",
+        "el": "hubo",
+        "nosotros": "hubimos",
+        "vosotros": "hubisteis",
+        "ellos": "hubieron"
+      }
     },
     {
       "infinitive": "hacer",
@@ -872,7 +2336,31 @@
         "vosotros": "hacéis",
         "ellos": "hacen"
       },
-      "translation": "to do"
+      "translation": "to do",
+      "imperfect": {
+        "yo": "hacía",
+        "tu": "hacías",
+        "el": "hacía",
+        "nosotros": "hacíamos",
+        "vosotros": "hacíais",
+        "ellos": "hacían"
+      },
+      "future": {
+        "yo": "haré",
+        "tu": "harás",
+        "el": "hará",
+        "nosotros": "haremos",
+        "vosotros": "haréis",
+        "ellos": "harán"
+      },
+      "preterite": {
+        "yo": "hice",
+        "tu": "hiciste",
+        "el": "hizo",
+        "nosotros": "hicimos",
+        "vosotros": "hicisteis",
+        "ellos": "hicieron"
+      }
     },
     {
       "infinitive": "decir",
@@ -887,7 +2375,31 @@
         "vosotros": "decís",
         "ellos": "dicen"
       },
-      "translation": "to say"
+      "translation": "to say",
+      "imperfect": {
+        "yo": "decía",
+        "tu": "decías",
+        "el": "decía",
+        "nosotros": "decíamos",
+        "vosotros": "decíais",
+        "ellos": "decían"
+      },
+      "future": {
+        "yo": "diré",
+        "tu": "dirás",
+        "el": "dirá",
+        "nosotros": "diremos",
+        "vosotros": "diréis",
+        "ellos": "dirán"
+      },
+      "preterite": {
+        "yo": "dije",
+        "tu": "dijiste",
+        "el": "dijo",
+        "nosotros": "dijimos",
+        "vosotros": "dijisteis",
+        "ellos": "dijeron"
+      }
     },
     {
       "infinitive": "venir",
@@ -902,7 +2414,31 @@
         "vosotros": "venís",
         "ellos": "vienen"
       },
-      "translation": "to come"
+      "translation": "to come",
+      "imperfect": {
+        "yo": "venía",
+        "tu": "venías",
+        "el": "venía",
+        "nosotros": "veníamos",
+        "vosotros": "veníais",
+        "ellos": "venían"
+      },
+      "future": {
+        "yo": "vendré",
+        "tu": "vendrás",
+        "el": "vendrá",
+        "nosotros": "vendremos",
+        "vosotros": "vendréis",
+        "ellos": "vendrán"
+      },
+      "preterite": {
+        "yo": "vine",
+        "tu": "viniste",
+        "el": "vino",
+        "nosotros": "vinimos",
+        "vosotros": "vinisteis",
+        "ellos": "vinieron"
+      }
     },
     {
       "infinitive": "poner",
@@ -917,7 +2453,31 @@
         "vosotros": "ponéis",
         "ellos": "ponen"
       },
-      "translation": "to put"
+      "translation": "to put",
+      "imperfect": {
+        "yo": "ponía",
+        "tu": "ponías",
+        "el": "ponía",
+        "nosotros": "poníamos",
+        "vosotros": "poníais",
+        "ellos": "ponían"
+      },
+      "future": {
+        "yo": "pondré",
+        "tu": "pondrás",
+        "el": "pondrá",
+        "nosotros": "pondremos",
+        "vosotros": "pondréis",
+        "ellos": "pondrán"
+      },
+      "preterite": {
+        "yo": "puse",
+        "tu": "pusiste",
+        "el": "puso",
+        "nosotros": "pusimos",
+        "vosotros": "pusisteis",
+        "ellos": "pusieron"
+      }
     },
     {
       "infinitive": "saber",
@@ -932,7 +2492,31 @@
         "vosotros": "sabéis",
         "ellos": "saben"
       },
-      "translation": "to know"
+      "translation": "to know",
+      "imperfect": {
+        "yo": "sabía",
+        "tu": "sabías",
+        "el": "sabía",
+        "nosotros": "sabíamos",
+        "vosotros": "sabíais",
+        "ellos": "sabían"
+      },
+      "future": {
+        "yo": "sabré",
+        "tu": "sabrás",
+        "el": "sabrá",
+        "nosotros": "sabremos",
+        "vosotros": "sabréis",
+        "ellos": "sabrán"
+      },
+      "preterite": {
+        "yo": "supe",
+        "tu": "supiste",
+        "el": "supo",
+        "nosotros": "supimos",
+        "vosotros": "supisteis",
+        "ellos": "supieron"
+      }
     },
     {
       "infinitive": "traer",
@@ -947,7 +2531,31 @@
         "vosotros": "traéis",
         "ellos": "traen"
       },
-      "translation": "to bring"
+      "translation": "to bring",
+      "imperfect": {
+        "yo": "traía",
+        "tu": "traías",
+        "el": "traía",
+        "nosotros": "traíamos",
+        "vosotros": "traíais",
+        "ellos": "traían"
+      },
+      "future": {
+        "yo": "traeré",
+        "tu": "traerás",
+        "el": "traerá",
+        "nosotros": "traeremos",
+        "vosotros": "traeréis",
+        "ellos": "traerán"
+      },
+      "preterite": {
+        "yo": "traje",
+        "tu": "trajiste",
+        "el": "trajo",
+        "nosotros": "trajimos",
+        "vosotros": "trajisteis",
+        "ellos": "trajeron"
+      }
     },
     {
       "infinitive": "salir",
@@ -962,7 +2570,31 @@
         "vosotros": "salís",
         "ellos": "salen"
       },
-      "translation": "to leave"
+      "translation": "to leave",
+      "imperfect": {
+        "yo": "salía",
+        "tu": "salías",
+        "el": "salía",
+        "nosotros": "salíamos",
+        "vosotros": "salíais",
+        "ellos": "salían"
+      },
+      "future": {
+        "yo": "saldré",
+        "tu": "saldrás",
+        "el": "saldrá",
+        "nosotros": "saldremos",
+        "vosotros": "saldréis",
+        "ellos": "saldrán"
+      },
+      "preterite": {
+        "yo": "salí",
+        "tu": "saliste",
+        "el": "salió",
+        "nosotros": "salimos",
+        "vosotros": "salisteis",
+        "ellos": "salieron"
+      }
     },
     {
       "infinitive": "caer",
@@ -977,7 +2609,31 @@
         "vosotros": "caéis",
         "ellos": "caen"
       },
-      "translation": "to fall"
+      "translation": "to fall",
+      "imperfect": {
+        "yo": "caía",
+        "tu": "caías",
+        "el": "caía",
+        "nosotros": "caíamos",
+        "vosotros": "caíais",
+        "ellos": "caían"
+      },
+      "future": {
+        "yo": "caeré",
+        "tu": "caerás",
+        "el": "caerá",
+        "nosotros": "caeremos",
+        "vosotros": "caeréis",
+        "ellos": "caerán"
+      },
+      "preterite": {
+        "yo": "caí",
+        "tu": "caíste",
+        "el": "cayó",
+        "nosotros": "caímos",
+        "vosotros": "caísteis",
+        "ellos": "cayeron"
+      }
     },
     {
       "infinitive": "ver",
@@ -992,7 +2648,31 @@
         "vosotros": "veis",
         "ellos": "ven"
       },
-      "translation": "to see"
+      "translation": "to see",
+      "imperfect": {
+        "yo": "veía",
+        "tu": "veías",
+        "el": "veía",
+        "nosotros": "veíamos",
+        "vosotros": "veíais",
+        "ellos": "veían"
+      },
+      "future": {
+        "yo": "veré",
+        "tu": "verás",
+        "el": "verá",
+        "nosotros": "veremos",
+        "vosotros": "veréis",
+        "ellos": "verán"
+      },
+      "preterite": {
+        "yo": "vi",
+        "tu": "viste",
+        "el": "vio",
+        "nosotros": "vimos",
+        "vosotros": "visteis",
+        "ellos": "vieron"
+      }
     },
     {
       "infinitive": "dar",
@@ -1007,7 +2687,31 @@
         "vosotros": "dais",
         "ellos": "dan"
       },
-      "translation": "to give"
+      "translation": "to give",
+      "imperfect": {
+        "yo": "daba",
+        "tu": "dabas",
+        "el": "daba",
+        "nosotros": "dábamos",
+        "vosotros": "dabais",
+        "ellos": "daban"
+      },
+      "future": {
+        "yo": "daré",
+        "tu": "darás",
+        "el": "dará",
+        "nosotros": "daremos",
+        "vosotros": "daréis",
+        "ellos": "darán"
+      },
+      "preterite": {
+        "yo": "di",
+        "tu": "diste",
+        "el": "dio",
+        "nosotros": "dimos",
+        "vosotros": "disteis",
+        "ellos": "dieron"
+      }
     },
     {
       "infinitive": "poder",
@@ -1022,7 +2726,31 @@
         "vosotros": "podéis",
         "ellos": "pueden"
       },
-      "translation": "to be able"
+      "translation": "to be able",
+      "imperfect": {
+        "yo": "podía",
+        "tu": "podías",
+        "el": "podía",
+        "nosotros": "podíamos",
+        "vosotros": "podíais",
+        "ellos": "podían"
+      },
+      "future": {
+        "yo": "podré",
+        "tu": "podrás",
+        "el": "podrá",
+        "nosotros": "podremos",
+        "vosotros": "podréis",
+        "ellos": "podrán"
+      },
+      "preterite": {
+        "yo": "pude",
+        "tu": "pudiste",
+        "el": "pudo",
+        "nosotros": "pudimos",
+        "vosotros": "pudisteis",
+        "ellos": "pudieron"
+      }
     },
     {
       "infinitive": "querer",
@@ -1037,7 +2765,31 @@
         "vosotros": "queréis",
         "ellos": "quieren"
       },
-      "translation": "to want"
+      "translation": "to want",
+      "imperfect": {
+        "yo": "quería",
+        "tu": "querías",
+        "el": "quería",
+        "nosotros": "queríamos",
+        "vosotros": "queríais",
+        "ellos": "querían"
+      },
+      "future": {
+        "yo": "querré",
+        "tu": "querrás",
+        "el": "querrá",
+        "nosotros": "querremos",
+        "vosotros": "querréis",
+        "ellos": "querrán"
+      },
+      "preterite": {
+        "yo": "quise",
+        "tu": "quisiste",
+        "el": "quiso",
+        "nosotros": "quisimos",
+        "vosotros": "quisisteis",
+        "ellos": "quisieron"
+      }
     },
     {
       "infinitive": "entender",
@@ -1052,7 +2804,31 @@
         "vosotros": "entendéis",
         "ellos": "entienden"
       },
-      "translation": "to understand"
+      "translation": "to understand",
+      "imperfect": {
+        "yo": "entendía",
+        "tu": "entendías",
+        "el": "entendía",
+        "nosotros": "entendíamos",
+        "vosotros": "entendíais",
+        "ellos": "entendían"
+      },
+      "future": {
+        "yo": "entenderé",
+        "tu": "entenderás",
+        "el": "entenderá",
+        "nosotros": "entenderemos",
+        "vosotros": "entenderéis",
+        "ellos": "entenderán"
+      },
+      "preterite": {
+        "yo": "entendí",
+        "tu": "entendiste",
+        "el": "entendió",
+        "nosotros": "entendimos",
+        "vosotros": "entendisteis",
+        "ellos": "entendieron"
+      }
     },
     {
       "infinitive": "volver",
@@ -1067,7 +2843,31 @@
         "vosotros": "volvéis",
         "ellos": "vuelven"
       },
-      "translation": "to return"
+      "translation": "to return",
+      "imperfect": {
+        "yo": "volvía",
+        "tu": "volvías",
+        "el": "volvía",
+        "nosotros": "volvíamos",
+        "vosotros": "volvíais",
+        "ellos": "volvían"
+      },
+      "future": {
+        "yo": "volveré",
+        "tu": "volverás",
+        "el": "volverá",
+        "nosotros": "volveremos",
+        "vosotros": "volveréis",
+        "ellos": "volverán"
+      },
+      "preterite": {
+        "yo": "volví",
+        "tu": "volviste",
+        "el": "volvió",
+        "nosotros": "volvimos",
+        "vosotros": "volvisteis",
+        "ellos": "volvieron"
+      }
     },
     {
       "infinitive": "dormir",
@@ -1082,7 +2882,31 @@
         "vosotros": "dormís",
         "ellos": "duermen"
       },
-      "translation": "to sleep"
+      "translation": "to sleep",
+      "imperfect": {
+        "yo": "dormía",
+        "tu": "dormías",
+        "el": "dormía",
+        "nosotros": "dormíamos",
+        "vosotros": "dormíais",
+        "ellos": "dormían"
+      },
+      "future": {
+        "yo": "dormiré",
+        "tu": "dormirás",
+        "el": "dormirá",
+        "nosotros": "dormiremos",
+        "vosotros": "dormiréis",
+        "ellos": "dormirán"
+      },
+      "preterite": {
+        "yo": "dormí",
+        "tu": "dormiste",
+        "el": "durmió",
+        "nosotros": "dormimos",
+        "vosotros": "dormisteis",
+        "ellos": "durmieron"
+      }
     },
     {
       "infinitive": "pedir",
@@ -1097,7 +2921,31 @@
         "vosotros": "pedís",
         "ellos": "piden"
       },
-      "translation": "to ask for"
+      "translation": "to ask for",
+      "imperfect": {
+        "yo": "pedía",
+        "tu": "pedías",
+        "el": "pedía",
+        "nosotros": "pedíamos",
+        "vosotros": "pedíais",
+        "ellos": "pedían"
+      },
+      "future": {
+        "yo": "pediré",
+        "tu": "pedirás",
+        "el": "pedirá",
+        "nosotros": "pediremos",
+        "vosotros": "pediréis",
+        "ellos": "pedirán"
+      },
+      "preterite": {
+        "yo": "pedí",
+        "tu": "pediste",
+        "el": "pidió",
+        "nosotros": "pedimos",
+        "vosotros": "pedisteis",
+        "ellos": "pidieron"
+      }
     },
     {
       "infinitive": "sentir",
@@ -1112,7 +2960,31 @@
         "vosotros": "sentís",
         "ellos": "sienten"
       },
-      "translation": "to feel"
+      "translation": "to feel",
+      "imperfect": {
+        "yo": "sentía",
+        "tu": "sentías",
+        "el": "sentía",
+        "nosotros": "sentíamos",
+        "vosotros": "sentíais",
+        "ellos": "sentían"
+      },
+      "future": {
+        "yo": "sentiré",
+        "tu": "sentirás",
+        "el": "sentirá",
+        "nosotros": "sentiremos",
+        "vosotros": "sentiréis",
+        "ellos": "sentirán"
+      },
+      "preterite": {
+        "yo": "sentí",
+        "tu": "sentiste",
+        "el": "sintió",
+        "nosotros": "sentimos",
+        "vosotros": "sentisteis",
+        "ellos": "sintieron"
+      }
     },
     {
       "infinitive": "preferir",
@@ -1127,7 +2999,31 @@
         "vosotros": "preferís",
         "ellos": "prefieren"
       },
-      "translation": "to prefer"
+      "translation": "to prefer",
+      "imperfect": {
+        "yo": "prefería",
+        "tu": "preferías",
+        "el": "prefería",
+        "nosotros": "preferíamos",
+        "vosotros": "preferíais",
+        "ellos": "preferían"
+      },
+      "future": {
+        "yo": "preferiré",
+        "tu": "preferirás",
+        "el": "preferirá",
+        "nosotros": "preferiremos",
+        "vosotros": "preferiréis",
+        "ellos": "preferirán"
+      },
+      "preterite": {
+        "yo": "preferí",
+        "tu": "preferiste",
+        "el": "prefirió",
+        "nosotros": "preferimos",
+        "vosotros": "preferisteis",
+        "ellos": "prefirieron"
+      }
     },
     {
       "infinitive": "empezar",
@@ -1142,7 +3038,31 @@
         "vosotros": "empezáis",
         "ellos": "empiezan"
       },
-      "translation": "to start"
+      "translation": "to start",
+      "imperfect": {
+        "yo": "empezaba",
+        "tu": "empezabas",
+        "el": "empezaba",
+        "nosotros": "empezábamos",
+        "vosotros": "empezabais",
+        "ellos": "empezaban"
+      },
+      "future": {
+        "yo": "empezaré",
+        "tu": "empezarás",
+        "el": "empezará",
+        "nosotros": "empezaremos",
+        "vosotros": "empezaréis",
+        "ellos": "empezarán"
+      },
+      "preterite": {
+        "yo": "empecé",
+        "tu": "empezaste",
+        "el": "empezó",
+        "nosotros": "empezamos",
+        "vosotros": "empezasteis",
+        "ellos": "empezaron"
+      }
     },
     {
       "infinitive": "cerrar",
@@ -1157,7 +3077,31 @@
         "vosotros": "cerráis",
         "ellos": "cierran"
       },
-      "translation": "to close"
+      "translation": "to close",
+      "imperfect": {
+        "yo": "cerraba",
+        "tu": "cerrabas",
+        "el": "cerraba",
+        "nosotros": "cerrábamos",
+        "vosotros": "cerrabais",
+        "ellos": "cerraban"
+      },
+      "future": {
+        "yo": "cerraré",
+        "tu": "cerrarás",
+        "el": "cerrará",
+        "nosotros": "cerraremos",
+        "vosotros": "cerraréis",
+        "ellos": "cerrarán"
+      },
+      "preterite": {
+        "yo": "cerré",
+        "tu": "cerraste",
+        "el": "cerró",
+        "nosotros": "cerramos",
+        "vosotros": "cerrasteis",
+        "ellos": "cerraron"
+      }
     },
     {
       "infinitive": "contar",
@@ -1172,7 +3116,31 @@
         "vosotros": "contáis",
         "ellos": "cuentan"
       },
-      "translation": "to count"
+      "translation": "to count",
+      "imperfect": {
+        "yo": "contaba",
+        "tu": "contabas",
+        "el": "contaba",
+        "nosotros": "contábamos",
+        "vosotros": "contabais",
+        "ellos": "contaban"
+      },
+      "future": {
+        "yo": "contaré",
+        "tu": "contarás",
+        "el": "contará",
+        "nosotros": "contaremos",
+        "vosotros": "contaréis",
+        "ellos": "contarán"
+      },
+      "preterite": {
+        "yo": "conté",
+        "tu": "contaste",
+        "el": "contó",
+        "nosotros": "contamos",
+        "vosotros": "contasteis",
+        "ellos": "contaron"
+      }
     },
     {
       "infinitive": "encontrar",
@@ -1187,7 +3155,31 @@
         "vosotros": "encontráis",
         "ellos": "encuentran"
       },
-      "translation": "to find"
+      "translation": "to find",
+      "imperfect": {
+        "yo": "encontraba",
+        "tu": "encontrabas",
+        "el": "encontraba",
+        "nosotros": "encontrábamos",
+        "vosotros": "encontrabais",
+        "ellos": "encontraban"
+      },
+      "future": {
+        "yo": "encontraré",
+        "tu": "encontrarás",
+        "el": "encontrará",
+        "nosotros": "encontraremos",
+        "vosotros": "encontraréis",
+        "ellos": "encontrarán"
+      },
+      "preterite": {
+        "yo": "encontré",
+        "tu": "encontraste",
+        "el": "encontró",
+        "nosotros": "encontramos",
+        "vosotros": "encontrasteis",
+        "ellos": "encontraron"
+      }
     },
     {
       "infinitive": "jugar",
@@ -1202,7 +3194,31 @@
         "vosotros": "jugáis",
         "ellos": "juegan"
       },
-      "translation": "to play"
+      "translation": "to play",
+      "imperfect": {
+        "yo": "jugaba",
+        "tu": "jugabas",
+        "el": "jugaba",
+        "nosotros": "jugábamos",
+        "vosotros": "jugabais",
+        "ellos": "jugaban"
+      },
+      "future": {
+        "yo": "jugaré",
+        "tu": "jugarás",
+        "el": "jugará",
+        "nosotros": "jugaremos",
+        "vosotros": "jugaréis",
+        "ellos": "jugarán"
+      },
+      "preterite": {
+        "yo": "jugué",
+        "tu": "jugaste",
+        "el": "jugó",
+        "nosotros": "jugamos",
+        "vosotros": "jugasteis",
+        "ellos": "jugaron"
+      }
     },
     {
       "infinitive": "oír",
@@ -1217,7 +3233,31 @@
         "vosotros": "oís",
         "ellos": "oyen"
       },
-      "translation": "to hear"
+      "translation": "to hear",
+      "imperfect": {
+        "yo": "oía",
+        "tu": "oías",
+        "el": "oía",
+        "nosotros": "oíamos",
+        "vosotros": "oíais",
+        "ellos": "oían"
+      },
+      "future": {
+        "yo": "oiré",
+        "tu": "oirás",
+        "el": "oirá",
+        "nosotros": "oiremos",
+        "vosotros": "oiréis",
+        "ellos": "oirán"
+      },
+      "preterite": {
+        "yo": "oí",
+        "tu": "oíste",
+        "el": "oyó",
+        "nosotros": "oímos",
+        "vosotros": "oísteis",
+        "ellos": "oyeron"
+      }
     },
     {
       "infinitive": "conocer",
@@ -1232,7 +3272,31 @@
         "vosotros": "conocéis",
         "ellos": "conocen"
       },
-      "translation": "to know"
+      "translation": "to know",
+      "imperfect": {
+        "yo": "conocía",
+        "tu": "conocías",
+        "el": "conocía",
+        "nosotros": "conocíamos",
+        "vosotros": "conocíais",
+        "ellos": "conocían"
+      },
+      "future": {
+        "yo": "conoceré",
+        "tu": "conocerás",
+        "el": "conocerá",
+        "nosotros": "conoceremos",
+        "vosotros": "conoceréis",
+        "ellos": "conocerán"
+      },
+      "preterite": {
+        "yo": "conocí",
+        "tu": "conociste",
+        "el": "conoció",
+        "nosotros": "conocimos",
+        "vosotros": "conocisteis",
+        "ellos": "conocieron"
+      }
     },
     {
       "infinitive": "conducir",
@@ -1247,7 +3311,31 @@
         "vosotros": "conducís",
         "ellos": "conducen"
       },
-      "translation": "to drive"
+      "translation": "to drive",
+      "imperfect": {
+        "yo": "conducía",
+        "tu": "conducías",
+        "el": "conducía",
+        "nosotros": "conducíamos",
+        "vosotros": "conducíais",
+        "ellos": "conducían"
+      },
+      "future": {
+        "yo": "conduciré",
+        "tu": "conducirás",
+        "el": "conducirá",
+        "nosotros": "conduciremos",
+        "vosotros": "conduciréis",
+        "ellos": "conducirán"
+      },
+      "preterite": {
+        "yo": "conduje",
+        "tu": "condujiste",
+        "el": "condujo",
+        "nosotros": "condujimos",
+        "vosotros": "condujisteis",
+        "ellos": "condujeron"
+      }
     },
     {
       "infinitive": "construir",
@@ -1262,7 +3350,31 @@
         "vosotros": "construís",
         "ellos": "construyen"
       },
-      "translation": "to build"
+      "translation": "to build",
+      "imperfect": {
+        "yo": "construía",
+        "tu": "construías",
+        "el": "construía",
+        "nosotros": "construíamos",
+        "vosotros": "construíais",
+        "ellos": "construían"
+      },
+      "future": {
+        "yo": "construiré",
+        "tu": "construirás",
+        "el": "construirá",
+        "nosotros": "construiremos",
+        "vosotros": "construiréis",
+        "ellos": "construirán"
+      },
+      "preterite": {
+        "yo": "construí",
+        "tu": "construiste",
+        "el": "construyó",
+        "nosotros": "construimos",
+        "vosotros": "construisteis",
+        "ellos": "construyeron"
+      }
     },
     {
       "infinitive": "seguir",
@@ -1277,7 +3389,31 @@
         "vosotros": "seguís",
         "ellos": "siguen"
       },
-      "translation": "to follow"
+      "translation": "to follow",
+      "imperfect": {
+        "yo": "seguía",
+        "tu": "seguías",
+        "el": "seguía",
+        "nosotros": "seguíamos",
+        "vosotros": "seguíais",
+        "ellos": "seguían"
+      },
+      "future": {
+        "yo": "seguiré",
+        "tu": "seguirás",
+        "el": "seguirá",
+        "nosotros": "seguiremos",
+        "vosotros": "seguiréis",
+        "ellos": "seguirán"
+      },
+      "preterite": {
+        "yo": "seguí",
+        "tu": "seguiste",
+        "el": "siguió",
+        "nosotros": "seguimos",
+        "vosotros": "seguisteis",
+        "ellos": "siguieron"
+      }
     },
     {
       "infinitive": "servir",
@@ -1292,7 +3428,31 @@
         "vosotros": "servís",
         "ellos": "sirven"
       },
-      "translation": "to serve"
+      "translation": "to serve",
+      "imperfect": {
+        "yo": "servía",
+        "tu": "servías",
+        "el": "servía",
+        "nosotros": "servíamos",
+        "vosotros": "servíais",
+        "ellos": "servían"
+      },
+      "future": {
+        "yo": "serviré",
+        "tu": "servirás",
+        "el": "servirá",
+        "nosotros": "serviremos",
+        "vosotros": "serviréis",
+        "ellos": "servirán"
+      },
+      "preterite": {
+        "yo": "serví",
+        "tu": "serviste",
+        "el": "sirvió",
+        "nosotros": "servimos",
+        "vosotros": "servisteis",
+        "ellos": "sirvieron"
+      }
     },
     {
       "infinitive": "repetir",
@@ -1307,7 +3467,31 @@
         "vosotros": "repetís",
         "ellos": "repiten"
       },
-      "translation": "to repeat"
+      "translation": "to repeat",
+      "imperfect": {
+        "yo": "repetía",
+        "tu": "repetías",
+        "el": "repetía",
+        "nosotros": "repetíamos",
+        "vosotros": "repetíais",
+        "ellos": "repetían"
+      },
+      "future": {
+        "yo": "repetiré",
+        "tu": "repetirás",
+        "el": "repetirá",
+        "nosotros": "repetiremos",
+        "vosotros": "repetiréis",
+        "ellos": "repetirán"
+      },
+      "preterite": {
+        "yo": "repetí",
+        "tu": "repetiste",
+        "el": "repitió",
+        "nosotros": "repetimos",
+        "vosotros": "repetisteis",
+        "ellos": "repitieron"
+      }
     }
   ]
 }

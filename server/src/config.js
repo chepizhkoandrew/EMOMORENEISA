@@ -160,6 +160,19 @@ export const config = {
 
   enforceWallet: bool("ENFORCE_WALLET", false),
 
+  // Social layer: friend invites, song sharing, in-app notifications.
+  social: {
+    // Base for shareable invite links; the website rewrites /invite/:token.
+    inviteBaseUrl: str("INVITE_BASE_URL", "https://professormadrid.com/invite"),
+    // Origin allowed to call the public invite-info endpoint.
+    corsOrigin: str("INVITE_CORS_ORIGIN", "https://professormadrid.com"),
+    // Private bucket for shared song mp3s (content-addressed, deduped).
+    songBucket: str("SHARED_SONG_BUCKET", "shared-songs"),
+    // Shared secret for /v1/admin/* announcement endpoints. Unset = admin
+    // surface disabled (503).
+    adminApiKey: str("ADMIN_API_KEY", "")
+  },
+
   // Apple / StoreKit
   appleBundleId: str("APPLE_BUNDLE_ID", "com.professormadrid.app"),
   trialGrantTreats: num("TRIAL_GRANT_TREATS", 250),

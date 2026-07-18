@@ -1,0 +1,12 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": ["PL2R8BF574.com.professormadrid.app"],
+        "components": [
+          { "/": "/invite/*", "comment": "Friend invite links open in the app" }
+        ]
+      }
+    ]
+  }
+}

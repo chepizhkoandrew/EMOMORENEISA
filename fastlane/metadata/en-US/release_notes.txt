@@ -1,3 +1,5 @@
-First release of Professor Madrid — your personal AI Spanish tutor.
+New: Remember with Music — turn your vocabulary into a song
 
-Meet the Professor, master the verbs, learn Spanish the way children do — by living it.
+Pick a genre and some words from your memory queue, and Professor Madrid writes and sings a short original Spanish song built around them. Then watch it play back karaoke-style, with the lyrics highlighted in sync and pictures illustrating each line — pairing rhythm and imagination with the words makes them stick.
+
+We also reorganized the home menu for clearer, more intuitive navigation between Speaking, Memory, and Grammar.
