@@ -183,11 +183,23 @@ nonisolated struct KaraokeVideoExporter {
                 try await Task.sleep(nanoseconds: 8_000_000)
                 pumpAudio(upTo: t)
             }
-            guard let pool = adaptor.pixelBufferPool,
-                  let buffer = makePixelBuffer(pool: pool) else { throw ExportError.writerFailed }
-            renderer.draw(at: t, into: buffer)
-            let time = CMTime(value: CMTimeValue(frame), timescale: CMTimeScale(fps))
-            if !adaptor.append(buffer, withPresentationTime: time) { throw ExportError.writerFailed }
+            // Each frame allocates a full 1080x1920 bitmap plus attributed
+            // strings/fonts via Objective-C bridging (UIGraphicsImageRenderer,
+            // NSAttributedString). A tight loop with no suspension point can
+            // run for hundreds of frames without ever draining those
+            // autoreleased objects, ballooning memory until iOS jetsams the
+            // app (this is what crashed ~20-30% into export). Draining once
+            // per frame keeps peak memory flat regardless of song length.
+            var appendFailed = false
+            var writeFailed = false
+            autoreleasepool {
+                guard let pool = adaptor.pixelBufferPool,
+                      let buffer = makePixelBuffer(pool: pool) else { writeFailed = true; return }
+                renderer.draw(at: t, into: buffer)
+                let time = CMTime(value: CMTimeValue(frame), timescale: CMTimeScale(fps))
+                if !adaptor.append(buffer, withPresentationTime: time) { appendFailed = true }
+            }
+            if writeFailed || appendFailed { throw ExportError.writerFailed }
             progress(0.92 * Double(frame) / Double(frameCount))
         }
         videoInput.markAsFinished()
