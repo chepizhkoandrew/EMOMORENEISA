@@ -25,6 +25,12 @@ final class KaraokeSceneImages {
             for (idx, scene) in scenes.enumerated() {
                 byKey[Self.key(scene), default: []].append(idx)
             }
+            // A scene whose illustration fetch still fails after retries
+            // (e.g. sustained quota exhaustion, not just a blip) falls back
+            // to whichever picture was showing most recently rather than
+            // the generic starfield — a repeated picture reads far better
+            // mid-song than the slideshow suddenly going blank.
+            var lastGoodImage: UIImage? = nil
             for (idx, scene) in scenes.enumerated() {
                 guard let self, !Task.isCancelled else { return }
                 let key = Self.key(scene)
@@ -36,8 +42,10 @@ final class KaraokeSceneImages {
                         image = UIImage(data: illo.data)
                     }
                 }
-                if let image {
-                    for i in byKey[key] ?? [] { self.images[i] = image }
+                let resolved = image ?? lastGoodImage
+                if let resolved {
+                    lastGoodImage = resolved
+                    for i in byKey[key] ?? [] { self.images[i] = resolved }
                 }
             }
         }

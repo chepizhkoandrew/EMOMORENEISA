@@ -245,15 +245,34 @@ final class ProxyClient {
         _ = try await postJSON(path: "/v1/delete-account", body: [:])
     }
 
+    /// Retries transient failures (rate limits, 5xx, network blips) with a
+    /// short backoff — the Vertex illustration backend is prone to brief
+    /// quota-exhaustion 429s under burst load, and a single swallowed
+    /// failure used to mean that scene's picture (karaoke slideshow, memory
+    /// card) never got a second chance. A non-429 4xx means the request
+    /// itself is bad — retrying identical input won't help, so that returns
+    /// immediately.
     func fetchIllustration(spanish: String, english: String) async -> (data: Data, mime: String)? {
-        guard let json = try? await postJSON(
-            path: "/v1/illustration",
-            body: ["spanish": spanish, "english": english],
-            timeout: 30
-        ),
-        let b64 = json["base64"] as? String,
-        let data = Data(base64Encoded: b64) else { return nil }
-        return (data, (json["mime"] as? String) ?? "image/jpeg")
+        for attempt in 0..<3 {
+            if attempt > 0 {
+                try? await Task.sleep(nanoseconds: UInt64(attempt) * 1_200_000_000)
+            }
+            do {
+                let json = try await postJSON(
+                    path: "/v1/illustration",
+                    body: ["spanish": spanish, "english": english],
+                    timeout: 30
+                )
+                guard let b64 = json["base64"] as? String,
+                      let data = Data(base64Encoded: b64) else { return nil }
+                return (data, (json["mime"] as? String) ?? "image/jpeg")
+            } catch {
+                if case ProxyError.http(let status, _) = error, status != 429, status < 500 {
+                    return nil
+                }
+            }
+        }
+        return nil
     }
 
     // MARK: - Onboarding (utility class, not billed)

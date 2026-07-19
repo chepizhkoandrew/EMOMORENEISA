@@ -447,13 +447,56 @@ export function buildIllustrationPrompt(spanish, english) {
   );
 }
 
-// Calls Vertex :generateContent asking for an IMAGE modality. Returns
-// { base64, mime } on success or null on any failure (429/5xx/empty) so the
-// caller can degrade to the seagull pose without ever throwing.
-// `aspectRatio` defaults to the memorization-illustration portrait shape;
-// callers generating something else (e.g. square menu-card icons via
-// scripts/gen_menu_icons.mjs) pass "1:1" explicitly.
-export async function generateIllustration(prompt, aspectRatio = "3:4") {
+// Shared :generateContent call shape (Vertex and the plain Gemini Developer
+// API both speak this). `authHeaders`/`url` differ per backend; everything
+// else — request body, response parsing, timeout, failure logging — is
+// identical, so both callers below share this instead of duplicating it.
+async function callGenerateContentImage(url, headers, prompt, aspectRatio, tag) {
+  const ac = new AbortController();
+  const timer = setTimeout(() => ac.abort(), 25000);
+  let resp;
+  try {
+    resp = await fetch(url, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+        generationConfig: { responseModalities: ["IMAGE"], imageConfig: { aspectRatio } }
+      }),
+      signal: ac.signal
+    });
+  } catch (e) {
+    console.warn(`[IMG] ${tag} fetch error: ${e.message}`);
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+  if (!resp.ok) {
+    let detail = "";
+    try { detail = (await resp.text()).slice(0, 200); } catch (_) {}
+    console.warn(`[IMG] ${tag} HTTP ${resp.status}: ${detail}`);
+    return null;
+  }
+
+  let json;
+  try {
+    json = await resp.json();
+  } catch (e) {
+    console.warn(`[IMG] ${tag} bad JSON: ${e.message}`);
+    return null;
+  }
+  const parts = json?.candidates?.[0]?.content?.parts || [];
+  for (const p of parts) {
+    const inline = p?.inlineData || p?.inline_data;
+    if (inline?.data) {
+      return { base64: inline.data, mime: inline.mimeType || inline.mime_type || "image/png" };
+    }
+  }
+  console.warn(`[IMG] ${tag} HTTP 200 but no inline image data`);
+  return null;
+}
+
+async function generateIllustrationViaVertex(prompt, aspectRatio) {
   const cfg = config.vertexImage;
   if (!cfg.enabled || !cfg.projectId) return null;
   const client = gcpJwtClient();
@@ -475,50 +518,44 @@ export async function generateIllustration(prompt, aspectRatio = "3:4") {
     `https://${host}/v1/projects/${cfg.projectId}/locations/${cfg.location}` +
     `/publishers/google/models/${cfg.model}:generateContent`;
 
-  // Hard timeout so a slow/hung Vertex call can never hold the loro stream open
-  // past the audio — on abort we simply degrade to the seagull pose.
-  const ac = new AbortController();
-  const timer = setTimeout(() => ac.abort(), 25000);
-  let resp;
-  try {
-    resp = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify({
-        contents: [{ role: "user", parts: [{ text: prompt }] }],
-        generationConfig: { responseModalities: ["IMAGE"], imageConfig: { aspectRatio } }
-      }),
-      signal: ac.signal
-    });
-  } catch (e) {
-    console.warn(`[IMG] vertex fetch error: ${e.message}`);
-    return null;
-  } finally {
-    clearTimeout(timer);
-  }
-  if (!resp.ok) {
-    let detail = "";
-    try { detail = (await resp.text()).slice(0, 200); } catch (_) {}
-    console.warn(`[IMG] vertex HTTP ${resp.status}: ${detail}`);
-    return null;
-  }
+  return callGenerateContentImage(
+    url,
+    { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    prompt,
+    aspectRatio,
+    "vertex"
+  );
+}
 
-  let json;
-  try {
-    json = await resp.json();
-  } catch (e) {
-    console.warn(`[IMG] vertex bad JSON: ${e.message}`);
-    return null;
-  }
-  const parts = json?.candidates?.[0]?.content?.parts || [];
-  for (const p of parts) {
-    const inline = p?.inlineData || p?.inline_data;
-    if (inline?.data) {
-      return { base64: inline.data, mime: inline.mimeType || inline.mime_type || "image/png" };
-    }
-  }
-  console.warn("[IMG] vertex HTTP 200 but no inline image data");
-  return null;
+// Fallback path: the Gemini Developer API (generativelanguage.googleapis.com,
+// API-key auth) is a completely separate product from Vertex AI
+// (aiplatform.googleapis.com, service-account auth) with its own independent
+// quota — same underlying model, different rate-limit bucket. More expensive
+// per call than Vertex, but only fires when Vertex has already failed, so a
+// transient Vertex quota exhaustion (2 req/min default on new GCP billing
+// accounts — see the 2026-07-19 karaoke chorus incident) doesn't leave a
+// scene without a picture.
+async function generateIllustrationViaGeminiKey(prompt, aspectRatio) {
+  if (!config.geminiKey) return null;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${config.vertexImage.model}:generateContent?key=${config.geminiKey}`;
+  return callGenerateContentImage(
+    url,
+    { "Content-Type": "application/json" },
+    prompt,
+    aspectRatio,
+    "gemini-key"
+  );
+}
+
+// Returns { base64, mime } on success or null when both backends fail (429/
+// 5xx/empty) so the caller can degrade to the seagull pose without ever
+// throwing. `aspectRatio` defaults to the memorization-illustration portrait
+// shape; callers generating something else (e.g. square menu-card icons via
+// scripts/gen_menu_icons.mjs) pass "1:1" explicitly.
+export async function generateIllustration(prompt, aspectRatio = "3:4") {
+  const viaVertex = await generateIllustrationViaVertex(prompt, aspectRatio);
+  if (viaVertex) return viaVertex;
+  return generateIllustrationViaGeminiKey(prompt, aspectRatio);
 }
 
 // Speech-to-text via OpenAI. gpt-4o-transcribe is the most accurate at catching
