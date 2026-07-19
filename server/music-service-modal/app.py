@@ -79,24 +79,33 @@ def _norm_tokens(text: str):
 
 
 def align_lyrics(whisper_model, audio_path: str, lyrics: str, duration: float):
-    """Line-level timings for the known lyrics against the rendered audio.
+    """Line- and word-level timings for the known lyrics against the rendered audio.
 
     Whisper transcribes with word timestamps; the word stream is fuzzy-matched
     (SequenceMatcher over accent-folded tokens) back onto the lyric lines we fed
-    the music model. Sung vocals transcribe imperfectly, so lines that never
-    match are interpolated between their matched neighbours. Returns None when
-    too little matches to trust (caller falls back to heuristic timings).
+    the music model. Sung vocals transcribe imperfectly, so lines/words that
+    never match are interpolated between their matched neighbours. Returns None
+    when too little matches to trust (caller falls back to heuristic timings).
     """
     lines = _sung_lines(lyrics)
     if not lines:
         return None
 
-    # Flatten lyrics into tokens, remembering which line each token belongs to.
-    lyric_tokens, token_line = [], []
+    # Flatten lyrics into (display_word, norm_token) pairs, remembering which
+    # line each word belongs to. A display word can fold into >1 norm token
+    # (rare, e.g. hyphenated) or 0 (pure punctuation) — token_word maps each
+    # norm token back to its owning display-word index within the line so
+    # per-word spans can be assembled the same way per-line spans are.
+    lyric_tokens, token_line, token_word = [], [], []
+    line_words = []  # line_words[i] = display words (original casing/accents) for line i
     for i, line in enumerate(lines):
-        for tok in _norm_tokens(line):
-            lyric_tokens.append(tok)
-            token_line.append(i)
+        words = line.split()
+        line_words.append(words)
+        for wi, word in enumerate(words):
+            for tok in _norm_tokens(word):
+                lyric_tokens.append(tok)
+                token_line.append(i)
+                token_word.append(wi)
     if not lyric_tokens:
         return None
 
@@ -128,6 +137,17 @@ def align_lyrics(whisper_model, audio_path: str, lyrics: str, duration: float):
             matched += 1
     if matched / len(lyric_tokens) < 0.35:
         return None
+
+    # Per-word spans (matched tokens), grouped by (line, word) — used to
+    # synthesize word-level timings below, once line spans are finalized.
+    word_time = {}  # (line_idx, word_idx) -> [start, end]
+    for idx, (s, e) in token_time.items():
+        key = (token_line[idx], token_word[idx])
+        if key not in word_time:
+            word_time[key] = [s, e]
+        else:
+            word_time[key][0] = min(word_time[key][0], s)
+            word_time[key][1] = max(word_time[key][1], e)
 
     # Per-line span from its matched tokens.
     spans = [None] * len(lines)
@@ -170,6 +190,63 @@ def align_lyrics(whisper_model, audio_path: str, lyrics: str, duration: float):
         e = max(s + 0.2, min(e, duration))
         prev_end = e
         out.append({"text": line, "startSec": round(s, 2), "endSec": round(e, 2)})
+
+    # Word-level timings within each line: matched words keep their real
+    # Whisper span; unmatched words are interpolated between matched
+    # neighbours (same length-weighted technique as fill_gap above), bounded
+    # by the line's own final [startSec, endSec] so words never spill past
+    # their line even when the line itself was interpolated.
+    def line_word_spans(li, line_start, line_end):
+        words = line_words[li]
+        if not words:
+            return []
+        wspans = [word_time.get((li, wi)) for wi in range(len(words))]
+        matched_wi = [wi for wi, s in enumerate(wspans) if s is not None]
+
+        def fill_word_gap(lo_wi, hi_wi, lo_t, hi_t):
+            gap = list(range(lo_wi + 1, hi_wi))
+            weights = [max(1, len(words[g])) for g in gap]
+            total = sum(weights)
+            t = lo_t
+            for g, w in zip(gap, weights):
+                step = (hi_t - lo_t) * (w / total)
+                wspans[g] = [t, t + step]
+                t += step
+
+        if not matched_wi:
+            # No word in this line matched — spread evenly by length across
+            # the line's own (possibly interpolated) span.
+            fill_word_gap(-1, len(words), line_start, line_end)
+        else:
+            first_wi, last_wi = matched_wi[0], matched_wi[-1]
+            if first_wi > 0:
+                fill_word_gap(-1, first_wi, line_start, wspans[first_wi][0])
+            if last_wi < len(words) - 1:
+                fill_word_gap(last_wi, len(words), wspans[last_wi][1], line_end)
+            for i in range(len(matched_wi) - 1):
+                a, b = matched_wi[i], matched_wi[i + 1]
+                if b - a > 1:
+                    fill_word_gap(a, b, wspans[a][1], wspans[b][0])
+
+        # Clamp + enforce monotonic within [line_start, line_end]. Unlike the
+        # line-level pass above (which can let a final line's endSec run past
+        # `duration` by its minimum-span floor), words must never spill past
+        # their own line — the highlight sweep treats line_end as a hard
+        # boundary — so the minimum span is applied *inside* the clamp, not
+        # after it.
+        prev_end = line_start
+        result = []
+        for wi, word in enumerate(words):
+            s, e = wspans[wi] if wspans[wi] else (prev_end, prev_end + 0.1)
+            s = max(prev_end, min(s, line_end))
+            e = min(line_end, max(s + 0.05, min(e, line_end)))
+            prev_end = e
+            result.append({"text": word, "startSec": round(s, 2), "endSec": round(e, 2)})
+        return result
+
+    for i, entry in enumerate(out):
+        entry["words"] = line_word_spans(i, entry["startSec"], entry["endSec"])
+
     return out
 
 

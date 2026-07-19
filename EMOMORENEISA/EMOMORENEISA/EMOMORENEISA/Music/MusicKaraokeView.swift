@@ -116,7 +116,7 @@ struct MusicKaraokeView: View {
         return sung.map { text in
             let span = singable * Double(max(1, text.count)) / total
             defer { t += span }
-            return ProxyClient.MusicLyricLine(text: text, startSec: t, endSec: t + span)
+            return ProxyClient.MusicLyricLine(text: text, startSec: t, endSec: t + span, words: [])
         }
     }
 
@@ -330,8 +330,7 @@ struct MusicKaraokeView: View {
     /// layers and re-drawn as its own solid-color layer instead — no blur,
     /// see `highlightColor` above for why.
     private func karaokeLine(_ line: ProxyClient.MusicLyricLine, at t: TimeInterval) -> some View {
-        let span = max(0.2, line.endSec - line.startSec)
-        let fraction = min(1, max(0, (t - line.startSec) / span))
+        let fraction = LyricsHighlight.sungFraction(words: line.words, lineStart: line.startSec, lineEnd: line.endSec, at: t)
         let wordList = LyricsHighlight.words(in: line.text)
         let highlightPhrase = activeQueueScene(at: t)?.word ?? ""
         let highlightSet = LyricsHighlight.indices(in: wordList, matching: highlightPhrase)

@@ -31,6 +31,7 @@ nonisolated struct KaraokeVideoExporter {
         let text: String
         let startSec: Double
         let endSec: Double
+        let words: [ProxyClient.MusicWord]
         let redIndices: Set<Int>
     }
 
@@ -47,9 +48,9 @@ nonisolated struct KaraokeVideoExporter {
     /// highlight indices), so `export` itself stays actor-free.
     @MainActor
     static func makeInput(song: ProxyClient.MusicSong, images: [Int: UIImage], highlightTargets: [String]) -> Input {
-        let effective: [(String, Double, Double)]
+        let effective: [(text: String, start: Double, end: Double, words: [ProxyClient.MusicWord])]
         if !song.lines.isEmpty {
-            effective = song.lines.map { ($0.text, $0.startSec, $0.endSec) }
+            effective = song.lines.map { ($0.text, $0.startSec, $0.endSec, $0.words) }
         } else {
             // Same length-weighted fallback as the live karaoke view, for
             // songs generated before the alignment step shipped.
@@ -64,14 +65,15 @@ nonisolated struct KaraokeVideoExporter {
             effective = sung.map { text in
                 let span = singable * Double(max(1, text.count)) / total
                 defer { t += span }
-                return (text, t, t + span)
+                return (text, t, t + span, [])
             }
         }
-        let lines = effective.map { text, start, end in
+        let lines = effective.map { text, start, end, words in
             TimedLine(
                 text: text,
                 startSec: start,
                 endSec: end,
+                words: words,
                 redIndices: LyricsHighlight.indices(
                     in: LyricsHighlight.words(in: text),
                     matchingAny: highlightTargets
@@ -242,7 +244,13 @@ private nonisolated final class FrameRenderer {
     private let size = CGSize(width: 1080, height: 1920)
     private let renderer: UIGraphicsImageRenderer
     private var lastSceneIndex = -2
-    private var cachedBackground: UIImage? = nil
+    private var previousBackground: UIImage? = nil
+    private var currentBackground: UIImage? = nil
+    private var currentSceneStartSec: Double = 0
+    /// Live karaoke gets this crossfade for free from SwiftUI's `.transition`
+    /// (MusicKaraokeView.background) — the frame-by-frame exporter has to
+    /// blend it manually.
+    private static let crossfadeDuration: Double = 0.2
 
     init(input: KaraokeVideoExporter.Input) {
         self.input = input
@@ -271,10 +279,18 @@ private nonisolated final class FrameRenderer {
     private func drawBackground(at t: TimeInterval, in cg: CGContext) {
         let idx = sceneIndex(at: t) ?? -1
         if idx != lastSceneIndex {
+            previousBackground = currentBackground
             lastSceneIndex = idx
-            cachedBackground = composedBackground(sceneIndex: idx)
+            currentBackground = composedBackground(sceneIndex: idx)
+            currentSceneStartSec = (idx >= 0 && idx < input.sceneStarts.count) ? input.sceneStarts[idx] : t
         }
-        cachedBackground?.draw(in: CGRect(origin: .zero, size: size))
+        let progress = min(1, max(0, (t - currentSceneStartSec) / Self.crossfadeDuration))
+        if progress < 1, let previousBackground {
+            previousBackground.draw(in: CGRect(origin: .zero, size: size))
+            currentBackground?.draw(in: CGRect(origin: .zero, size: size), blendMode: .normal, alpha: progress)
+        } else {
+            currentBackground?.draw(in: CGRect(origin: .zero, size: size))
+        }
     }
 
     /// Picture aspect-filled + the same top/bottom darkening gradient as the
@@ -361,8 +377,7 @@ private nonisolated final class FrameRenderer {
                                           base: .white.withAlphaComponent(0.85), redIndices: []), nil, 0))
             }
             let line = input.lines[i]
-            let span = max(0.2, line.endSec - line.startSec)
-            let fraction = min(1, max(0, (t - line.startSec) / span))
+            let fraction = LyricsHighlight.sungFraction(words: line.words, lineStart: line.startSec, lineEnd: line.endSec, at: t)
             let white = attributed(line.text, font: currentFont, base: .white, redIndices: line.redIndices)
             let yellow = attributed(line.text, font: currentFont, base: .systemYellow, redIndices: line.redIndices)
             blocks.append((white, yellow, fraction))

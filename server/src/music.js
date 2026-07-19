@@ -159,16 +159,29 @@ async function composeScenePlan({ lyrics, words, durationSec }) {
     if (!byLine[i]) byLine[i] = firstAssigned;
   }
 
-  // Hard cap on DISTINCT pictures (each one is an illustration render): once
-  // the cap is hit, an unseen subject holds the previous line's picture.
+  // Hard cap on DISTINCT pictures (each one is an illustration render). Keys
+  // that recur later (chorus/hook reprise) are admitted into the cap first,
+  // ahead of subjects that only ever appear once — otherwise a run of
+  // one-off verse subjects early in the song can fill the cap and starve a
+  // later chorus of its own reused picture. Once the cap is spent, an
+  // unadmitted subject holds the previous line's picture.
   const maxDistinct = sceneCap(durationSec);
-  const seen = new Map();
+  const keyOf = line => `${line.spanish}|${line.english}`.toLowerCase();
+  const freq = new Map();
+  for (const line of byLine) freq.set(keyOf(line), (freq.get(keyOf(line)) || 0) + 1);
+  const firstSeenOrder = [];
+  const seenOnce = new Set();
+  for (const line of byLine) {
+    const key = keyOf(line);
+    if (!seenOnce.has(key)) { seenOnce.add(key); firstSeenOrder.push(key); }
+  }
+  const admitted = new Set([
+    ...firstSeenOrder.filter(k => freq.get(k) > 1),
+    ...firstSeenOrder.filter(k => freq.get(k) === 1)
+  ].slice(0, maxDistinct));
   for (let i = 0; i < byLine.length; i++) {
-    const key = `${byLine[i].spanish}|${byLine[i].english}`.toLowerCase();
-    if (!seen.has(key) && seen.size >= maxDistinct) {
-      byLine[i] = i > 0 ? byLine[i - 1] : seen.values().next().value;
-    } else if (!seen.has(key)) {
-      seen.set(key, byLine[i]);
+    if (!admitted.has(keyOf(byLine[i]))) {
+      byLine[i] = i > 0 ? byLine[i - 1] : byLine.find(l => admitted.has(keyOf(l)));
     }
   }
 
@@ -211,6 +224,15 @@ function fallbackScenes(words, durationSec) {
   }));
 }
 
+// A scene's real cut point is the moment its first line's first word starts,
+// not the line-level span (which can lag when that line's own opening words
+// went unmatched by Whisper but a later word in it did match — see
+// align_lyrics/line_word_spans in the music service). Falls back to the line
+// span for songs from before word-level alignment shipped.
+function lineStartSec(line) {
+  return line?.words?.[0]?.startSec ?? line?.startSec;
+}
+
 // Line ranges -> seconds (using whichever line timings we ended up with), then
 // stretched into a continuous slideshow: first scene from 0, last to the end,
 // each scene running until the next begins.
@@ -218,7 +240,7 @@ function resolveScenes(planned, lines, durationSec, words) {
   if (!planned || !planned.length || !lines.length) return fallbackScenes(words, durationSec);
   const scenes = planned
     .map(s => ({
-      startSec: lines[Math.min(s.fromLine, lines.length - 1)].startSec,
+      startSec: lineStartSec(lines[Math.min(s.fromLine, lines.length - 1)]),
       endSec: lines[Math.min(s.toLine, lines.length - 1)].endSec,
       word: s.word,
       spanish: s.spanish,

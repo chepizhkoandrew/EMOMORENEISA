@@ -368,6 +368,35 @@ final class ProxyClient {
         let text: String
         let startSec: Double
         let endSec: Double
+        /// Whisper-aligned (or length-interpolated) per-word timing within
+        /// this line — drives the word-accurate karaoke sweep. Empty for
+        /// songs from before word-level alignment shipped.
+        let words: [MusicWord]
+
+        init(text: String, startSec: Double, endSec: Double, words: [MusicWord] = []) {
+            self.text = text
+            self.startSec = startSec
+            self.endSec = endSec
+            self.words = words
+        }
+
+        /// Custom decode so `words` defaults to `[]` for SavedSong rows
+        /// persisted (via JSONEncoder/Decoder) before word-level alignment
+        /// shipped — a strict synthesized decode would fail the whole line
+        /// (and the caller's `try?` would silently drop the entire song).
+        init(from decoder: Decoder) throws {
+            let c = try decoder.container(keyedBy: CodingKeys.self)
+            text = try c.decode(String.self, forKey: .text)
+            startSec = try c.decode(Double.self, forKey: .startSec)
+            endSec = try c.decode(Double.self, forKey: .endSec)
+            words = (try? c.decodeIfPresent([MusicWord].self, forKey: .words)) ?? []
+        }
+    }
+
+    struct MusicWord: Codable {
+        let text: String
+        let startSec: Double
+        let endSec: Double
     }
 
     struct MusicScene: Codable {
@@ -426,7 +455,7 @@ final class ProxyClient {
                 guard let text = obj["text"] as? String,
                       let start = (obj["startSec"] as? NSNumber)?.doubleValue,
                       let end = (obj["endSec"] as? NSNumber)?.doubleValue else { return nil }
-                return MusicLyricLine(text: text, startSec: start, endSec: end)
+                return MusicLyricLine(text: text, startSec: start, endSec: end, words: Self.parseWords(obj["words"]))
             }
             let scenes: [MusicScene] = ((song["scenes"] as? [[String: Any]]) ?? []).compactMap { obj in
                 guard let start = (obj["startSec"] as? NSNumber)?.doubleValue,
@@ -452,6 +481,15 @@ final class ProxyClient {
             ))
         default:
             throw ProxyError.decoding
+        }
+    }
+
+    private static func parseWords(_ raw: Any?) -> [MusicWord] {
+        ((raw as? [[String: Any]]) ?? []).compactMap { obj in
+            guard let text = obj["text"] as? String,
+                  let start = (obj["startSec"] as? NSNumber)?.doubleValue,
+                  let end = (obj["endSec"] as? NSNumber)?.doubleValue else { return nil }
+            return MusicWord(text: text, startSec: start, endSec: end)
         }
     }
 
@@ -582,7 +620,10 @@ final class ProxyClient {
             "genre": genre,
             "durationSec": durationSec,
             "lyrics": lyrics,
-            "lines": lines.map { ["text": $0.text, "startSec": $0.startSec, "endSec": $0.endSec] },
+            "lines": lines.map {
+                ["text": $0.text, "startSec": $0.startSec, "endSec": $0.endSec,
+                 "words": $0.words.map { w in ["text": w.text, "startSec": w.startSec, "endSec": w.endSec] }]
+            },
             "scenes": scenes.map {
                 ["startSec": $0.startSec, "endSec": $0.endSec, "word": $0.word,
                  "spanish": $0.spanish, "english": $0.english]
@@ -637,7 +678,7 @@ final class ProxyClient {
             guard let text = obj["text"] as? String,
                   let start = (obj["startSec"] as? NSNumber)?.doubleValue,
                   let end = (obj["endSec"] as? NSNumber)?.doubleValue else { return nil }
-            return MusicLyricLine(text: text, startSec: start, endSec: end)
+            return MusicLyricLine(text: text, startSec: start, endSec: end, words: Self.parseWords(obj["words"]))
         }
         let scenes: [MusicScene] = ((song["scenes"] as? [[String: Any]]) ?? []).compactMap { obj in
             guard let start = (obj["startSec"] as? NSNumber)?.doubleValue,

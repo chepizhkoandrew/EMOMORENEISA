@@ -41,6 +41,38 @@ enum LyricsHighlight {
         phrases.reduce(into: Set<Int>()) { $0.formUnion(indices(in: wordList, matching: $1)) }
     }
 
+    /// Character-weighted sung fraction (0...1) for the karaoke sweep, using
+    /// word-level timings when available. Each fully-sung word (t past its
+    /// endSec) contributes its full character weight; the currently-singing
+    /// word contributes its own time-fraction — so the sweep speeds through
+    /// short words and lingers on long ones instead of moving at a constant
+    /// rate across the whole line. Falls back to a straight line-span
+    /// fraction when `words` is empty (songs from before word-level
+    /// alignment shipped, or lines Whisper never matched at all).
+    static func sungFraction(words: [ProxyClient.MusicWord], lineStart: Double, lineEnd: Double, at t: TimeInterval) -> Double {
+        guard !words.isEmpty else {
+            let span = max(0.2, lineEnd - lineStart)
+            return min(1, max(0, (t - lineStart) / span))
+        }
+        let weights = words.map { max(1, $0.text.count) }
+        let total = Double(weights.reduce(0, +))
+        guard total > 0 else { return 0 }
+        var sungChars = 0.0
+        for (i, word) in words.enumerated() {
+            let w = Double(weights[i])
+            if t >= word.endSec {
+                sungChars += w
+            } else if t > word.startSec {
+                let span = max(0.05, word.endSec - word.startSec)
+                sungChars += w * min(1, (t - word.startSec) / span)
+                break
+            } else {
+                break
+            }
+        }
+        return min(1, max(0, sungChars / total))
+    }
+
     /// One concatenated `Text` (preserves native wrapping/centering, unlike a
     /// manual HStack of separate word views) with per-word color from `style`.
     static func composedText(_ wordList: [String], style: (Int, String) -> Color) -> Text {
