@@ -252,6 +252,29 @@ private nonisolated final class FrameRenderer {
     /// blend it manually.
     private static let crossfadeDuration: Double = 0.2
 
+    /// Fixed slot height for every lyric line in the scroll "reel" — sized to
+    /// comfortably fit 2 lines at the current-line font size. A fixed height
+    /// (vs. measuring each line) keeps the per-line position a cheap `i *
+    /// rowHeight` instead of a running sum, which matters across up to
+    /// ~3600 frames for a long song.
+    private static let rowHeight: CGFloat = 240
+    /// Matches the live view's `.easeInOut(duration: 0.35)` scroll glide —
+    /// there's no animation system here, so this window is eased by hand
+    /// (smoothstep) as a function of elapsed time since the line started.
+    private static let transitionDuration: Double = 0.35
+
+    private struct LineAttrCache {
+        let adjacent: NSAttributedString
+        let adjacentHeight: CGFloat
+        let currentWhite: NSAttributedString
+        let currentYellow: NSAttributedString
+        let currentHeight: CGFloat
+        let introDimmed: NSAttributedString
+    }
+    /// Built once on first use (not per frame) — text/redIndices per line
+    /// never change across the export, only which row is "current" does.
+    private var lineCache: [LineAttrCache] = []
+
     init(input: KaraokeVideoExporter.Input) {
         self.input = input
         let format = UIGraphicsImageRendererFormat()
@@ -324,9 +347,13 @@ private nonisolated final class FrameRenderer {
 
     // MARK: Lyrics
 
-    private func lineIndex(at t: TimeInterval) -> Int? {
-        guard !input.lines.isEmpty else { return nil }
-        return input.lines.lastIndex { t >= $0.startSec }
+    /// Unlike the live view's `Int?` (nil during the instrumental intro),
+    /// this always resolves to a row — row 0 doubles as the intro's dimmed
+    /// preview slot (see `drawLyrics`), which keeps the reel math (always a
+    /// concrete row index) simple.
+    private func lineIndex(at t: TimeInterval) -> Int {
+        guard !input.lines.isEmpty else { return 0 }
+        return input.lines.lastIndex { t >= $0.startSec } ?? 0
     }
 
     private func rounded(_ pointSize: CGFloat, _ weight: UIFont.Weight) -> UIFont {
@@ -361,56 +388,86 @@ private nonisolated final class FrameRenderer {
         return result
     }
 
-    private func drawLyrics(at t: TimeInterval) {
-        guard !input.lines.isEmpty else { return }
-        let currentIdx = lineIndex(at: t)
+    private func ensureLineCache() {
+        guard lineCache.isEmpty, !input.lines.isEmpty else { return }
         let hPadding: CGFloat = 70
         let maxWidth = size.width - hPadding * 2
         let currentFont = rounded(86, .heavy)
         let adjacentFont = rounded(52, .bold)
-
-        var blocks: [(NSAttributedString, NSAttributedString?, Double)] = []
-
-        if let i = currentIdx {
-            if i > 0 {
-                blocks.append((attributed(input.lines[i - 1].text, font: adjacentFont,
-                                          base: .white.withAlphaComponent(0.85), redIndices: []), nil, 0))
-            }
-            let line = input.lines[i]
-            let fraction = LyricsHighlight.sungFraction(words: line.words, lineStart: line.startSec, lineEnd: line.endSec, at: t)
+        func height(_ s: NSAttributedString) -> CGFloat {
+            ceil(s.boundingRect(with: CGSize(width: maxWidth, height: .greatestFiniteMagnitude),
+                                options: [.usesLineFragmentOrigin], context: nil).height)
+        }
+        lineCache = input.lines.map { line in
+            let adjacent = attributed(line.text, font: adjacentFont, base: .white.withAlphaComponent(0.85), redIndices: [])
             let white = attributed(line.text, font: currentFont, base: .white, redIndices: line.redIndices)
             let yellow = attributed(line.text, font: currentFont, base: .systemYellow, redIndices: line.redIndices)
-            blocks.append((white, yellow, fraction))
-            if i + 1 < input.lines.count {
-                blocks.append((attributed(input.lines[i + 1].text, font: adjacentFont,
-                                          base: .white.withAlphaComponent(0.85), redIndices: []), nil, 0))
-            }
-        } else if let first = input.lines.first {
-            // Instrumental intro: dimmed preview of the opening line.
-            blocks.append((attributed(first.text, font: currentFont,
-                                      base: .white.withAlphaComponent(0.65), redIndices: []), nil, 0))
+            let intro = attributed(line.text, font: currentFont, base: .white.withAlphaComponent(0.65), redIndices: [])
+            return LineAttrCache(
+                adjacent: adjacent, adjacentHeight: height(adjacent),
+                currentWhite: white, currentYellow: yellow, currentHeight: height(white),
+                introDimmed: intro
+            )
         }
+    }
 
-        let spacing: CGFloat = 44
-        let heights = blocks.map {
-            ceil($0.0.boundingRect(with: CGSize(width: maxWidth, height: .greatestFiniteMagnitude),
-                                   options: [.usesLineFragmentOrigin], context: nil).height)
-        }
-        let totalHeight = heights.reduce(0, +) + spacing * CGFloat(max(0, blocks.count - 1))
-        var y = (size.height - totalHeight) / 2
+    /// Manual per-frame equivalent of the live view's `withAnimation`-driven
+    /// scroll: eases the reel's vertical offset from the previous line's
+    /// centered position to the new one over `transitionDuration` seconds
+    /// right after each line's `startSec`, using a smoothstep curve.
+    private func scrollY(currentIdx: Int, at t: TimeInterval) -> CGFloat {
+        let targetY = CGFloat(currentIdx) * Self.rowHeight
+        guard currentIdx > 0 else { return targetY }
+        let elapsed = t - input.lines[currentIdx].startSec
+        guard elapsed >= 0, elapsed < Self.transitionDuration else { return targetY }
+        let fromY = CGFloat(currentIdx - 1) * Self.rowHeight
+        let p = CGFloat(elapsed / Self.transitionDuration)
+        let eased = p * p * (3 - 2 * p) // smoothstep
+        return fromY + (targetY - fromY) * eased
+    }
 
-        for (index, block) in blocks.enumerated() {
-            let rect = CGRect(x: hPadding, y: y, width: maxWidth, height: heights[index])
-            block.0.draw(with: rect, options: [.usesLineFragmentOrigin], context: nil)
-            // Sung sweep: the yellow copy clipped to the sung fraction, same
-            // whole-block sweep as the live karaoke mask.
-            if let sungCopy = block.1, block.2 > 0, let cg = UIGraphicsGetCurrentContext() {
-                cg.saveGState()
-                cg.clip(to: CGRect(x: hPadding, y: y, width: maxWidth * block.2, height: heights[index]))
-                sungCopy.draw(with: rect, options: [.usesLineFragmentOrigin], context: nil)
-                cg.restoreGState()
+    /// Draws the lyric "reel" — every line lives at a fixed `i * rowHeight`
+    /// position; only the scroll offset animates, so no line's styling is
+    /// ever inserted/removed mid-transition (that was the source of the
+    /// overlapping/ghosted look in the previous discrete-swap version).
+    /// Same "3 lines visible" content as before (current ± 1 neighbour) —
+    /// only the transition mechanism changed.
+    private func drawLyrics(at t: TimeInterval) {
+        guard !input.lines.isEmpty else { return }
+        ensureLineCache()
+        let currentIdx = lineIndex(at: t)
+        let isIntro = t < input.lines[0].startSec
+        let hPadding: CGFloat = 70
+        let maxWidth = size.width - hPadding * 2
+        let offset = scrollY(currentIdx: currentIdx, at: t)
+        let viewportCenterY = size.height / 2
+
+        let lo = max(0, currentIdx - 1)
+        let hi = min(input.lines.count - 1, currentIdx + 1)
+        guard lo <= hi else { return }
+        for i in lo...hi {
+            let distance = i - currentIdx
+            let rowCenterY = viewportCenterY + (CGFloat(i) * Self.rowHeight - offset)
+            let cache = lineCache[i]
+
+            if distance == 0 {
+                let text = isIntro ? cache.introDimmed : cache.currentWhite
+                let rect = CGRect(x: hPadding, y: rowCenterY - cache.currentHeight / 2, width: maxWidth, height: cache.currentHeight)
+                text.draw(with: rect, options: [.usesLineFragmentOrigin], context: nil)
+                if !isIntro {
+                    let line = input.lines[i]
+                    let fraction = LyricsHighlight.sungFraction(words: line.words, lineStart: line.startSec, lineEnd: line.endSec, at: t)
+                    if fraction > 0, let cg = UIGraphicsGetCurrentContext() {
+                        cg.saveGState()
+                        cg.clip(to: CGRect(x: hPadding, y: rect.minY, width: maxWidth * fraction, height: cache.currentHeight))
+                        cache.currentYellow.draw(with: rect, options: [.usesLineFragmentOrigin], context: nil)
+                        cg.restoreGState()
+                    }
+                }
+            } else {
+                let rect = CGRect(x: hPadding, y: rowCenterY - cache.adjacentHeight / 2, width: maxWidth, height: cache.adjacentHeight)
+                cache.adjacent.draw(with: rect, options: [.usesLineFragmentOrigin], context: nil)
             }
-            y += heights[index] + spacing
         }
     }
 

@@ -107,6 +107,12 @@ struct MusicKaraokeView: View {
     @State private var player: AVAudioPlayer? = nil
     @State private var isPlaying = false
     @State private var finished = false
+    /// Drives the lyric reel's programmatic scroll position — updated
+    /// (inside `withAnimation`) whenever the sung line advances, so the
+    /// three visible lines glide upward together instead of the old
+    /// discrete swap between disjoint view layouts (which read as
+    /// overlapping/ghosted text during the transition).
+    @State private var scrollTarget: Int? = nil
 
     /// Server-timed lines when available; a length-weighted spread otherwise
     /// (songs generated before the alignment step shipped).
@@ -304,32 +310,67 @@ struct MusicKaraokeView: View {
         }
     }
 
+    /// The lyric "reel": every sung line lives in one continuous scrolling
+    /// stack (movie-credits style) instead of three independently-swapped
+    /// view slots. Only the scroll position changes as singing advances —
+    /// no line's content is ever inserted/removed mid-transition, which is
+    /// what produced the old overlapping/ghosted look during a line change.
+    /// Programmatic-only (`.scrollDisabled`); the visible window is capped
+    /// to roughly 3 rows (current + one neighbour each side).
     @ViewBuilder
     private func lyricsBlock(at t: TimeInterval) -> some View {
         let all = lines
         let current = lineIndex(at: t)
-        VStack(spacing: 20) {
-            if let i = current, i > 0 {
-                adjacentLine(all[i - 1].text)
-            }
-            if let i = current {
-                karaokeLine(all[i], at: t)
-                    .id("line-\(i)")
-            } else if let first = all.first {
-                // Instrumental intro: preview the opening line dimmed.
-                let font = Font.system(size: Self.currentLineSize, weight: .heavy, design: .rounded)
-                ZStack {
-                    Self.outlinedText(Text(first.text), font: font)
-                    Text(first.text).font(font).foregroundColor(.white.opacity(0.65))
+        ScrollView(.vertical, showsIndicators: false) {
+            LazyVStack(spacing: 20) {
+                ForEach(all.indices, id: \.self) { i in
+                    lyricRow(i, all: all, current: current, t: t)
+                        .id(i)
                 }
             }
-            if let i = current, i + 1 < all.count {
-                adjacentLine(all[i + 1].text)
-            }
+            .scrollTargetLayout()
         }
+        .scrollDisabled(true)
+        .scrollPosition(id: $scrollTarget, anchor: .center)
+        .frame(height: 260)
         .multilineTextAlignment(.center)
         .frame(maxWidth: .infinity)
-        .animation(.easeInOut(duration: 0.25), value: current)
+        .onAppear { scrollTarget = current ?? 0 }
+        .onChange(of: current) { _, newValue in
+            withAnimation(.easeInOut(duration: 0.35)) {
+                scrollTarget = newValue ?? 0
+            }
+        }
+    }
+
+    /// One row of the reel. `distance` from the currently-singing line
+    /// selects the styling — 0 is the big sweep-highlighted current line,
+    /// ±1 is the medium dimmed neighbour (today's `adjacentLine`), anything
+    /// further is present (so scroll positioning stays continuous) but
+    /// fully transparent, keeping the same "3 lines visible" content as
+    /// before this change — only the transition mechanism is new.
+    @ViewBuilder
+    private func lyricRow(_ i: Int, all: [ProxyClient.MusicLyricLine], current: Int?, t: TimeInterval) -> some View {
+        let distance = i - (current ?? 0)
+        Group {
+            if distance == 0 {
+                if current != nil {
+                    karaokeLine(all[i], at: t)
+                } else {
+                    // Instrumental intro: dimmed preview of the opening line, no sweep.
+                    let font = Font.system(size: Self.currentLineSize, weight: .heavy, design: .rounded)
+                    ZStack {
+                        Self.outlinedText(Text(all[i].text), font: font)
+                        Text(all[i].text).font(font).foregroundColor(.white.opacity(0.65))
+                    }
+                }
+            } else if abs(distance) == 1 {
+                adjacentLine(all[i].text)
+            } else {
+                adjacentLine(all[i].text).opacity(0)
+            }
+        }
+        .frame(minHeight: 44)
     }
 
     /// Classic karaoke fill: the sung fraction of the current line sweeps
