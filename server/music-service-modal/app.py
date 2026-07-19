@@ -26,7 +26,14 @@ from fastapi import Header, HTTPException
 app = modal.App("ace-step-music")
 
 MODEL_DIR = "/models/ace-step"
-WHISPER_DIR = "/models/faster-whisper-small"
+# "small" was too weak on chanted/shouted vocals over dense backing music
+# (2026-07-19 "gol gol españa" incident — match ratio 0.49, garbled
+# transcription of the whole chorus). "medium" is the largest step up that
+# still leaves safe VRAM headroom on a T4 alongside ACE-Step (~7.4-7.8GB
+# resident, confirmed via Modal logs) and Demucs; large-v3 (~6GB) would run
+# the three too close to the 16GB ceiling.
+WHISPER_DIR = "/models/faster-whisper-medium"
+DEMUCS_MODEL = "htdemucs"
 INFER_STEPS = 60
 
 
@@ -36,7 +43,13 @@ def _download_model():
     snapshot_download("ACE-Step/ACE-Step-v1-3.5B", local_dir=MODEL_DIR)
     # Whisper is used post-generation to time-align the known lyrics to the
     # rendered audio (karaoke line timings).
-    snapshot_download("Systran/faster-whisper-small", local_dir=WHISPER_DIR)
+    snapshot_download("Systran/faster-whisper-medium", local_dir=WHISPER_DIR)
+    # Demucs (vocal isolation, run before transcription) downloads its own
+    # pretrained checkpoint on first use — pre-warm it into the image here so
+    # the first real request doesn't pay a cold download.
+    from demucs.pretrained import get_model
+
+    get_model(DEMUCS_MODEL)
 
 
 gpu_image = (
@@ -46,6 +59,7 @@ gpu_image = (
         "huggingface_hub",
         "diffusers==0.33.1",
         "faster-whisper",
+        "demucs",
         "git+https://github.com/ace-step/ACE-Step.git",
     )
     .run_function(_download_model)
@@ -138,10 +152,26 @@ def align_lyrics(whisper_model, audio_path: str, lyrics: str, duration: float):
     )
     token_time = {}  # lyric token index -> (start, end)
     matched = 0
+    skipped_short = 0
     for block in matcher.get_matching_blocks():
+        if block.size == 0:
+            continue
+        # A single isolated matched token is unreliable for short/common
+        # Spanish function words ("a", "va", "uno", "sin"...) — a garbled
+        # transcription can spuriously line one of these up almost anywhere,
+        # which is exactly how the 2026-07-19 incident's lines 4-5 got
+        # mislabeled "real" despite resting on a near-nonsense heard string.
+        # Runs of 2+ consecutive matched tokens are trusted regardless of
+        # length since phrase-level correspondence is far less likely to be
+        # coincidental.
+        if block.size == 1 and len(lyric_tokens[block.a]) < 5:
+            skipped_short += 1
+            continue
         for k in range(block.size):
             token_time[block.a + k] = (heard[block.b + k][1], heard[block.b + k][2])
             matched += 1
+    if skipped_short:
+        print(f"[align] distrusted {skipped_short} isolated short-token match(es)")
     ratio = matched / len(lyric_tokens)
     print(f"[align] match ratio {ratio:.2f} ({matched}/{len(lyric_tokens)} tokens, {len(heard)} heard)")
     if ratio < 0.35:
@@ -275,9 +305,10 @@ class ACEStepService:
 
         self.pipeline = ACEStepPipeline(checkpoint_dir=MODEL_DIR, dtype="bfloat16", torch_compile=False)
         self.whisper = None
+        self.demucs = None
 
     def _whisper(self):
-        # Lazy: only songs pay the ~1GB load, and only once per container.
+        # Lazy: only songs pay the ~3GB load, and only once per container.
         if self.whisper is None:
             from faster_whisper import WhisperModel
 
@@ -285,9 +316,65 @@ class ACEStepService:
                 self.whisper = WhisperModel(WHISPER_DIR, device="cuda", compute_type="float16")
             except Exception:
                 # VRAM contention with ACE-Step or missing CUDA support: CPU is
-                # slower (~10-20s for a 60s song) but always works.
+                # slower but always works.
                 self.whisper = WhisperModel(WHISPER_DIR, device="cpu", compute_type="int8")
         return self.whisper
+
+    def _demucs(self):
+        # Lazy, same pattern as _whisper — loaded once per container, then
+        # reused for every subsequent song that container handles.
+        if self.demucs is None:
+            from demucs.pretrained import get_model
+
+            model = get_model(DEMUCS_MODEL)
+            model.eval()
+            try:
+                import torch
+
+                if torch.cuda.is_available():
+                    model = model.cuda()
+            except Exception:
+                pass  # falls back to whatever device get_model() defaulted to (cpu)
+            self.demucs = model
+        return self.demucs
+
+    def _isolate_vocals(self, wav_path: str, tmp_dir: str) -> str:
+        """Separates vocals from the backing track before transcription —
+        Whisper transcribing the full mixed track (vocals + drums/bass/
+        synths) is exactly the condition it struggles with most, and was the
+        root cause of the 2026-07-19 chanted-chorus sync failure. Best-effort:
+        on any failure, returns the original mixed `wav_path` unchanged so
+        alignment still runs on the noisier signal rather than the whole
+        job failing.
+        """
+        try:
+            import torch
+            import torchaudio
+            from demucs.apply import apply_model
+
+            model = self._demucs()
+            device = next(model.parameters()).device
+
+            wav, sr = torchaudio.load(wav_path)
+            if sr != model.samplerate:
+                wav = torchaudio.functional.resample(wav, sr, model.samplerate)
+            if wav.shape[0] != model.audio_channels:
+                # Mono source, stereo-expecting model (or vice versa).
+                if wav.shape[0] == 1 and model.audio_channels == 2:
+                    wav = wav.repeat(2, 1)
+                elif wav.shape[0] > model.audio_channels:
+                    wav = wav[: model.audio_channels]
+
+            with torch.no_grad():
+                sources = apply_model(model, wav[None].to(device), split=True)[0]
+            vocals = sources[model.sources.index("vocals")].cpu()
+
+            vocals_path = os.path.join(tmp_dir, "vocals.wav")
+            torchaudio.save(vocals_path, vocals, model.samplerate)
+            return vocals_path
+        except Exception as e:
+            print(f"[align] vocal isolation failed, aligning against mixed audio instead: {e}")
+            return wav_path
 
     @modal.method()
     def generate(self, prompt: str, lyrics: str, duration_sec: int = 30):
@@ -333,7 +420,8 @@ class ACEStepService:
             # (was previously silent on both failure paths) so a bad-sync
             # report can actually be diagnosed instead of guessed at.
             try:
-                lines = align_lyrics(self._whisper(), wav_path, lyrics, float(duration))
+                vocals_path = self._isolate_vocals(wav_path, tmp)
+                lines = align_lyrics(self._whisper(), vocals_path, lyrics, float(duration))
                 if lines is None:
                     print("[align] rejected: match ratio below threshold or no lyric tokens")
                 else:
