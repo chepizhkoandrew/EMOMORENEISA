@@ -124,7 +124,14 @@ def align_lyrics(whisper_model, audio_path: str, lyrics: str, duration: float):
             for tok in toks:
                 heard.append((tok, float(w.start), float(w.end)))
     if not heard:
+        print("[align] whisper heard nothing (no words in any segment)")
         return None
+
+    # What Whisper actually transcribed vs. what the lyrics say, side by
+    # side — the fastest way to tell "bad audio/transcription" apart from
+    # "bad matching logic" when a sync report comes in.
+    print(f"[align] expected ({len(lyric_tokens)}): {' '.join(lyric_tokens)}")
+    print(f"[align] heard    ({len(heard)}): {' '.join(h[0] for h in heard)}")
 
     matcher = difflib.SequenceMatcher(
         a=lyric_tokens, b=[h[0] for h in heard], autojunk=False
@@ -173,6 +180,9 @@ def align_lyrics(whisper_model, audio_path: str, lyrics: str, duration: float):
             t += step
 
     matched_idx = [i for i, s in enumerate(spans) if s is not None]
+    interpolated_idx = [i for i in range(len(lines)) if i not in matched_idx]
+    if interpolated_idx:
+        print(f"[align] lines with ZERO matched tokens (fully guessed, not real audio): {interpolated_idx}")
     first, last = matched_idx[0], matched_idx[-1]
     if first > 0:
         fill_gap(-1, first, max(0.0, spans[first][0] - 2.0 * first), spans[first][0])
@@ -248,6 +258,11 @@ def align_lyrics(whisper_model, audio_path: str, lyrics: str, duration: float):
 
     for i, entry in enumerate(out):
         entry["words"] = line_word_spans(i, entry["startSec"], entry["endSec"])
+
+    for i, entry in enumerate(out):
+        tag = "guessed" if i in interpolated_idx else "real"
+        word_summary = " | ".join(f"{w['text']}@{w['startSec']}" for w in entry["words"])
+        print(f"[align] line {i} [{tag}] {entry['startSec']}-{entry['endSec']}: \"{entry['text']}\" words: {word_summary}")
 
     return out
 
