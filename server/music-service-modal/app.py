@@ -135,7 +135,9 @@ def align_lyrics(whisper_model, audio_path: str, lyrics: str, duration: float):
         for k in range(block.size):
             token_time[block.a + k] = (heard[block.b + k][1], heard[block.b + k][2])
             matched += 1
-    if matched / len(lyric_tokens) < 0.35:
+    ratio = matched / len(lyric_tokens)
+    print(f"[align] match ratio {ratio:.2f} ({matched}/{len(lyric_tokens)} tokens, {len(heard)} heard)")
+    if ratio < 0.35:
         return None
 
     # Per-word spans (matched tokens), grouped by (line, word) — used to
@@ -312,10 +314,19 @@ class ACEStepService:
                 audio_b64 = base64.b64encode(f.read()).decode("ascii")
 
             # Karaoke line timings; best-effort — a song without timings still
-            # plays, the proxy just falls back to heuristic spacing.
+            # plays, the proxy just falls back to heuristic spacing. Logged
+            # (was previously silent on both failure paths) so a bad-sync
+            # report can actually be diagnosed instead of guessed at.
             try:
                 lines = align_lyrics(self._whisper(), wav_path, lyrics, float(duration))
+                if lines is None:
+                    print("[align] rejected: match ratio below threshold or no lyric tokens")
+                else:
+                    print(f"[align] ok: {len(lines)} lines aligned")
             except Exception:
+                import traceback
+                print("[align] EXCEPTION:")
+                traceback.print_exc()
                 lines = None
 
         return {
