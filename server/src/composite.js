@@ -1,4 +1,5 @@
 import { spawn } from "node:child_process";
+import { existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 import ffmpegPath from "ffmpeg-static";
@@ -7,16 +8,20 @@ import { config } from "./config.js";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const MASCOT_PATH = path.join(__dirname, "../assets/madrid_cutout.png");
 
+console.log(`[MASCOT] ffmpegPath=${ffmpegPath || "(unavailable)"} mascotAssetExists=${existsSync(MASCOT_PATH)} (${MASCOT_PATH})`);
+
 function runFfmpeg(args, inputBuffer) {
   return new Promise((resolve, reject) => {
     if (!ffmpegPath) return reject(new Error("ffmpeg-static unavailable"));
     const ff = spawn(ffmpegPath, args);
     const out = [];
+    const errOut = [];
     ff.stdout.on("data", (d) => out.push(d));
+    ff.stderr.on("data", (d) => errOut.push(d));
     ff.on("error", reject);
     ff.on("close", (code) => {
       if (code === 0 && out.length) return resolve(Buffer.concat(out));
-      reject(new Error(`ffmpeg exited ${code}`));
+      reject(new Error(`ffmpeg exited ${code}: ${Buffer.concat(errOut).toString("utf8").slice(0, 2000)}`));
     });
     ff.stdin.on("error", () => {});
     ff.stdin.write(inputBuffer);
@@ -97,7 +102,8 @@ export async function compositeMascot(
 
   try {
     return await runFfmpeg(args, sceneBuffer);
-  } catch (_) {
+  } catch (e) {
+    console.error(`[MASCOT] compositeMascot failed, serving uncomposited scene: ${e.message}`);
     return sceneBuffer;
   }
 }
