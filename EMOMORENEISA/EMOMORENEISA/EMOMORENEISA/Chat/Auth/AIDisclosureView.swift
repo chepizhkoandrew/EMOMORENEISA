@@ -65,6 +65,10 @@ struct AIDisclosureView: View {
                             icon: "music.note",
                             text: L("When you create a song, your chosen words and any lyrics you write are sent to Google's Gemini to compose the lyrics and plan the pictures, and to our music-generation service to create the audio.")
                         )
+                        disclosureRow(
+                            icon: "theatermasks.fill",
+                            text: L("In Roleplay mode, the guest character and setting you choose are sent to Google's Gemini to generate a background picture for the episode.")
+                        )
                     }
                     .padding(.horizontal, 32)
 

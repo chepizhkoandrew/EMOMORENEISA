@@ -21,8 +21,10 @@ final class AuthService {
     /// an older version has not actually consented to whatever new AI usage
     /// the current version added, so they need to see it again, not just
     /// once at signup. 2026-07-18: added illustration generation + the new
-    /// music-generation feature's two AI calls.
-    static let aiDisclosureVersion = "2026-07-18"
+    /// music-generation feature's two AI calls. 2026-07-21: added Roleplay's
+    /// scene-image generation — the existing illustration row was worded
+    /// narrowly around the memory queue and didn't clearly cover it.
+    static let aiDisclosureVersion = "2026-07-21"
 
     /// `aiDisclosureVersion` parsed as a date — an acceptance timestamp
     /// older than this predates the current wording.
