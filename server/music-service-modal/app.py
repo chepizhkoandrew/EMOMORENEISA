@@ -13,17 +13,25 @@ Test:    curl $(modal app list -> find the healthz URL)/
 
 import base64
 import difflib
+import json
 import os
 import re
 import subprocess
 import tempfile
 import time
 import unicodedata
+import urllib.parse
+import urllib.request
 
 import modal
 from fastapi import Header, HTTPException
 
 app = modal.App("ace-step-music")
+
+# Instant rollback switch: if ACE-Step 1.5's Spanish output or latency
+# disappoints in practice, flip this to False and redeploy — no other code
+# change needed, the old v1 pipeline path is kept intact below.
+USE_ACESTEP_15 = False
 
 MODEL_DIR = "/models/ace-step"
 # "small" was too weak on chanted/shouted vocals over dense backing music
@@ -68,6 +76,171 @@ gpu_image = (
 light_image = modal.Image.debian_slim(python_version="3.11").pip_install("fastapi[standard]")
 
 music_key_secret = modal.Secret.from_name("music-service-key")
+
+
+# --- ACE-Step 1.5 (song generation) --------------------------------------------
+#
+# Runs as a SEPARATE container/GPU from ACEStepService below, deliberately —
+# ACE-Step 1.5's own GPU_COMPATIBILITY.md documents a T4's 16GB as fitting the
+# XL DiT + 1.7B LM tier only when the whole GPU is available to it alone; our
+# alignment pipeline (Whisper-medium + Demucs, ~3.3GB) sharing that same
+# budget would risk VRAM contention against a model already using CPU
+# offload. Two containers, two independent scale-to-zero lifecycles, no
+# contention — ACEStepService.generate() below calls this one via .remote()
+# for the audio, then runs vocal isolation + alignment on the result exactly
+# as it always has.
+#
+# Deliberately NOT overriding to the "sft" quality tier here anymore: a
+# first attempt setting ACESTEP_CONFIG_PATH=acestep-v15-sft / LM=0.6B still
+# downloaded turbo+1.7B regardless (root cause unconfirmed — ruled out
+# .env-file precedence, since api_server.py's load_dotenv() call uses
+# override=False and no .env file exists in this image anyway). There's also
+# an open upstream issue (ace-step/ACE-Step-1.5#200) specifically about SFT
+# service-mode initialization being buggy. Using their own `.env.example`
+# default pairing (turbo DiT + 1.7B LM — their own "standard configuration")
+# sidesteps both the unconfirmed-override mystery and a known-buggy code
+# path, at the cost of the faster/distilled tier instead of the full-CFG one
+# originally planned. Revisit once there's time to root-cause the override
+# behavior properly.
+ACESTEP15_DIT_MODEL = "acestep-v15-turbo"
+ACESTEP15_LM_MODEL = "acestep-5Hz-lm-1.7B"
+ACESTEP15_API_PORT = 8001
+ACESTEP15_UV = "/root/.local/bin/uv"
+ACESTEP15_DIR = "/opt/acestep15"
+
+acestep15_image = (
+    modal.Image.from_registry("pytorch/pytorch:2.4.0-cuda12.4-cudnn9-runtime", add_python="3.11")
+    # build-essential: Triton (vLLM's kernel JIT) needs a C compiler at
+    # runtime — its absence surfaced as "Failed to find C compiler" during
+    # the first real test, silently falling back to a slower PyTorch path
+    # rather than failing outright, but worth fixing properly.
+    .apt_install("git", "ffmpeg", "curl", "espeak-ng", "build-essential")
+    .run_commands(
+        "curl -LsSf https://astral.sh/uv/install.sh | sh",
+        f"git clone https://github.com/ace-step/ACE-Step-1.5.git {ACESTEP15_DIR}",
+        f"cd {ACESTEP15_DIR} && {ACESTEP15_UV} sync",
+    )
+    # Modal loads the WHOLE app.py module (including the top-level
+    # `from fastapi import ...` used by the webhook function) in every
+    # container regardless of which class/function it's actually running —
+    # this needs to be importable here even though AceStep15Service itself
+    # never touches fastapi (the acestep-api subprocess runs in its own
+    # separate uv-managed venv under ACESTEP15_DIR, unaffected either way).
+    .pip_install("fastapi[standard]")
+)
+# NOTE: checkpoints are NOT pre-warmed into the image at build time — their
+# own docs state the server auto-downloads weights on first run (resolved
+# via ACESTEP_CONFIG_PATH/ACESTEP_LM_MODEL_PATH through their own internal
+# registry). First real request after a cold container start pays a
+# one-time download cost — observed to be several GB (turbo DiT + 1.7B LM +
+# a Qwen embedding model, downloaded in parallel) — well past the original
+# 300s health-check budget, which is very likely what actually caused the
+# first two 500s (not the model-selection question above). Bumped to 20
+# minutes; a warm container (same scaledown_window=300 lifetime) skips this
+# entirely on subsequent requests.
+ACESTEP15_ENTER_TIMEOUT_S = 1200
+
+
+@app.cls(gpu="L4", image=acestep15_image, scaledown_window=300, timeout=1800)
+class AceStep15Service:
+    @modal.enter()
+    def load(self):
+        env = os.environ.copy()
+        env["ACESTEP_CONFIG_PATH"] = ACESTEP15_DIT_MODEL
+        env["ACESTEP_LM_MODEL_PATH"] = ACESTEP15_LM_MODEL
+        env["ACESTEP_API_PORT"] = str(ACESTEP15_API_PORT)
+        env["ACESTEP_API_HOST"] = "127.0.0.1"
+        print(f"[acestep15] spawning acestep-api: DIT={env['ACESTEP_CONFIG_PATH']} LM={env['ACESTEP_LM_MODEL_PATH']}")
+        self.proc = subprocess.Popen(
+            [ACESTEP15_UV, "run", "acestep-api"],
+            cwd=ACESTEP15_DIR,
+            env=env,
+        )
+        # DiT + LM cold-load (incl. first-run download) can take a while;
+        # poll /health rather than assuming a fixed warm-up time. Logs
+        # progress periodically so a slow cold start is visible, not silent.
+        deadline = time.time() + ACESTEP15_ENTER_TIMEOUT_S
+        healthy = False
+        last_log = 0.0
+        while time.time() < deadline:
+            if self.proc.poll() is not None:
+                raise RuntimeError(f"[acestep15] acestep-api process exited early with code {self.proc.returncode}")
+            if time.time() - last_log > 30:
+                print(f"[acestep15] waiting for /health ({int(deadline - time.time())}s left)...")
+                last_log = time.time()
+            try:
+                with urllib.request.urlopen(f"http://127.0.0.1:{ACESTEP15_API_PORT}/health", timeout=3) as resp:
+                    if resp.status == 200:
+                        healthy = True
+                        break
+            except Exception:
+                pass
+            time.sleep(2)
+        if not healthy:
+            raise RuntimeError(f"acestep-api did not become healthy within {ACESTEP15_ENTER_TIMEOUT_S}s")
+        print("[acestep15] acestep-api healthy")
+
+    def _post(self, path: str, body: dict, timeout: int = 30) -> dict:
+        req = urllib.request.Request(
+            f"http://127.0.0.1:{ACESTEP15_API_PORT}{path}",
+            data=json.dumps(body).encode(),
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            return json.loads(resp.read())
+
+    @modal.method()
+    def generate_song(self, prompt: str, lyrics: str, duration_sec: int) -> bytes:
+        # /health passing only confirms the web server is up, not that the
+        # model is actually loaded into GPU memory — the 2026-07-20 L4 test
+        # got past /health then hit a client-side socket TimeoutError on
+        # THIS call, most likely because the DiT model lazy-loads on the
+        # first real task submission (including its flash_attention_2 ->
+        # sdpa -> eager fallback attempts, per their init_service_loader.py
+        # source), which can genuinely take several minutes the first time —
+        # not a hang, just slower than the original 60s budget assumed.
+        submitted = self._post("/release_task", {
+            "prompt": prompt,
+            "lyrics": lyrics,
+            "audio_duration": float(duration_sec),
+            "vocal_language": "es",
+            # turbo is the distilled, no-CFG tier — 8 steps is their own
+            # documented setting for it, not the 50-step CFG figure that
+            # applies to sft/base.
+            "inference_steps": 8,
+        }, timeout=600)
+        task_id = submitted["data"]["task_id"]
+        print(f"[acestep15] task {task_id} submitted")
+
+        poll_seconds = 1500
+        deadline = time.time() + poll_seconds
+        result = None
+        last_log = 0.0
+        while time.time() < deadline:
+            if time.time() - last_log > 30:
+                print(f"[acestep15] task {task_id} polling... ({int(deadline - time.time())}s left)")
+                last_log = time.time()
+            polled = self._post("/query_result", {"task_id_list": [task_id]})
+            item = polled["data"]
+            item = item[0] if isinstance(item, list) else item
+            status = item.get("status")
+            if status == "succeeded":
+                result = item
+                break
+            if status == "failed":
+                raise RuntimeError(f"[acestep15] task {task_id} failed: {item}")
+            time.sleep(2)
+        if result is None:
+            raise RuntimeError(f"[acestep15] task {task_id} timed out after {poll_seconds}s")
+        print(f"[acestep15] task {task_id} succeeded")
+
+        audio_path = result.get("file")
+        if not audio_path:
+            raise RuntimeError(f"[acestep15] task {task_id} succeeded but no file path in result: {result}")
+        url = f"http://127.0.0.1:{ACESTEP15_API_PORT}/v1/audio?path={urllib.parse.quote(audio_path, safe='')}"
+        with urllib.request.urlopen(url, timeout=60) as resp:
+            return resp.read()
 
 
 # --- Lyrics-to-audio alignment (karaoke timings) -------------------------------
@@ -297,13 +470,15 @@ def align_lyrics(whisper_model, audio_path: str, lyrics: str, duration: float):
     return out
 
 
-@app.cls(gpu="T4", image=gpu_image, scaledown_window=300, timeout=600)
+@app.cls(gpu="T4", image=gpu_image, scaledown_window=300, timeout=1800)
 class ACEStepService:
     @modal.enter()
     def load(self):
-        from acestep.pipeline_ace_step import ACEStepPipeline
+        self.pipeline = None
+        if not USE_ACESTEP_15:
+            from acestep.pipeline_ace_step import ACEStepPipeline
 
-        self.pipeline = ACEStepPipeline(checkpoint_dir=MODEL_DIR, dtype="bfloat16", torch_compile=False)
+            self.pipeline = ACEStepPipeline(checkpoint_dir=MODEL_DIR, dtype="bfloat16", torch_compile=False)
         self.whisper = None
         self.demucs = None
 
@@ -383,28 +558,45 @@ class ACEStepService:
 
         with tempfile.TemporaryDirectory() as tmp:
             wav_path = os.path.join(tmp, "song.wav")
-            # NOTE: keyword names track ACE-Step v1 (pipeline __call__). If you
-            # upgrade the acestep package, re-check this signature against
-            # https://github.com/ace-step/ACE-Step infer.py defaults.
-            self.pipeline(
-                audio_duration=float(duration),
-                prompt=prompt,
-                lyrics=lyrics,
-                infer_step=INFER_STEPS,
-                guidance_scale=15.0,
-                scheduler_type="euler",
-                cfg_type="apg",
-                omega_scale=10.0,
-                guidance_interval=0.5,
-                guidance_interval_decay=0.0,
-                min_guidance_scale=3.0,
-                use_erg_tag=True,
-                use_erg_lyric=True,
-                use_erg_diffusion=True,
-                guidance_scale_text=0.0,
-                guidance_scale_lyric=0.0,
-                save_path=wav_path,
-            )
+            if USE_ACESTEP_15:
+                # Runs in its own container/GPU (AceStep15Service) — see the
+                # class docstring-equivalent comment above it for why this
+                # isn't embedded here. Its output format isn't guaranteed to
+                # be wav, so normalize through ffmpeg regardless of what
+                # comes back (ffmpeg identifies container format from
+                # content, not the extension on raw_path).
+                audio_bytes = AceStep15Service().generate_song.remote(prompt, lyrics, duration)
+                raw_path = os.path.join(tmp, "acestep15_raw")
+                with open(raw_path, "wb") as f:
+                    f.write(audio_bytes)
+                subprocess.run(
+                    ["ffmpeg", "-y", "-i", raw_path, wav_path],
+                    check=True,
+                    capture_output=True,
+                )
+            else:
+                # NOTE: keyword names track ACE-Step v1 (pipeline __call__). If you
+                # upgrade the acestep package, re-check this signature against
+                # https://github.com/ace-step/ACE-Step infer.py defaults.
+                self.pipeline(
+                    audio_duration=float(duration),
+                    prompt=prompt,
+                    lyrics=lyrics,
+                    infer_step=INFER_STEPS,
+                    guidance_scale=15.0,
+                    scheduler_type="euler",
+                    cfg_type="apg",
+                    omega_scale=10.0,
+                    guidance_interval=0.5,
+                    guidance_interval_decay=0.0,
+                    min_guidance_scale=3.0,
+                    use_erg_tag=True,
+                    use_erg_lyric=True,
+                    use_erg_diffusion=True,
+                    guidance_scale_text=0.0,
+                    guidance_scale_lyric=0.0,
+                    save_path=wav_path,
+                )
 
             mp3_path = os.path.join(tmp, "song.mp3")
             subprocess.run(
@@ -441,7 +633,7 @@ class ACEStepService:
         }
 
 
-@app.function(image=light_image, secrets=[music_key_secret])
+@app.function(image=light_image, secrets=[music_key_secret], timeout=1800)
 @modal.fastapi_endpoint(method="POST")
 def generate(item: dict, x_api_key: str = Header(None)):
     expected = os.environ.get("MUSIC_SERVICE_KEY", "")
