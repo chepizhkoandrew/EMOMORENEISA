@@ -332,8 +332,33 @@ def align_lyrics(aligner_bundle, audio_path: str, lyrics: str, duration: float):
     def frame_to_sec(frame_idx):
         return (frame_idx * samples_per_frame) / sample_rate
 
+    # CTC's blank class (index 0, the library's own default convention for
+    # forced_align) marks "no character being sung right now" per frame. A
+    # word's raw TokenSpan boundary can swallow an adjacent instrumental/
+    # silent gap whole (observed 2026-07-20: "Espana" claimed 5.3s-11.7s
+    # across a genuine ~4s quiet stretch, confirmed via the actual audio's
+    # energy dropping ~4x in that window) — trim each word's span inward from
+    # both ends to where blank probability actually drops, so a word's
+    # claimed duration reflects when it was actually sung, not wherever the
+    # aligner's Viterbi path happened to draw the boundary. For karaoke,
+    # a wrong word landing at the wrong moment is exactly what breaks trust
+    # in the feature, so this errs toward trusting the audio over the raw
+    # span every time.
+    blank_probs = emission[0][:, 0].exp().tolist()
+
+    def trim_to_confident_frames(start_frame, end_frame):
+        if end_frame <= start_frame:
+            return start_frame, end_frame
+        lo, hi = start_frame, end_frame
+        while lo < hi - 1 and blank_probs[lo] > 0.5:
+            lo += 1
+        while hi > lo + 1 and blank_probs[hi - 1] > 0.5:
+            hi -= 1
+        return lo, hi
+
     # Flat per-word spans (one entry per flat_words element, in order).
     words = []
+    trimmed_count = 0
     for spans, word in zip(token_spans, flat_words):
         if not spans:
             # Defensive fallback — every input token should get a span, but
@@ -341,10 +366,16 @@ def align_lyrics(aligner_bundle, audio_path: str, lyrics: str, duration: float):
             prev_end = words[-1]["endSec"] if words else 0.0
             words.append({"text": word, "startSec": prev_end, "endSec": prev_end + 0.1, "score": -999.0})
             continue
-        t0 = frame_to_sec(spans[0].start)
-        t1 = frame_to_sec(spans[-1].end)
+        raw_start, raw_end = spans[0].start, spans[-1].end
+        trimmed_start, trimmed_end = trim_to_confident_frames(raw_start, raw_end)
+        if trimmed_end - trimmed_start < (raw_end - raw_start) * 0.8:
+            trimmed_count += 1
+        t0 = frame_to_sec(trimmed_start)
+        t1 = frame_to_sec(trimmed_end)
         score = sum(s.score for s in spans) / len(spans)
         words.append({"text": word, "startSec": t0, "endSec": t1, "score": score})
+    if trimmed_count:
+        print(f"[align] trimmed a likely silent/instrumental gap out of {trimmed_count} word span(s)")
 
     # Enforce monotonic, duration-clamped boundaries — forced alignment isn't
     # guaranteed strictly increasing across word/line boundaries, and the
