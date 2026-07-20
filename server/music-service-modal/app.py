@@ -415,19 +415,47 @@ def align_lyrics(aligner_bundle, audio_path: str, lyrics: str, duration: float):
     lowest = sorted(words, key=lambda w: w["score"])[:8]
     print(f"[align] lowest-confidence words: {[(w['text'], w['startSec'], round(w['score'], 2)) for w in lowest]}")
 
-    # Reconstruct per-line entries from the flat word list.
+    # Reconstruct per-line entries from the flat word list. A line whose
+    # words collectively score near-zero has essentially no acoustic
+    # evidence backing their individual placements — observed 2026-07-20:
+    # an outro line scoring exactly 0.00 across two separate real
+    # generations, most likely because a 30s song with 5 lines of lyrics
+    # doesn't leave ACE-Step v1 enough room to actually sing it, not an
+    # alignment-tooling bug. Trusting each word's raw placement there shows
+    # confident-looking-but-wrong timing — worse for karaoke trust than an
+    # honest, evenly-spread guess across the line's own span, the same
+    # fallback the old Whisper-based pipeline used for fully-unmatched
+    # lines. Applied per line (not globally) so one bad line doesn't distrust
+    # a whole song that's mostly aligned well.
+    LOW_CONFIDENCE_LINE_MEAN = 0.05
     out = []
     wi = 0
     for line in lines:
         n = len(line_words[len(out)])
         entries = words[wi: wi + n]
         wi += n
-        out.append({
-            "text": line,
-            "startSec": entries[0]["startSec"],
-            "endSec": entries[-1]["endSec"],
-            "words": [{"text": w["text"], "startSec": w["startSec"], "endSec": w["endSec"]} for w in entries],
-        })
+        line_start, line_end = entries[0]["startSec"], entries[-1]["endSec"]
+        real = [e["score"] for e in entries if e["score"] > -999.0]
+        mean_score = sum(real) / len(real) if real else -999.0
+
+        if mean_score < LOW_CONFIDENCE_LINE_MEAN and line_end > line_start:
+            print(
+                f"[align] line \"{line}\" mean score {mean_score:.3f} < {LOW_CONFIDENCE_LINE_MEAN} — "
+                f"spreading evenly across {line_start}-{line_end} instead of trusting per-word placement"
+            )
+            weights = [max(1, len(e["text"])) for e in entries]
+            total_w = sum(weights)
+            t = line_start
+            span = line_end - line_start
+            line_words_out = []
+            for e, w in zip(entries, weights):
+                step = span * (w / total_w)
+                line_words_out.append({"text": e["text"], "startSec": round(t, 2), "endSec": round(t + step, 2)})
+                t += step
+        else:
+            line_words_out = [{"text": e["text"], "startSec": e["startSec"], "endSec": e["endSec"]} for e in entries]
+
+        out.append({"text": line, "startSec": line_start, "endSec": line_end, "words": line_words_out})
 
     for i, entry in enumerate(out):
         word_summary = " | ".join(f"{w['text']}@{w['startSec']}" for w in entry["words"])
