@@ -340,19 +340,37 @@ def align_lyrics(aligner_bundle, audio_path: str, lyrics: str, duration: float):
     # energy dropping ~4x in that window) — trim each word's span inward from
     # both ends to where blank probability actually drops, so a word's
     # claimed duration reflects when it was actually sung, not wherever the
-    # aligner's Viterbi path happened to draw the boundary. For karaoke,
-    # a wrong word landing at the wrong moment is exactly what breaks trust
-    # in the feature, so this errs toward trusting the audio over the raw
-    # span every time.
+    # aligner's Viterbi path happened to draw the boundary.
+    #
+    # A first version trimmed on any single frame >0.5 blank probability —
+    # too aggressive: short/weak Spanish function words ("a", "sin", "uno")
+    # can have brief blank-probability dips while genuinely still being
+    # sung, and that version ate into them from both sides down to ~1 frame
+    # (observed as a suspicious flat 0.05s duration across many words in the
+    # very next real test). Now requires a SUSTAINED run of high-confidence
+    # silence (~150ms of frames all above a stricter 0.9) before trimming —
+    # a multi-second instrumental gap trivially clears that bar, a brief dip
+    # inside a real word does not — and never trims a word below ~150ms.
     blank_probs = emission[0][:, 0].exp().tolist()
+    frame_sec = samples_per_frame / sample_rate
+    min_silence_run = max(1, round(0.15 / frame_sec))
+    min_word_frames = max(1, round(0.15 / frame_sec))
+    silence_prob = 0.9
+
+    def _is_silent_run(start, step):
+        for k in range(min_silence_run):
+            idx = start + k * step
+            if idx < 0 or idx >= len(blank_probs) or blank_probs[idx] <= silence_prob:
+                return False
+        return True
 
     def trim_to_confident_frames(start_frame, end_frame):
         if end_frame <= start_frame:
             return start_frame, end_frame
         lo, hi = start_frame, end_frame
-        while lo < hi - 1 and blank_probs[lo] > 0.5:
+        while hi - lo > min_word_frames and _is_silent_run(lo, 1):
             lo += 1
-        while hi > lo + 1 and blank_probs[hi - 1] > 0.5:
+        while hi - lo > min_word_frames and _is_silent_run(hi - 1, -1):
             hi -= 1
         return lo, hi
 
