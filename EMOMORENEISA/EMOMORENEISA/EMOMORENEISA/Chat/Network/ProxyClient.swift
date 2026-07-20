@@ -37,6 +37,38 @@ final class ProxyClient {
         return (json["text"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
     }
 
+    // Roleplay podcast turn: same shape as chat() but billed via the flat
+    // roleplay treat cost on /v1/roleplay-chat (covers the bigger dual-persona
+    // completion plus both subsequent TTS calls for the turn).
+    func chatRoleplay(
+        systemPrompt: String,
+        history: [LocalChatMessage],
+        userText: String,
+        maxTokens: Int = 300
+    ) async throws -> String {
+        // Re-tag each assistant line with the same [MADRID]/[OBJECT] markers the
+        // model itself emits, so it can actually tell from history who said what
+        // across turns — otherwise every past AI line looks like one
+        // undifferentiated "assistant" block and the model can't track who's
+        // been carrying the conversation or who was addressed last.
+        let body: [String: Any] = [
+            "systemPrompt": systemPrompt,
+            "history": history.map { msg -> [String: Any] in
+                let prefix: String
+                switch msg.speakerId {
+                case "madrid": prefix = "[MADRID] "
+                case "object": prefix = "[OBJECT] "
+                default: prefix = ""
+                }
+                return ["isUser": msg.isUser, "text": prefix + (msg.textContent ?? "")]
+            },
+            "userText": userText,
+            "maxTokens": maxTokens
+        ]
+        let json = try await postJSON(path: "/v1/roleplay-chat", body: body)
+        return (json["text"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+    }
+
     // Background / utility completion. Not billed. `kind` = "enhance" | "summary" | "analyst".
     func utility(prompt: String, kind: String, maxTokens: Int = 256, temperature: Double = 0) async throws -> String {
         let json = try await postJSON(path: "/v1/utility", body: [
@@ -48,8 +80,12 @@ final class ProxyClient {
     // Returns raw decoded audio plus its MIME type. AAC is requested so the
     // server serves a compact, cache-backed file; PCM is wrapped into WAV by the
     // caller only when the server returns it (legacy/uncompressed fallback).
-    func tts(text: String, context: String = "default") async throws -> (data: Data, mime: String) {
-        let json = try await postJSON(path: "/v1/tts", body: ["text": text, "format": "aac", "context": context])
+    func tts(text: String, context: String = "default", voice: (languageCode: String, voiceName: String)? = nil) async throws -> (data: Data, mime: String) {
+        var body: [String: Any] = ["text": text, "format": "aac", "context": context]
+        if let voice {
+            body["voice"] = ["languageCode": voice.languageCode, "voiceName": voice.voiceName]
+        }
+        let json = try await postJSON(path: "/v1/tts", body: body)
         guard let b64 = json["audioBase64"] as? String, let data = Data(base64Encoded: b64) else {
             throw ProxyError.decoding
         }
@@ -261,6 +297,34 @@ final class ProxyClient {
                 let json = try await postJSON(
                     path: "/v1/illustration",
                     body: ["spanish": spanish, "english": english],
+                    timeout: 30
+                )
+                guard let b64 = json["base64"] as? String,
+                      let data = Data(base64Encoded: b64) else { return nil }
+                return (data, (json["mime"] as? String) ?? "image/jpeg")
+            } catch {
+                if case ProxyError.http(let status, _) = error, status != 429, status < 500 {
+                    return nil
+                }
+            }
+        }
+        return nil
+    }
+
+    // Generates (or fetches a cached) roleplay scene background — free, same
+    // retry/backoff shape as fetchIllustration, but built from a raw scene
+    // description instead of a Spanish/English phrase pair.
+    func fetchRoleplayScene(objectLabel: String, environmentLabel: String) async -> (data: Data, mime: String)? {
+        let scenePrompt = "\(objectLabel) being interviewed, set in \(environmentLabel). " +
+            "Leave the bottom-left foreground open and empty — no other people, hosts, or animals there."
+        for attempt in 0..<3 {
+            if attempt > 0 {
+                try? await Task.sleep(nanoseconds: UInt64(attempt) * 1_200_000_000)
+            }
+            do {
+                let json = try await postJSON(
+                    path: "/v1/illustration",
+                    body: ["scenePrompt": scenePrompt],
                     timeout: 30
                 )
                 guard let b64 = json["base64"] as? String,

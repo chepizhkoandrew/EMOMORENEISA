@@ -52,7 +52,7 @@ final class OnboardingAudioPlayer: NSObject {
     func prefetchDynamic(text: String) async -> URL? {
         guard !text.trimmingCharacters(in: .whitespaces).isEmpty else { return nil }
         do {
-            let (raw, mime) = try await ProxyClient.shared.tts(text: text, context: "sentence")
+            let (raw, mime) = try await ProxyClient.shared.tts(text: text, context: "onboarding")
             let ext: String
             let m = mime.lowercased()
             if m.hasPrefix("audio/aac") { ext = "aac" }

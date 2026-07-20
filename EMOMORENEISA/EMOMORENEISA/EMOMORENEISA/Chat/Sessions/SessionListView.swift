@@ -173,7 +173,17 @@ struct SessionListView: View {
         let remote = await SupabaseSyncService.shared.fetchSessions(for: userId)
         let existingIds = Set(sessions.map(\.id))
         for r in remote where !existingIds.contains(r.id) {
-            let local = LocalChatSession(id: r.id, userId: r.userId, mode: SessionMode(rawValue: r.mode) ?? .topic, title: r.title, topic: r.topic)
+            let local = LocalChatSession(
+                id: r.id,
+                userId: r.userId,
+                mode: SessionMode(rawValue: r.mode) ?? .topic,
+                title: r.title,
+                topic: r.topic,
+                roleplayObjectLabel: r.roleplayObjectLabel,
+                roleplayEnvironmentLabel: r.roleplayEnvironmentLabel,
+                roleplayObjectVoice: r.roleplayObjectVoice,
+                roleplaySceneImagePath: r.roleplaySceneImagePath
+            )
             local.messageCount = r.messageCount
             local.lastMessagePreview = r.lastMessagePreview
             local.lastMessageAt = r.lastMessageAt
@@ -222,7 +232,11 @@ struct SessionRowView: View {
     }
 
     private var modeColor: Color {
-        session.modeEnum == .topic ? .yellow : .cyan
+        switch session.modeEnum {
+        case .topic:    return .yellow
+        case .visual:   return .cyan
+        case .roleplay: return .purple
+        }
     }
 
     private var relativeTime: String {

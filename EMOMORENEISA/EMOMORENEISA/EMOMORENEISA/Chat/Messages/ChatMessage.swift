@@ -17,6 +17,7 @@ struct RemoteChatMessage: Codable, Identifiable {
     var isEnhanced: Bool
     var threadReplyCount: Int
     var createdAt: Date
+    var speakerId: String?
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -30,6 +31,7 @@ struct RemoteChatMessage: Codable, Identifiable {
         case isEnhanced         = "is_enhanced"
         case threadReplyCount   = "thread_reply_count"
         case createdAt          = "created_at"
+        case speakerId          = "speaker_id"
     }
 }
 
@@ -48,6 +50,7 @@ final class LocalChatMessage {
     var threadReplyCount: Int
     var createdAt: Date
     var isSynced: Bool
+    var speakerId: String?
 
     init(
         id: UUID = UUID(),
@@ -58,7 +61,8 @@ final class LocalChatMessage {
         textContent: String? = nil,
         rawTranscript: String? = nil,
         audioLocalPath: String? = nil,
-        imageLocalPaths: [String] = []
+        imageLocalPaths: [String] = [],
+        speakerId: String? = nil
     ) {
         self.id = id
         self.sessionId = sessionId
@@ -73,6 +77,7 @@ final class LocalChatMessage {
         self.threadReplyCount = 0
         self.createdAt = Date()
         self.isSynced = false
+        self.speakerId = speakerId
     }
 
     var senderEnum: MessageSender { MessageSender(rawValue: sender) ?? .user }

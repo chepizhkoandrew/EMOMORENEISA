@@ -171,7 +171,7 @@ struct ModeSelectorView: View {
         }
         .onChange(of: activeLeaf) { _, leaf in
             if leaf != nil {
-                let longFade = leaf == .topicFlow || leaf == .streetViewFlow
+                let longFade = leaf == .topicFlow || leaf == .streetViewFlow || leaf == .rolePlay
                 pauseAmbient(musicFadeDuration: longFade ? 1.5 : 0.3)
             } else if !pendingSessionLaunch && !pendingVerbGameLaunch {
                 // Only resume here if we're actually landing back on this
@@ -222,11 +222,12 @@ struct ModeSelectorView: View {
                 SignInView().environment(authState)
             }
         case .rolePlay:
-            ComingSoonView(
-                title: L("Role Play"),
-                message: L("Chat with any character you imagine"),
-                systemImage: "theatermasks.fill"
-            )
+            if authState.isSignedIn {
+                RoleplaySetupView(onSessionCreated: handleSessionCreated)
+                    .environment(authState)
+            } else {
+                SignInView().environment(authState)
+            }
         case .memoryCalendar:
             MemorizeContainerView().environment(authState)
         case .musicPlaceholder:

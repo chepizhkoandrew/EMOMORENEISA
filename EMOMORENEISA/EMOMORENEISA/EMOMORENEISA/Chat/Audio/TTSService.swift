@@ -14,7 +14,7 @@ final class TTSService: NSObject {
     var duration: TimeInterval = 0
 
     private var player: AVAudioPlayer?
-    private var queue: [(id: UUID, text: String)] = []
+    private var queue: [(id: UUID, text: String, voice: (languageCode: String, voiceName: String)?)] = []
     private var queueIndex: Int = 0
     private var queueContext: String = "sentence"
     private var progressTimer: Timer?
@@ -39,14 +39,29 @@ final class TTSService: NSObject {
 
     // MARK: - Public API
 
-    func speak(text: String, messageId: UUID, context: String = "default") {
+    func speak(text: String, messageId: UUID, context: String = "default", voice: (languageCode: String, voiceName: String)? = nil) {
         clearQueue()
-        Task { await playSingle(text: text, messageId: messageId, context: context) }
+        Task { await playSingle(text: text, messageId: messageId, context: context, voice: voice) }
     }
 
     func speakQueue(startingFrom messageId: UUID, in messages: [(id: UUID, text: String)], context: String = "sentence") {
         let startIdx = messages.firstIndex(where: { $0.id == messageId }) ?? 0
-        let items = Array(messages[startIdx...])
+        let items = messages[startIdx...].map { (id: $0.id, text: $0.text, voice: nil as (languageCode: String, voiceName: String)?) }
+        guard !items.isEmpty else { return }
+        clearQueue()
+        queue = items
+        queueIndex = 0
+        queueContext = context
+        isQueueActive = true
+        Task { await playCurrentQueueItem() }
+    }
+
+    // Plays a fixed, ordered sequence of items back-to-back (e.g. a roleplay
+    // turn's Madrid line then object line), each with its own optional voice
+    // override. Reuses the same queue machinery as speakQueue so playback
+    // advances automatically without one call's clearQueue() cutting off the
+    // previous item still in flight (which calling speak() twice in a row would do).
+    func speakTurn(_ items: [(id: UUID, text: String, voice: (languageCode: String, voiceName: String)?)], context: String = "roleplay") {
         guard !items.isEmpty else { return }
         clearQueue()
         queue = items
@@ -207,7 +222,7 @@ final class TTSService: NSObject {
     // MARK: - Playback
 
     @MainActor
-    private func playSingle(text: String, messageId: UUID, context: String = "default") async {
+    private func playSingle(text: String, messageId: UUID, context: String = "default", voice: (languageCode: String, voiceName: String)? = nil) async {
         let chunks = splitTextIntoChunks(text)
         activeChunks = chunks
         chunkURLs = Array(repeating: nil, count: chunks.count)
@@ -221,7 +236,7 @@ final class TTSService: NSObject {
             let msgId = messageId
             let task = Task<URL?, Never> {
                 if let cached = self.cachedChunkURL(for: msgId, chunkIndex: idx) { return cached }
-                guard let (data, ext) = await self.fetchTTS(text: chunkText, context: context) else { return nil }
+                guard let (data, ext) = await self.fetchTTS(text: chunkText, context: context, voice: voice) else { return nil }
                 let fileURL = self.cacheChunkURL(for: msgId, chunkIndex: idx, ext: ext)
                 try? data.write(to: fileURL)
                 return fileURL
@@ -324,7 +339,7 @@ final class TTSService: NSObject {
             return
         }
         let item = queue[queueIndex]
-        await playSingle(text: item.text, messageId: item.id, context: queueContext)
+        await playSingle(text: item.text, messageId: item.id, context: queueContext, voice: item.voice)
     }
 
     private func finishCurrentMessagePlayback() {
@@ -344,9 +359,9 @@ final class TTSService: NSObject {
 
     // MARK: - TTS Fetch
 
-    private func fetchTTS(text: String, context: String = "default") async -> (Data, String)? {
+    private func fetchTTS(text: String, context: String = "default", voice: (languageCode: String, voiceName: String)? = nil) async -> (Data, String)? {
         do {
-            let (raw, mime) = try await ProxyClient.shared.tts(text: text, context: context)
+            let (raw, mime) = try await ProxyClient.shared.tts(text: text, context: context, voice: voice)
             let m = mime.lowercased()
             // AAC (and m4a) play natively via AVAudioPlayer — store as-is. Only raw
             // PCM needs the WAV header.

@@ -12,6 +12,17 @@ struct MessageBubbleView: View {
             if message.isUser { Spacer(minLength: 56) }
 
             VStack(alignment: message.isUser ? .trailing : .leading, spacing: 5) {
+                if isObjectSpeaker {
+                    Label(L("Guest"), systemImage: "theatermasks.fill")
+                        .font(.system(size: 12, weight: .semibold, design: .rounded))
+                        .foregroundColor(.purple.opacity(0.85))
+                        .padding(.leading, 4)
+                } else if isHostSpeaker {
+                    Label(L("Host"), systemImage: "mic.fill")
+                        .font(.system(size: 12, weight: .semibold, design: .rounded))
+                        .foregroundColor(.yellow.opacity(0.85))
+                        .padding(.leading, 4)
+                }
                 bubbleContent
                     .overlay(alignment: .topTrailing) {
                         if message.isAssistant, let annotate = onAnnotate {
@@ -55,6 +66,7 @@ struct MessageBubbleView: View {
                     .font(.system(size: 20, weight: .regular, design: .rounded))
                     .foregroundColor(message.isUser ? .black : AppColors.textPrimary)
                     .lineSpacing(5)
+                    .fixedSize(horizontal: false, vertical: true)
             }
         }
         .padding(.horizontal, images.isEmpty ? 16 : 10)
@@ -226,12 +238,22 @@ struct MessageBubbleView: View {
         }
     }
 
+    private var isObjectSpeaker: Bool {
+        message.speakerId == "object"
+    }
+
+    private var isHostSpeaker: Bool {
+        message.speakerId == "madrid"
+    }
+
     private var bubbleBackground: Color {
-        message.isUser ? .yellow : AppColors.cardBackground
+        if message.isUser { return .yellow }
+        return isObjectSpeaker ? Color.purple.opacity(0.22) : AppColors.cardBackground
     }
 
     private var bubbleBorder: Color {
-        message.isUser ? .yellow.opacity(0.6) : AppColors.cardBorder
+        if message.isUser { return .yellow.opacity(0.6) }
+        return isObjectSpeaker ? Color.purple.opacity(0.5) : AppColors.cardBorder
     }
 }
 

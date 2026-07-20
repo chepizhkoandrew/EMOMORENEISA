@@ -17,7 +17,11 @@ final class SupabaseSyncService {
             lastMessagePreview: session.lastMessagePreview,
             lastMessageAt: session.lastMessageAt,
             createdAt: session.createdAt,
-            updatedAt: session.updatedAt
+            updatedAt: session.updatedAt,
+            roleplayObjectLabel: session.roleplayObjectLabel,
+            roleplayEnvironmentLabel: session.roleplayEnvironmentLabel,
+            roleplayObjectVoice: session.roleplayObjectVoice,
+            roleplaySceneImagePath: session.roleplaySceneImagePath
         )
         do {
             try await supabase.from("sessions").upsert(remote).execute()
@@ -39,7 +43,8 @@ final class SupabaseSyncService {
             imageStoragePaths: message.imageLocalPaths,
             isEnhanced: message.isEnhanced,
             threadReplyCount: message.threadReplyCount,
-            createdAt: message.createdAt
+            createdAt: message.createdAt,
+            speakerId: message.speakerId
         )
         do {
             try await supabase.from("messages").insert(remote).execute()

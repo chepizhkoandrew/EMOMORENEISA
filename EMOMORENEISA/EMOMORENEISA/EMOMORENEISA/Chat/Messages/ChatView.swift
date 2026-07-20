@@ -23,6 +23,8 @@ struct ChatView: View {
     @State private var parrotMessage: LocalChatMessage? = nil
     @State private var annotationTarget: AnnotationTarget? = nil
     @State private var isVoiceSending = false
+    @State private var suggestedReplies: [String] = []
+    @State private var showSuggestionsSheet = false
     @AppStorage("autoVoiceEnabled") private var autoVoiceEnabled: Bool = true
 
     private let openAI = ChatOpenAIService()
@@ -42,7 +44,36 @@ struct ChatView: View {
 
     var body: some View {
         ZStack {
-            AppBackground()
+            if session.modeEnum == .roleplay, let scenePath = session.roleplaySceneImagePath,
+               let image = UIImage(contentsOfFile: resolvedRoleplaySceneURL(scenePath).path) {
+                // GeometryReader gives the image a genuinely fixed, known frame
+                // to fill. Without it, `scaledToFill()` computes its own ideal
+                // size to preserve the image's aspect ratio while covering
+                // both axes — deliberately WIDER than the screen along one
+                // axis, that's the whole point of "fill" — and a bare
+                // `.frame(maxWidth: .infinity)` only sets an upper BOUND, it
+                // doesn't clamp back down to the actual proposed size. That
+                // oversized ideal width leaked upward into this entire ZStack
+                // (and everything else inside it), which is what was causing
+                // every row on this screen to render clipped at both edges.
+                GeometryReader { geo in
+                    Image(uiImage: image)
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: geo.size.width, height: geo.size.height)
+                        .clipped()
+                }
+                .overlay(
+                    LinearGradient(
+                        colors: [Color.black.opacity(0.35), Color.black.opacity(0.75)],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                )
+                .ignoresSafeArea()
+            } else {
+                AppBackground()
+            }
 
             VStack(spacing: 0) {
                 messageList
@@ -52,7 +83,16 @@ struct ChatView: View {
                 if !pendingImages.isEmpty {
                     imageStrip
                 }
+                if !suggestedReplies.isEmpty && !isGenerating {
+                    suggestionsButton
+                }
                 inputBar
+            }
+            .frame(maxWidth: .infinity)
+        }
+        .onChange(of: inputText) { _, newValue in
+            if !newValue.isEmpty && !suggestedReplies.isEmpty {
+                suggestedReplies = []
             }
         }
         .navigationBarBackButtonHidden(true)
@@ -125,7 +165,7 @@ struct ChatView: View {
     private var messageList: some View {
         ScrollViewReader { proxy in
             ScrollView {
-                LazyVStack(spacing: 14) {
+                LazyVStack(alignment: .leading, spacing: 14) {
                     ForEach(rootMessages) { message in
                         let precedingImageMsg = userMessageWithImages(preceding: message)
                         MessageBubbleView(
@@ -202,6 +242,83 @@ struct ChatView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
+    // MARK: - Suggested Replies (Roleplay)
+
+    // A single trigger button rather than a horizontally-scrolling chip row —
+    // full-sentence suggestions don't fit legibly in a one-line scroller, and
+    // there's no way to see all 3 at a glance to actually compare them.
+    private var suggestionsButton: some View {
+        Button {
+            showSuggestionsSheet = true
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: "text.bubble.fill")
+                    .font(.system(size: 15, weight: .semibold, design: .rounded))
+                Text(L("Suggested replies"))
+                    .font(.system(size: 15, weight: .semibold, design: .rounded))
+                Text("\(suggestedReplies.count)")
+                    .font(.system(size: 13, weight: .bold, design: .rounded))
+                    .foregroundColor(.black)
+                    .padding(.horizontal, 7)
+                    .padding(.vertical, 2)
+                    .background(Color.yellow)
+                    .clipShape(Capsule())
+            }
+            .foregroundColor(AppColors.textPrimary)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .buttonStyle(.plain)
+        .background(AppColors.backgroundTop)
+        .overlay(Rectangle().frame(height: 0.5).foregroundColor(AppColors.cardBorder), alignment: .top)
+        .sheet(isPresented: $showSuggestionsSheet) {
+            suggestionsSheetContent
+        }
+    }
+
+    private var suggestionsSheetContent: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(spacing: 12) {
+                    ForEach(suggestedReplies, id: \.self) { suggestion in
+                        Button {
+                            inputText = suggestion
+                            suggestedReplies = []
+                            showSuggestionsSheet = false
+                        } label: {
+                            Text(suggestion)
+                                .font(.system(size: 18, weight: .medium, design: .rounded))
+                                .foregroundColor(AppColors.textPrimary)
+                                .multilineTextAlignment(.leading)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(16)
+                                .background(AppColors.inputBackground)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 16)
+                                        .stroke(AppColors.inputBorder, lineWidth: 1)
+                                )
+                                .clipShape(RoundedRectangle(cornerRadius: 16))
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding(20)
+            }
+            .background(AppColors.backgroundTop)
+            .navigationTitle(L("Suggested replies"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbarColorScheme(.dark, for: .navigationBar)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button(L("Close")) { showSuggestionsSheet = false }
+                        .foregroundColor(.yellow)
+                }
+            }
+        }
+        .presentationDetents([.medium])
+    }
+
     // MARK: - Pending Images Strip
 
     private var imageStrip: some View {
@@ -231,6 +348,7 @@ struct ChatView: View {
             .padding(.horizontal, 16)
             .padding(.vertical, 10)
         }
+        .frame(maxWidth: .infinity)
         .background(AppColors.backgroundTop)
         .overlay(Rectangle().frame(height: 0.5).foregroundColor(AppColors.cardBorder), alignment: .top)
     }
@@ -400,6 +518,8 @@ struct ChatView: View {
             }
         case .topic:
             await generateAssistantReply(userText: nil, imageData: [])
+        case .roleplay:
+            await generateRoleplayReply(userText: nil)
         }
     }
 
@@ -446,6 +566,7 @@ struct ChatView: View {
         inputText = ""
         pendingImages = []
         selectedPhotoItems = []
+        suggestedReplies = []
 
         let type: MessageType = images.isEmpty ? .text : (text.isEmpty ? .image : .mixed)
         let imagePaths = saveImages(images, sessionId: session.id)
@@ -475,6 +596,11 @@ struct ChatView: View {
         }
     }
 
+    private func resolvedRoleplaySceneURL(_ relativePath: String) -> URL {
+        let docsDir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        return docsDir.appendingPathComponent(relativePath)
+    }
+
     private func saveImages(_ images: [UIImage], sessionId: UUID) -> [String] {
         guard !images.isEmpty else { return [] }
         let relativeDir = "esp-images/\(sessionId.uuidString)"
@@ -493,6 +619,10 @@ struct ChatView: View {
     // MARK: - LLM
 
     private func generateAssistantReply(userText: String?, imageData: [Data]) async {
+        guard session.modeEnum != .roleplay else {
+            await generateRoleplayReply(userText: userText)
+            return
+        }
         isGenerating = true
         errorMessage = nil
 
@@ -508,6 +638,8 @@ struct ChatView: View {
                 profile: authState.profile,
                 goal: session.sessionGoal ?? session.topic
             )
+        case .roleplay:
+            systemPrompt = "" // unreachable — handled by the guard above
         }
 
         let history = Array(rootMessages.filter { $0.textContent != nil }.suffix(20))
@@ -568,6 +700,87 @@ struct ChatView: View {
             errorMessage = error.localizedDescription
         }
         isGenerating = false
+    }
+
+    // MARK: - Roleplay LLM
+
+    private func generateRoleplayReply(userText: String?) async {
+        isGenerating = true
+        errorMessage = nil
+
+        let objectLabel = session.roleplayObjectLabel ?? "a mysterious guest"
+        let environmentLabel = session.roleplayEnvironmentLabel ?? "a cozy studio"
+        let topic = session.topic ?? "everyday life"
+
+        let systemPrompt = PromptBuilder.roleplaySystemPrompt(
+            profile: authState.profile,
+            objectLabel: objectLabel,
+            environmentLabel: environmentLabel,
+            topic: topic
+        )
+
+        let history = Array(rootMessages.filter { $0.textContent != nil }.suffix(20))
+        let openingInstruction = "Empieza el programa ya. Preséntate brevemente, presenta a tu invitado de hoy y deja que reaccione."
+        let userInput = userText ?? openingInstruction
+        // A round can now be a variable-length sequence of up to ~4 lines
+        // (dynamic turn-taking) rather than a fixed Madrid+Object pair, so
+        // give the model some extra headroom over the normal per-turn budget.
+        let baseMaxTokens = authState.profile?.levelEnum.maxTokens ?? 300
+        let roleplayMaxTokens = Int(Double(baseMaxTokens) * 1.4)
+
+        do {
+            let raw = try await ProxyClient.shared.chatRoleplay(
+                systemPrompt: systemPrompt,
+                history: history,
+                userText: userInput,
+                maxTokens: roleplayMaxTokens
+            )
+            let segments = RoleplayResponseParser.parse(raw)
+            let objectVoiceName = session.roleplayObjectVoice ?? RoleplayContent.voiceForObject(objectLabel)
+
+            var turnItems: [(id: UUID, text: String, voice: (languageCode: String, voiceName: String)?)] = []
+            for segment in segments {
+                let msg = LocalChatMessage(
+                    sessionId: session.id,
+                    sender: .assistant,
+                    type: .text,
+                    textContent: segment.text,
+                    speakerId: segment.speaker
+                )
+                addMessage(msg)
+
+                let voice: (languageCode: String, voiceName: String)? =
+                    segment.speaker == "object" ? (languageCode: "es-ES", voiceName: objectVoiceName) : nil
+                turnItems.append((id: msg.id, text: segment.text, voice: voice))
+            }
+
+            if autoVoiceEnabled, !turnItems.isEmpty {
+                TTSService.shared.speakTurn(turnItems)
+            }
+
+            refreshSuggestedReplies(objectLabel: objectLabel, topic: topic)
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+        isGenerating = false
+    }
+
+    // Fire-and-forget: kicks off the 3 suggested-reply chips for the student's
+    // next turn without blocking the round from being marked done. Best-effort
+    // — a failure just means no chips show up until the following round.
+    private func refreshSuggestedReplies(objectLabel: String, topic: String) {
+        let recentHistory = Array(rootMessages.filter { $0.textContent != nil }.suffix(20))
+        let level = authState.profile?.levelEnum.displayLabel ?? L("Beginner")
+        Task {
+            if let replies = await SuggestedRepliesService.shared.generateReplies(
+                history: recentHistory,
+                objectLabel: objectLabel,
+                topic: topic,
+                level: level
+            ) {
+                suggestedReplies = replies
+            }
+        }
     }
 
     private func addMessage(_ message: LocalChatMessage) {
