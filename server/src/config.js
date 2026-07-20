@@ -175,7 +175,7 @@ export const config = {
 
   // Apple / StoreKit
   appleBundleId: str("APPLE_BUNDLE_ID", "com.professormadrid.app"),
-  trialGrantTreats: num("TRIAL_GRANT_TREATS", 250),
+  trialGrantTreats: num("TRIAL_GRANT_TREATS", 150),
 
   // Consumable treat packs (product_id -> grant). bonus_pct is informational;
   // total_treats is what actually gets credited. Override via PACKS_JSON env.
@@ -200,6 +200,10 @@ export const config = {
     loro: num("COST_LORO_DRILL", 3),
     annotate: num("COST_ANNOTATE", 6),
     verbCheck: num("COST_VERB_CHECK", 2),
+    // Flat charge per roleplay turn — covers the larger dual-persona completion
+    // plus both subsequent TTS calls (Madrid + object), which are billed free
+    // via the "roleplay" TTS context so a turn is never double-charged.
+    roleplay: num("COST_ROLEPLAY_TURN", 12),
     // Placeholder song prices until real GPU cost per length is measured.
     musicShort: num("COST_MUSIC_30S", 15),
     musicMedium: num("COST_MUSIC_60S", 25),

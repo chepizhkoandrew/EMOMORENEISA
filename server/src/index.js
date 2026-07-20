@@ -4,7 +4,8 @@ import { requireUser } from "./auth.js";
 import { openaiChat, openaiTranscribe, geminiText } from "./providers.js";
 import { getVoice, activeVoiceTag } from "./voicecache.js";
 import { probePass1Prompt, probePass2Prompt, synthesisPrompt, ONBOARDING_QUIZ_VERSION } from "./onboardingPrompts.js";
-import { getIllustration } from "./imagecache.js";
+import { getIllustration, getIllustrationFromPrompt } from "./imagecache.js";
+import { compositeMascot } from "./composite.js";
 import { chatCostUsd, ttsCostUsd, analystCostUsd, imageCostUsd } from "./pricing.js";
 import { getWallet, debit, credit, grantTrialIfNeeded, recordTopup } from "./wallet.js";
 import { supabase } from "./supabase.js";
@@ -140,21 +141,67 @@ app.post("/v1/chat", requireUser, async (req, res) => {
   }
 });
 
-app.post("/v1/tts", requireUser, async (req, res) => {
-  const { text } = req.body || {};
-  if (!text || typeof text !== "string") return res.status(400).json({ error: "missing_text" });
-  const format = req.body?.format === "aac" ? "aac" : "pcm";
-  const validContexts = new Set(["scene","label","loro","encouragement","sentence","default"]);
-  const context = (typeof req.body?.context === "string" && validContexts.has(req.body.context))
-    ? req.body.context : "default";
+app.post("/v1/roleplay-chat", requireUser, async (req, res) => {
+  if (!config.openaiKey) return res.status(503).json({ error: "chat_not_configured" });
 
-  const cost = config.actionCosts.voice;
-  const pre = await debit(req.user.id, cost, "voice_message", {});
+  const { systemPrompt, history, userText, maxTokens } = req.body || {};
+  const model = config.models.chat;
+  const cost = config.actionCosts.roleplay;
+  const reason = "roleplay_turn";
+
+  const pre = await debit(req.user.id, cost, reason, { model });
   if (!pre.ok && pre.error === "insufficient_treats") {
     return res.status(402).json({ error: "insufficient_treats", balance: pre.balance });
   }
 
-  const audio = await getVoice(text, { format, context });
+  try {
+    const result = await openaiChat({ systemPrompt, history, userText, maxTokens, model });
+    const rawCost = chatCostUsd(result.usage.inputTokens, result.usage.outputTokens);
+    await record({
+      userId: req.user.id,
+      kind: "roleplay",
+      provider: "openai",
+      inputTokens: result.usage.inputTokens,
+      outputTokens: result.usage.outputTokens,
+      rawCostUsd: rawCost,
+      treatsCharged: cost
+    });
+    res.json({ text: result.text, usage: result.usage, treatsCharged: cost });
+  } catch (e) {
+    if (pre.enforced) await credit(req.user.id, cost, "refund", `${reason}_failed`, {});
+    res.status(e.status || 502).json({ error: "upstream_error", detail: e.message });
+  }
+});
+
+app.post("/v1/tts", requireUser, async (req, res) => {
+  const { text } = req.body || {};
+  if (!text || typeof text !== "string") return res.status(400).json({ error: "missing_text" });
+  const format = req.body?.format === "aac" ? "aac" : "pcm";
+  const validContexts = new Set(["scene","label","loro","encouragement","sentence","default","roleplay","onboarding"]);
+  const context = (typeof req.body?.context === "string" && validContexts.has(req.body.context))
+    ? req.body.context : "default";
+  const voiceOverride = (req.body?.voice && typeof req.body.voice === "object")
+    ? {
+        languageCode: typeof req.body.voice.languageCode === "string" ? req.body.voice.languageCode : undefined,
+        voiceName: typeof req.body.voice.voiceName === "string" ? req.body.voice.voiceName : undefined
+      }
+    : null;
+
+  // Roleplay turns are billed as one flat charge on /v1/roleplay-chat that
+  // already covers both persona voices for that turn — don't double-charge here.
+  // Onboarding quiz audio is a free preview (the user hasn't even seen their
+  // trial balance yet) — falling back to dynamic TTS for a missing bundled
+  // asset shouldn't silently drain treats before the app is even set up.
+  const cost = (context === "roleplay" || context === "onboarding") ? 0 : config.actionCosts.voice;
+  let pre = { ok: true, enforced: false };
+  if (cost > 0) {
+    pre = await debit(req.user.id, cost, "voice_message", {});
+    if (!pre.ok && pre.error === "insufficient_treats") {
+      return res.status(402).json({ error: "insufficient_treats", balance: pre.balance });
+    }
+  }
+
+  const audio = await getVoice(text, { format, context, voiceOverride });
   if (!audio) {
     if (pre.enforced) await credit(req.user.id, cost, "refund", "voice_message_failed", {});
     return res.status(502).json({ error: "tts_failed" });
@@ -453,7 +500,27 @@ app.post("/v1/loro/stream", requireUser, async (req, res) => {
 // one image and caches it for future calls. Returns { base64, mime } or 404
 // when image generation is unavailable.
 app.post("/v1/illustration", requireUser, async (req, res) => {
-  const { spanish, english } = req.body || {};
+  const { spanish, english, scenePrompt } = req.body || {};
+
+  if (typeof scenePrompt === "string" && scenePrompt.trim()) {
+    const illustration = await getIllustrationFromPrompt(scenePrompt.trim()).catch(() => null);
+    if (!illustration) {
+      return res.status(404).json({ error: "illustration_unavailable" });
+    }
+    // scenePrompt-shaped requests are exclusively Roleplay scene backgrounds
+    // (see ProxyClient.fetchRoleplayScene) — composite the Madrid mascot onto
+    // every one of these so he's a consistent, recognizable presence in every
+    // episode, without touching the shared illustration cache used by the
+    // spanish/english (memorization) branch below.
+    const composited = await compositeMascot(Buffer.from(illustration.base64, "base64")).catch(
+      () => null
+    );
+    return res.json({
+      base64: (composited || Buffer.from(illustration.base64, "base64")).toString("base64"),
+      mime: "image/jpeg"
+    });
+  }
+
   if (!spanish || typeof spanish !== "string") {
     return res.status(400).json({ error: "missing_spanish" });
   }

@@ -213,6 +213,8 @@ function wavToPcm(buf) {
 //                   word — first standalone noun/adj token in the phrase)
 //   "encouragement" — Positive feedback ("¡Muy bien!", correct-answer praise)
 //   "sentence"    — General chat / AI reply (pauses between sentences only)
+//   "onboarding"  — Onboarding quiz voice line (same prosody as "sentence";
+//                   free — see the /v1/tts cost carve-out in index.js)
 //   "default"     — Any other call; minimal SSML wrapping, no extra markup.
 // ---------------------------------------------------------------------------
 function escapeXml(s) {
@@ -271,8 +273,9 @@ export function textToSsml(text, context = "default") {
       return `<speak><prosody pitch="+2st" rate="1.05">${safe}</prosody></speak>`;
     }
 
-    case "sentence": {
-      // General chat messages: just add sentence-boundary pauses.
+    case "sentence":
+    case "onboarding": {
+      // General chat messages / onboarding quiz lines: just add sentence-boundary pauses.
       const sentences = splitSentences(text);
       if (sentences.length <= 1) return `<speak>${safe}</speak>`;
       const parts = sentences.map((s, i) =>
@@ -412,7 +415,7 @@ export async function openaiTTS(text) {
 // Fixed style anchor: every illustration shares this so the cache stays
 // consistent AND the learner builds associations against ONE recognizable art
 // style. Bump STYLE_ANCHOR_VERSION (in imagecache.js) if this text changes.
-const ILLUSTRATION_STYLE_ANCHOR =
+export const ILLUSTRATION_STYLE_ANCHOR =
   "Consistent art style for every image: a warm, flat vector children's-book " +
   "illustration with bold clean outlines, soft cel shading, and a cheerful " +
   "sunny pastel palette. One clear central subject on a simple, uncluttered " +
@@ -451,7 +454,10 @@ export function buildIllustrationPrompt(spanish, english) {
 // API both speak this). `authHeaders`/`url` differ per backend; everything
 // else — request body, response parsing, timeout, failure logging — is
 // identical, so both callers below share this instead of duplicating it.
-async function callGenerateContentImage(url, headers, prompt, aspectRatio, tag) {
+// `imageParts` (optional) lets a caller feed one or more reference images
+// alongside the text prompt — used only by the one-off mascot-asset script
+// (server/scripts/gen_madrid_mascot.mjs), not by any per-request runtime path.
+async function callGenerateContentImage(url, headers, prompt, aspectRatio, tag, imageParts = []) {
   const ac = new AbortController();
   const timer = setTimeout(() => ac.abort(), 25000);
   let resp;
@@ -460,7 +466,7 @@ async function callGenerateContentImage(url, headers, prompt, aspectRatio, tag) 
       method: "POST",
       headers,
       body: JSON.stringify({
-        contents: [{ role: "user", parts: [{ text: prompt }] }],
+        contents: [{ role: "user", parts: [...imageParts, { text: prompt }] }],
         generationConfig: { responseModalities: ["IMAGE"], imageConfig: { aspectRatio } }
       }),
       signal: ac.signal
@@ -496,7 +502,7 @@ async function callGenerateContentImage(url, headers, prompt, aspectRatio, tag) 
   return null;
 }
 
-async function generateIllustrationViaVertex(prompt, aspectRatio) {
+async function generateIllustrationViaVertex(prompt, aspectRatio, imageParts = []) {
   const cfg = config.vertexImage;
   if (!cfg.enabled || !cfg.projectId) return null;
   const client = gcpJwtClient();
@@ -523,7 +529,8 @@ async function generateIllustrationViaVertex(prompt, aspectRatio) {
     { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
     prompt,
     aspectRatio,
-    "vertex"
+    "vertex",
+    imageParts
   );
 }
 
@@ -535,7 +542,7 @@ async function generateIllustrationViaVertex(prompt, aspectRatio) {
 // transient Vertex quota exhaustion (2 req/min default on new GCP billing
 // accounts — see the 2026-07-19 karaoke chorus incident) doesn't leave a
 // scene without a picture.
-async function generateIllustrationViaGeminiKey(prompt, aspectRatio) {
+async function generateIllustrationViaGeminiKey(prompt, aspectRatio, imageParts = []) {
   if (!config.geminiKey) return null;
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${config.vertexImage.model}:generateContent?key=${config.geminiKey}`;
   return callGenerateContentImage(
@@ -543,7 +550,8 @@ async function generateIllustrationViaGeminiKey(prompt, aspectRatio) {
     { "Content-Type": "application/json" },
     prompt,
     aspectRatio,
-    "gemini-key"
+    "gemini-key",
+    imageParts
   );
 }
 
@@ -552,10 +560,10 @@ async function generateIllustrationViaGeminiKey(prompt, aspectRatio) {
 // throwing. `aspectRatio` defaults to the memorization-illustration portrait
 // shape; callers generating something else (e.g. square menu-card icons via
 // scripts/gen_menu_icons.mjs) pass "1:1" explicitly.
-export async function generateIllustration(prompt, aspectRatio = "3:4") {
-  const viaVertex = await generateIllustrationViaVertex(prompt, aspectRatio);
+export async function generateIllustration(prompt, aspectRatio = "3:4", imageParts = []) {
+  const viaVertex = await generateIllustrationViaVertex(prompt, aspectRatio, imageParts);
   if (viaVertex) return viaVertex;
-  return generateIllustrationViaGeminiKey(prompt, aspectRatio);
+  return generateIllustrationViaGeminiKey(prompt, aspectRatio, imageParts);
 }
 
 // Speech-to-text via OpenAI. gpt-4o-transcribe is the most accurate at catching

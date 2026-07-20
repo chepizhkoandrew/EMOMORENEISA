@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 import { supabase } from "./supabase.js";
 import { config } from "./config.js";
-import { generateIllustration, buildIllustrationPrompt } from "./providers.js";
+import { generateIllustration, buildIllustrationPrompt, ILLUSTRATION_STYLE_ANCHOR } from "./providers.js";
 import { pngToJpeg } from "./image.js";
 
 const JPEG_MIME = "image/jpeg";
@@ -70,11 +70,8 @@ async function cachePut(key, buf) {
   } catch (_) { /* best-effort: a cache write failure must never break a request */ }
 }
 
-// Illustration for a phrase with the shared JPEG cache in front of Vertex.
-// Returns { base64, mime, cached } or null when generation is unavailable /
-// fails (best-effort — the caller falls back to the seagull pose).
-export async function getIllustration(spanish, english) {
-  const prompt = buildIllustrationPrompt(spanish, english);
+// Shared cache-then-generate-then-transcode path for any fully-built prompt.
+async function getIllustrationForPrompt(prompt) {
   const key = cacheKey(prompt);
 
   const hit = await cacheGet(key);
@@ -93,4 +90,21 @@ export async function getIllustration(spanish, english) {
     // Transcode failed — still return the original bytes so the user gets art.
     return { base64: raw.base64, mime: raw.mime || "image/png", cached: false };
   }
+}
+
+// Illustration for a phrase with the shared JPEG cache in front of Vertex.
+// Returns { base64, mime, cached } or null when generation is unavailable /
+// fails (best-effort — the caller falls back to the seagull pose).
+export async function getIllustration(spanish, english) {
+  return getIllustrationForPrompt(buildIllustrationPrompt(spanish, english));
+}
+
+// Illustration for a raw scene description (e.g. roleplay backgrounds) —
+// bypasses the phrase-pair prompt shape but keeps the same style anchor and
+// cache/generation pipeline so art stays visually consistent app-wide.
+export async function getIllustrationFromPrompt(scenePrompt) {
+  const prompt =
+    `${ILLUSTRATION_STYLE_ANCHOR}\n\n` +
+    `Scene: ${scenePrompt}`;
+  return getIllustrationForPrompt(prompt);
 }
