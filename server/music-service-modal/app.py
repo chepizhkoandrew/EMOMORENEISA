@@ -12,7 +12,6 @@ Test:    curl $(modal app list -> find the healthz URL)/
 """
 
 import base64
-import difflib
 import json
 import os
 import re
@@ -34,13 +33,6 @@ app = modal.App("ace-step-music")
 USE_ACESTEP_15 = False
 
 MODEL_DIR = "/models/ace-step"
-# "small" was too weak on chanted/shouted vocals over dense backing music
-# (2026-07-19 "gol gol españa" incident — match ratio 0.49, garbled
-# transcription of the whole chorus). "medium" is the largest step up that
-# still leaves safe VRAM headroom on a T4 alongside ACE-Step (~7.4-7.8GB
-# resident, confirmed via Modal logs) and Demucs; large-v3 (~6GB) would run
-# the three too close to the 16GB ceiling.
-WHISPER_DIR = "/models/faster-whisper-medium"
 DEMUCS_MODEL = "htdemucs"
 INFER_STEPS = 60
 
@@ -49,15 +41,18 @@ def _download_model():
     from huggingface_hub import snapshot_download
 
     snapshot_download("ACE-Step/ACE-Step-v1-3.5B", local_dir=MODEL_DIR)
-    # Whisper is used post-generation to time-align the known lyrics to the
-    # rendered audio (karaoke line timings).
-    snapshot_download("Systran/faster-whisper-medium", local_dir=WHISPER_DIR)
-    # Demucs (vocal isolation, run before transcription) downloads its own
+    # Demucs (vocal isolation, run before forced alignment) downloads its own
     # pretrained checkpoint on first use — pre-warm it into the image here so
     # the first real request doesn't pay a cold download.
     from demucs.pretrained import get_model
 
     get_model(DEMUCS_MODEL)
+
+    # MMS_FA (forced alignment — see align_lyrics below) downloads its own
+    # weights via torch.hub on first use; pre-warm the same way.
+    from torchaudio.pipelines import MMS_FA
+
+    MMS_FA.get_model()
 
 
 gpu_image = (
@@ -66,7 +61,6 @@ gpu_image = (
     .pip_install(
         "huggingface_hub",
         "diffusers==0.33.1",
-        "faster-whisper",
         "demucs",
         "git+https://github.com/ace-step/ACE-Step.git",
     )
@@ -265,207 +259,130 @@ def _norm_tokens(text: str):
     return re.findall(r"[a-z0-9]+", folded)
 
 
-def align_lyrics(whisper_model, audio_path: str, lyrics: str, duration: float):
-    """Line- and word-level timings for the known lyrics against the rendered audio.
+def align_lyrics(aligner_bundle, audio_path: str, lyrics: str, duration: float):
+    """Line- and word-level timings for the known lyrics against the rendered
+    audio, via forced alignment (torchaudio MMS_FA) rather than transcription.
 
-    Whisper transcribes with word timestamps; the word stream is fuzzy-matched
-    (SequenceMatcher over accent-folded tokens) back onto the lyric lines we fed
-    the music model. Sung vocals transcribe imperfectly, so lines/words that
-    never match are interpolated between their matched neighbours. Returns None
-    when too little matches to trust (caller falls back to heuristic timings).
+    We already know the exact lyrics — no need to ask a model to *recognize*
+    what was sung, only *when*. Forced alignment finds the best temporal
+    placement of the known text against the audio's acoustic features
+    directly, sidestepping full ASR transcription error on top of alignment
+    error (the root cause of the 2026-07-19 "gol gol españa" chant failure —
+    Whisper's transcription came out garbled, dragging the fuzzy-match ratio
+    down to 0.49 and leaving several lines fully guessed).
+
+    Every word always gets *a* placement (forced alignment doesn't "fail to
+    match" the way fuzzy-matching against a bad transcription can) — the
+    per-word `score` the aligner returns is the trust signal instead: a word
+    genuinely sung gets a high score, a word forced into silence or the
+    wrong audio (skipped line, ad-lib, instrumental gap — a real risk since
+    nothing guarantees the model sang exactly what we asked) gets a low one.
+    Logged per word rather than gated on a guessed threshold, so an actual
+    cutoff can be calibrated from real score distributions, the same way the
+    old 0.35 match-ratio threshold was arrived at empirically.
     """
+    import torch
+    import torchaudio
+
     lines = _sung_lines(lyrics)
     if not lines:
         return None
 
-    # Flatten lyrics into (display_word, norm_token) pairs, remembering which
-    # line each word belongs to. A display word can fold into >1 norm token
-    # (rare, e.g. hyphenated) or 0 (pure punctuation) — token_word maps each
-    # norm token back to its owning display-word index within the line so
-    # per-word spans can be assembled the same way per-line spans are.
-    lyric_tokens, token_line, token_word = [], [], []
+    # Flatten lyrics into a single flat word list across the whole song,
+    # remembering which line each word belongs to so per-line spans can be
+    # reconstructed from the per-word alignment result afterward.
     line_words = []  # line_words[i] = display words (original casing/accents) for line i
+    flat_words = []  # flat display words across the whole song, in order
     for i, line in enumerate(lines):
         words = line.split()
         line_words.append(words)
-        for wi, word in enumerate(words):
-            for tok in _norm_tokens(word):
-                lyric_tokens.append(tok)
-                token_line.append(i)
-                token_word.append(wi)
-    if not lyric_tokens:
+        flat_words.extend(words)
+    if not flat_words:
         return None
 
-    segments, _ = whisper_model.transcribe(
-        audio_path,
-        language="es",
-        word_timestamps=True,
-        beam_size=5,
-        condition_on_previous_text=False,
-        vad_filter=True,
-    )
-    heard = []  # (token, start, end)
-    for seg in segments:
-        for w in seg.words or []:
-            toks = _norm_tokens(w.word)
-            for tok in toks:
-                heard.append((tok, float(w.start), float(w.end)))
-    if not heard:
-        print("[align] whisper heard nothing (no words in any segment)")
-        return None
+    # MMS_FA's vocab is accent-folded lowercase — same fold _norm_tokens
+    # already does for the old matcher. Falls back to the raw lowered word
+    # if folding strips it to nothing (e.g. a stray punctuation-only token),
+    # so word count never drifts from flat_words.
+    def _fold(word):
+        toks = _norm_tokens(word)
+        return "".join(toks) if toks else word.lower()
 
-    # What Whisper actually transcribed vs. what the lyrics say, side by
-    # side — the fastest way to tell "bad audio/transcription" apart from
-    # "bad matching logic" when a sync report comes in.
-    print(f"[align] expected ({len(lyric_tokens)}): {' '.join(lyric_tokens)}")
-    print(f"[align] heard    ({len(heard)}): {' '.join(h[0] for h in heard)}")
+    normalized = [_fold(w) for w in flat_words]
 
-    matcher = difflib.SequenceMatcher(
-        a=lyric_tokens, b=[h[0] for h in heard], autojunk=False
-    )
-    token_time = {}  # lyric token index -> (start, end)
-    matched = 0
-    skipped_short = 0
-    for block in matcher.get_matching_blocks():
-        if block.size == 0:
+    model = aligner_bundle["model"]
+    tokenizer = aligner_bundle["tokenizer"]
+    aligner = aligner_bundle["aligner"]
+    sample_rate = aligner_bundle["sample_rate"]
+    device = next(model.parameters()).device
+
+    waveform, sr = torchaudio.load(audio_path)
+    if sr != sample_rate:
+        waveform = torchaudio.functional.resample(waveform, sr, sample_rate)
+    if waveform.shape[0] > 1:
+        waveform = waveform.mean(dim=0, keepdim=True)
+
+    with torch.inference_mode():
+        emission, _ = model(waveform.to(device))
+        token_spans = aligner(emission[0], tokenizer(normalized))
+
+    num_frames = emission.size(1)
+    samples_per_frame = waveform.shape[1] / num_frames
+
+    def frame_to_sec(frame_idx):
+        return (frame_idx * samples_per_frame) / sample_rate
+
+    # Flat per-word spans (one entry per flat_words element, in order).
+    words = []
+    for spans, word in zip(token_spans, flat_words):
+        if not spans:
+            # Defensive fallback — every input token should get a span, but
+            # a single odd word failing to align must not crash the song.
+            prev_end = words[-1]["endSec"] if words else 0.0
+            words.append({"text": word, "startSec": prev_end, "endSec": prev_end + 0.1, "score": -999.0})
             continue
-        # A single isolated matched token is unreliable for short/common
-        # Spanish function words ("a", "va", "uno", "sin"...) — a garbled
-        # transcription can spuriously line one of these up almost anywhere,
-        # which is exactly how the 2026-07-19 incident's lines 4-5 got
-        # mislabeled "real" despite resting on a near-nonsense heard string.
-        # Runs of 2+ consecutive matched tokens are trusted regardless of
-        # length since phrase-level correspondence is far less likely to be
-        # coincidental.
-        if block.size == 1 and len(lyric_tokens[block.a]) < 5:
-            skipped_short += 1
-            continue
-        for k in range(block.size):
-            token_time[block.a + k] = (heard[block.b + k][1], heard[block.b + k][2])
-            matched += 1
-    if skipped_short:
-        print(f"[align] distrusted {skipped_short} isolated short-token match(es)")
-    ratio = matched / len(lyric_tokens)
-    print(f"[align] match ratio {ratio:.2f} ({matched}/{len(lyric_tokens)} tokens, {len(heard)} heard)")
-    if ratio < 0.35:
-        return None
+        t0 = frame_to_sec(spans[0].start)
+        t1 = frame_to_sec(spans[-1].end)
+        score = sum(s.score for s in spans) / len(spans)
+        words.append({"text": word, "startSec": t0, "endSec": t1, "score": score})
 
-    # Per-word spans (matched tokens), grouped by (line, word) — used to
-    # synthesize word-level timings below, once line spans are finalized.
-    word_time = {}  # (line_idx, word_idx) -> [start, end]
-    for idx, (s, e) in token_time.items():
-        key = (token_line[idx], token_word[idx])
-        if key not in word_time:
-            word_time[key] = [s, e]
-        else:
-            word_time[key][0] = min(word_time[key][0], s)
-            word_time[key][1] = max(word_time[key][1], e)
-
-    # Per-line span from its matched tokens.
-    spans = [None] * len(lines)
-    for idx, (s, e) in token_time.items():
-        li = token_line[idx]
-        if spans[li] is None:
-            spans[li] = [s, e]
-        else:
-            spans[li][0] = min(spans[li][0], s)
-            spans[li][1] = max(spans[li][1], e)
-
-    # Interpolate unmatched lines between matched neighbours, weighted by length.
-    def fill_gap(lo_i, hi_i, lo_t, hi_t):
-        gap = list(range(lo_i + 1, hi_i))
-        weights = [max(1, len(lines[g])) for g in gap]
-        total = sum(weights)
-        t = lo_t
-        for g, w in zip(gap, weights):
-            step = (hi_t - lo_t) * (w / total)
-            spans[g] = [t, t + step]
-            t += step
-
-    matched_idx = [i for i, s in enumerate(spans) if s is not None]
-    interpolated_idx = [i for i in range(len(lines)) if i not in matched_idx]
-    if interpolated_idx:
-        print(f"[align] lines with ZERO matched tokens (fully guessed, not real audio): {interpolated_idx}")
-    first, last = matched_idx[0], matched_idx[-1]
-    if first > 0:
-        fill_gap(-1, first, max(0.0, spans[first][0] - 2.0 * first), spans[first][0])
-    if last < len(lines) - 1:
-        fill_gap(last, len(lines), spans[last][1], min(duration, spans[last][1] + 2.0 * (len(lines) - 1 - last)))
-    for i in range(len(matched_idx) - 1):
-        a, b = matched_idx[i], matched_idx[i + 1]
-        if b - a > 1:
-            fill_gap(a, b, spans[a][1], spans[b][0])
-
-    # Enforce monotonic, clamped spans.
+    # Enforce monotonic, duration-clamped boundaries — forced alignment isn't
+    # guaranteed strictly increasing across word/line boundaries, and the
+    # client's sweep/scene-sync logic assumes it is.
     prev_end = 0.0
-    out = []
-    for i, line in enumerate(lines):
-        s, e = spans[i]
-        s = max(prev_end, min(s, duration))
-        e = max(s + 0.2, min(e, duration))
+    for w in words:
+        s = max(prev_end, min(w["startSec"], duration))
+        e = max(s + 0.05, min(w["endSec"], duration))
+        w["startSec"], w["endSec"] = round(s, 2), round(e, 2)
         prev_end = e
-        out.append({"text": line, "startSec": round(s, 2), "endSec": round(e, 2)})
 
-    # Word-level timings within each line: matched words keep their real
-    # Whisper span; unmatched words are interpolated between matched
-    # neighbours (same length-weighted technique as fill_gap above), bounded
-    # by the line's own final [startSec, endSec] so words never spill past
-    # their line even when the line itself was interpolated.
-    def line_word_spans(li, line_start, line_end):
-        words = line_words[li]
-        if not words:
-            return []
-        wspans = [word_time.get((li, wi)) for wi in range(len(words))]
-        matched_wi = [wi for wi, s in enumerate(wspans) if s is not None]
+    real_scores = [w["score"] for w in words if w["score"] > -999.0]
+    if real_scores:
+        print(
+            f"[align] forced-alignment word scores: "
+            f"min={min(real_scores):.2f} max={max(real_scores):.2f} "
+            f"mean={sum(real_scores) / len(real_scores):.2f}"
+        )
+    lowest = sorted(words, key=lambda w: w["score"])[:8]
+    print(f"[align] lowest-confidence words: {[(w['text'], w['startSec'], round(w['score'], 2)) for w in lowest]}")
 
-        def fill_word_gap(lo_wi, hi_wi, lo_t, hi_t):
-            gap = list(range(lo_wi + 1, hi_wi))
-            weights = [max(1, len(words[g])) for g in gap]
-            total = sum(weights)
-            t = lo_t
-            for g, w in zip(gap, weights):
-                step = (hi_t - lo_t) * (w / total)
-                wspans[g] = [t, t + step]
-                t += step
-
-        if not matched_wi:
-            # No word in this line matched — spread evenly by length across
-            # the line's own (possibly interpolated) span.
-            fill_word_gap(-1, len(words), line_start, line_end)
-        else:
-            first_wi, last_wi = matched_wi[0], matched_wi[-1]
-            if first_wi > 0:
-                fill_word_gap(-1, first_wi, line_start, wspans[first_wi][0])
-            if last_wi < len(words) - 1:
-                fill_word_gap(last_wi, len(words), wspans[last_wi][1], line_end)
-            for i in range(len(matched_wi) - 1):
-                a, b = matched_wi[i], matched_wi[i + 1]
-                if b - a > 1:
-                    fill_word_gap(a, b, wspans[a][1], wspans[b][0])
-
-        # Clamp + enforce monotonic within [line_start, line_end]. Unlike the
-        # line-level pass above (which can let a final line's endSec run past
-        # `duration` by its minimum-span floor), words must never spill past
-        # their own line — the highlight sweep treats line_end as a hard
-        # boundary — so the minimum span is applied *inside* the clamp, not
-        # after it.
-        prev_end = line_start
-        result = []
-        for wi, word in enumerate(words):
-            s, e = wspans[wi] if wspans[wi] else (prev_end, prev_end + 0.1)
-            s = max(prev_end, min(s, line_end))
-            e = min(line_end, max(s + 0.05, min(e, line_end)))
-            prev_end = e
-            result.append({"text": word, "startSec": round(s, 2), "endSec": round(e, 2)})
-        return result
+    # Reconstruct per-line entries from the flat word list.
+    out = []
+    wi = 0
+    for line in lines:
+        n = len(line_words[len(out)])
+        entries = words[wi: wi + n]
+        wi += n
+        out.append({
+            "text": line,
+            "startSec": entries[0]["startSec"],
+            "endSec": entries[-1]["endSec"],
+            "words": [{"text": w["text"], "startSec": w["startSec"], "endSec": w["endSec"]} for w in entries],
+        })
 
     for i, entry in enumerate(out):
-        entry["words"] = line_word_spans(i, entry["startSec"], entry["endSec"])
-
-    for i, entry in enumerate(out):
-        tag = "guessed" if i in interpolated_idx else "real"
         word_summary = " | ".join(f"{w['text']}@{w['startSec']}" for w in entry["words"])
-        print(f"[align] line {i} [{tag}] {entry['startSec']}-{entry['endSec']}: \"{entry['text']}\" words: {word_summary}")
+        print(f"[align] line {i} {entry['startSec']}-{entry['endSec']}: \"{entry['text']}\" words: {word_summary}")
 
     return out
 
@@ -479,21 +396,33 @@ class ACEStepService:
             from acestep.pipeline_ace_step import ACEStepPipeline
 
             self.pipeline = ACEStepPipeline(checkpoint_dir=MODEL_DIR, dtype="bfloat16", torch_compile=False)
-        self.whisper = None
+        self.aligner_bundle = None
         self.demucs = None
 
-    def _whisper(self):
-        # Lazy: only songs pay the ~3GB load, and only once per container.
-        if self.whisper is None:
-            from faster_whisper import WhisperModel
+    def _forced_aligner(self):
+        # Lazy, same pattern as _demucs — loaded once per container, then
+        # reused for every subsequent song. MMS_FA replaced faster-whisper
+        # here (2026-07-20): forced alignment of the KNOWN lyrics against the
+        # audio, instead of transcribing and fuzzy-matching a guess — see
+        # align_lyrics()'s docstring for why.
+        if self.aligner_bundle is None:
+            import torch
+            from torchaudio.pipelines import MMS_FA
 
+            model = MMS_FA.get_model()
+            model.eval()
             try:
-                self.whisper = WhisperModel(WHISPER_DIR, device="cuda", compute_type="float16")
+                if torch.cuda.is_available():
+                    model = model.cuda()
             except Exception:
-                # VRAM contention with ACE-Step or missing CUDA support: CPU is
-                # slower but always works.
-                self.whisper = WhisperModel(WHISPER_DIR, device="cpu", compute_type="int8")
-        return self.whisper
+                pass
+            self.aligner_bundle = {
+                "model": model,
+                "tokenizer": MMS_FA.get_tokenizer(),
+                "aligner": MMS_FA.get_aligner(),
+                "sample_rate": MMS_FA.sample_rate,
+            }
+        return self.aligner_bundle
 
     def _demucs(self):
         # Lazy, same pattern as _whisper — loaded once per container, then
@@ -613,7 +542,7 @@ class ACEStepService:
             # report can actually be diagnosed instead of guessed at.
             try:
                 vocals_path = self._isolate_vocals(wav_path, tmp)
-                lines = align_lyrics(self._whisper(), vocals_path, lyrics, float(duration))
+                lines = align_lyrics(self._forced_aligner(), vocals_path, lyrics, float(duration))
                 if lines is None:
                     print("[align] rejected: match ratio below threshold or no lyric tokens")
                 else:
