@@ -144,12 +144,17 @@ app.post("/v1/chat", requireUser, async (req, res) => {
 app.post("/v1/roleplay-chat", requireUser, async (req, res) => {
   if (!config.openaiKey) return res.status(503).json({ error: "chat_not_configured" });
 
-  const { systemPrompt, history, userText, maxTokens } = req.body || {};
+  const { systemPrompt, history, userText, maxTokens, isRetry } = req.body || {};
   const model = config.models.chat;
-  const cost = config.actionCosts.roleplay;
   const reason = "roleplay_turn";
+  // The client silently retries once, invisibly to the user, when a round's
+  // model output leaves one of the two AI voices asking the other a question
+  // with no way for it to ever get answered (there's no "continue without a
+  // new user message" mechanism) — that's our own reliability gap, not a
+  // second turn the user asked for, so it isn't billed.
+  const cost = isRetry ? 0 : config.actionCosts.roleplay;
 
-  const pre = await debit(req.user.id, cost, reason, { model });
+  const pre = cost > 0 ? await debit(req.user.id, cost, reason, { model }) : { ok: true, enforced: false };
   if (!pre.ok && pre.error === "insufficient_treats") {
     return res.status(402).json({ error: "insufficient_treats", balance: pre.balance });
   }

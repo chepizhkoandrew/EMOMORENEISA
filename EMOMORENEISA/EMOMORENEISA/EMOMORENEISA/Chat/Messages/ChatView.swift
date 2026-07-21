@@ -728,6 +728,8 @@ struct ChatView: View {
         let baseMaxTokens = authState.profile?.levelEnum.maxTokens ?? 300
         let roleplayMaxTokens = Int(Double(baseMaxTokens) * 1.4)
 
+        let studentName = authState.profile?.displayName ?? "Student"
+
         do {
             let raw = try await ProxyClient.shared.chatRoleplay(
                 systemPrompt: systemPrompt,
@@ -735,7 +737,29 @@ struct ChatView: View {
                 userText: userInput,
                 maxTokens: roleplayMaxTokens
             )
-            let segments = RoleplayResponseParser.parse(raw)
+            var segments = RoleplayResponseParser.parse(raw)
+
+            // The prompt tells the model never to end a round with one of its
+            // own two voices asking the OTHER a question that's left hanging
+            // (nothing can make them "continue" without a new user message —
+            // there's no such mechanism), but this isn't fully reliable in
+            // practice — confirmed by direct simulation against the real
+            // model. One silent, corrective retry before anything is ever
+            // shown to the user is cheap insurance against a visibly stuck
+            // conversation.
+            if endsWithUnresolvedCrossQuestion(segments, studentName: studentName) {
+                let retryUserInput = userInput + "\n\n(Nota: en tu respuesta anterior, uno de ustedes dos le hizo una pregunta directa al otro y la ronda terminó sin que la respondiera. Esta vez, si eso ocurre, responde la pregunta dentro de la MISMA ronda antes de [END_TURN].)"
+                if let retryRaw = try? await ProxyClient.shared.chatRoleplay(
+                    systemPrompt: systemPrompt,
+                    history: history,
+                    userText: retryUserInput,
+                    maxTokens: roleplayMaxTokens,
+                    isRetry: true
+                ) {
+                    segments = RoleplayResponseParser.parse(retryRaw)
+                }
+            }
+
             let objectVoiceName = session.roleplayObjectVoice ?? RoleplayContent.voiceForObject(objectLabel)
 
             var turnItems: [(id: UUID, text: String, voice: (languageCode: String, voiceName: String)?)] = []
@@ -763,6 +787,20 @@ struct ChatView: View {
             errorMessage = error.localizedDescription
         }
         isGenerating = false
+    }
+
+    // Heuristic, not exact: a round's last line ending in "?" without naming
+    // the student is almost always Madrid/the guest asking EACH OTHER
+    // something (in every observed case, a line actually addressed to the
+    // student names them directly, e.g. "¿Y tú, Andriy...?"). There's no
+    // mechanism for the other voice to "continue" and answer once a round
+    // ends, so a question like that left dangling would visibly stall the
+    // conversation until the student happens to bring the same thing back up.
+    private func endsWithUnresolvedCrossQuestion(_ segments: [RoleplayResponseParser.Segment], studentName: String) -> Bool {
+        guard let last = segments.last else { return false }
+        let text = last.text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard text.hasSuffix("?") else { return false }
+        return !text.localizedCaseInsensitiveContains(studentName)
     }
 
     // Fire-and-forget: kicks off the 3 suggested-reply chips for the student's

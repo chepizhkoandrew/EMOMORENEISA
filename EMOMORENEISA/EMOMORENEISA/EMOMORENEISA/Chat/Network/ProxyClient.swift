@@ -44,7 +44,8 @@ final class ProxyClient {
         systemPrompt: String,
         history: [LocalChatMessage],
         userText: String,
-        maxTokens: Int = 300
+        maxTokens: Int = 300,
+        isRetry: Bool = false
     ) async throws -> String {
         // Re-tag each assistant line with the same [MADRID]/[OBJECT] markers the
         // model itself emits, so it can actually tell from history who said what
@@ -63,7 +64,8 @@ final class ProxyClient {
                 return ["isUser": msg.isUser, "text": prefix + (msg.textContent ?? "")]
             },
             "userText": userText,
-            "maxTokens": maxTokens
+            "maxTokens": maxTokens,
+            "isRetry": isRetry
         ]
         let json = try await postJSON(path: "/v1/roleplay-chat", body: body)
         return (json["text"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
