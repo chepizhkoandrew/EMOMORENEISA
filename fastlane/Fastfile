@@ -1754,6 +1754,45 @@ platform :ios do
     end
   end
 
+  desc "Cancel a specific reviewSubmission by id, regardless of its state (submit_v12's own cleanup step only handles UNRESOLVED_ISSUES/READY_FOR_REVIEW — this is for a submission stuck in WAITING_FOR_REVIEW or any other state blocking a version's item)"
+  lane :cancel_submission do |options|
+    require "net/http"
+    require "uri"
+    require "json"
+    require "openssl"
+    require "jwt"
+
+    sub_id = options[:id]
+    unless sub_id
+      UI.error("Pass id: <reviewSubmission id>")
+      next
+    end
+
+    private_key = OpenSSL::PKey::EC.new(File.read(KEY_PATH))
+    now   = Time.now.to_i
+    token = JWT.encode(
+      { iss: ISSUER_ID, iat: now, exp: now + 1200, aud: "appstoreconnect-v1" },
+      private_key, "ES256", { kid: KEY_ID }
+    )
+    base    = "https://api.appstoreconnect.apple.com/v1"
+    headers = { "Authorization" => "Bearer #{token}", "Content-Type" => "application/json" }
+
+    uri = URI("#{base}/reviewSubmissions/#{sub_id}")
+    req = Net::HTTP::Patch.new(uri)
+    headers.each { |k, v| req[k] = v }
+    req.body = JSON.generate({ data: { type: "reviewSubmissions", id: sub_id, attributes: { canceled: true } } })
+    resp = Net::HTTP.start(uri.hostname, uri.port, use_ssl: true) { |http| http.request(req) }
+    parsed = begin; JSON.parse(resp.body); rescue; {}; end
+
+    case resp.code.to_i
+    when 200, 204
+      UI.success("✅  Canceled #{sub_id}")
+    else
+      errs = (parsed["errors"] || []).map { |e| e["detail"] || e["title"] }.join("; ")
+      UI.error("❌  HTTP #{resp.code}: #{errs.empty? ? JSON.generate(parsed)[0..800] : errs}")
+    end
+  end
+
   desc "Patch App Review notes on the current app version to match the corrected billing/AI-disclosure language"
   lane :fix_review_notes do
     require "net/http"
