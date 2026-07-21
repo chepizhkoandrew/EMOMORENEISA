@@ -19,38 +19,55 @@ struct RoleplaySetupView: View {
     @State private var topicText: String = ""
     @State private var isCreating = false
     @State private var errorMessage: String? = nil
+    @State private var creationStartedAt: Date? = nil
+
+    // Scene generation alone measured ~8-9s against the real Vertex/Gemini
+    // pipeline (see server-side verification notes) — this is a fixed guess
+    // for pacing the progress bar, not a real ETA from the server, since
+    // fetchRoleplayScene is a single blocking call, not a polled job like
+    // song generation.
+    private let creationEtaSeconds: Double = 10
+    private let creationStages: [(threshold: Double, text: String)] = [
+        (0.0, "Setting the scene…"),
+        (0.35, "Getting your guest ready…"),
+        (0.7, "Rehearsing the opening lines…"),
+        (0.92, "Almost ready…")
+    ]
 
     var body: some View {
         NavigationStack {
             ZStack {
                 AppBackground()
                 Group {
-                    switch step {
-                    case .object:      pickerContent(
-                        prompt: L("Who do you want to talk to?"),
-                        placeholder: L("e.g. \"Cleopatra\"…"),
-                        options: RoleplayContent.objects,
-                        text: $objectText,
-                        buttonTitle: L("Next"),
-                        action: { step = .environment }
-                    )
-                    case .environment: pickerContent(
-                        prompt: L("Where does this happen?"),
-                        placeholder: L("e.g. \"a rooftop terrace at sunset\"…"),
-                        options: RoleplayContent.environments,
-                        text: $environmentText,
-                        buttonTitle: L("Next"),
-                        action: { step = .topic }
-                    )
-                    case .topic: pickerContent(
-                        prompt: L("What are they talking about?"),
-                        placeholder: L("e.g. \"travel dreams\"…"),
-                        options: RoleplayContent.topics,
-                        text: $topicText,
-                        buttonTitle: L("Start the Show"),
-                        action: startRoleplay,
-                        isLoading: isCreating
-                    )
+                    if isCreating {
+                        workingCard
+                    } else {
+                        switch step {
+                        case .object:      pickerContent(
+                            prompt: L("Who do you want to talk to?"),
+                            placeholder: L("e.g. \"Cleopatra\"…"),
+                            options: RoleplayContent.objects,
+                            text: $objectText,
+                            buttonTitle: L("Next"),
+                            action: { step = .environment }
+                        )
+                        case .environment: pickerContent(
+                            prompt: L("Where does this happen?"),
+                            placeholder: L("e.g. \"a rooftop terrace at sunset\"…"),
+                            options: RoleplayContent.environments,
+                            text: $environmentText,
+                            buttonTitle: L("Next"),
+                            action: { step = .topic }
+                        )
+                        case .topic: pickerContent(
+                            prompt: L("What are they talking about?"),
+                            placeholder: L("e.g. \"travel dreams\"…"),
+                            options: RoleplayContent.topics,
+                            text: $topicText,
+                            buttonTitle: L("Start the Show"),
+                            action: startRoleplay
+                        )
+                        }
                     }
                 }
             }
@@ -92,8 +109,7 @@ struct RoleplaySetupView: View {
         options: [String],
         text: Binding<String>,
         buttonTitle: String,
-        action: @escaping () -> Void,
-        isLoading: Bool = false
+        action: @escaping () -> Void
     ) -> some View {
         VStack(spacing: 0) {
             ScrollView(showsIndicators: false) {
@@ -120,7 +136,7 @@ struct RoleplaySetupView: View {
                 .padding(24)
             }
 
-            bottomBar(title: buttonTitle, disabled: text.wrappedValue.trimmingCharacters(in: .whitespaces).isEmpty, isLoading: isLoading, action: action)
+            bottomBar(title: buttonTitle, disabled: text.wrappedValue.trimmingCharacters(in: .whitespaces).isEmpty, action: action)
         }
     }
 
@@ -175,29 +191,60 @@ struct RoleplaySetupView: View {
         }
     }
 
-    private func bottomBar(title: String, disabled: Bool, isLoading: Bool, action: @escaping () -> Void) -> some View {
+    private func bottomBar(title: String, disabled: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            ZStack {
-                if isLoading {
-                    ProgressView().tint(.white)
-                } else {
-                    Text(title)
-                        .font(.system(size: 19, weight: .bold, design: .rounded))
-                        .foregroundColor(.white)
-                }
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 20)
-            .background((disabled || isLoading) ? Color.yellow.opacity(0.35) : Color.yellow)
-            .clipShape(RoundedRectangle(cornerRadius: 18))
-            .shadow(color: (disabled || isLoading) ? .clear : Color.yellow.opacity(0.4), radius: 12, y: 4)
+            Text(title)
+                .font(.system(size: 19, weight: .bold, design: .rounded))
+                .foregroundColor(.white)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 20)
+                .background(disabled ? Color.yellow.opacity(0.35) : Color.yellow)
+                .clipShape(RoundedRectangle(cornerRadius: 18))
+                .shadow(color: disabled ? .clear : Color.yellow.opacity(0.4), radius: 12, y: 4)
         }
-        .disabled(disabled || isLoading)
+        .disabled(disabled)
         .padding(.horizontal, 24)
         .padding(.top, 12)
         .padding(.bottom, 20)
         .background(AppColors.backgroundTop)
         .overlay(Rectangle().frame(height: 0.5).foregroundColor(AppColors.cardBorder), alignment: .top)
+    }
+
+    // MARK: - Loading Card
+
+    private var workingCard: some View {
+        TimelineView(.animation) { context in
+            let startedAt = creationStartedAt ?? context.date
+            let elapsed = context.date.timeIntervalSince(startedAt)
+            let fraction = min(0.97, elapsed / creationEtaSeconds)
+            let stageText = creationStages.last(where: { fraction >= $0.threshold })?.text ?? creationStages[0].text
+
+            VStack(spacing: 18) {
+                Text(L(stageText))
+                    .font(.system(size: 20, weight: .bold, design: .rounded))
+                    .foregroundColor(.white)
+                    .multilineTextAlignment(.center)
+                    .contentTransition(.opacity)
+                    .animation(.easeInOut(duration: 0.4), value: stageText)
+
+                GeometryReader { geo in
+                    ZStack(alignment: .leading) {
+                        Capsule().fill(Color.white.opacity(0.15))
+                        Capsule().fill(Color.yellow)
+                            .frame(width: geo.size.width * fraction)
+                    }
+                }
+                .frame(height: 8)
+
+                Text("\(Int(fraction * 100))%")
+                    .font(.system(size: 13, weight: .bold, design: .rounded))
+                    .foregroundColor(.white.opacity(0.5))
+            }
+            .padding(28)
+            .background(RoundedRectangle(cornerRadius: 22).fill(Color.black.opacity(0.5)))
+            .overlay(RoundedRectangle(cornerRadius: 22).stroke(Color.white.opacity(0.10), lineWidth: 1))
+            .padding(.horizontal, 32)
+        }
     }
 
     // MARK: - Session Creation
@@ -210,6 +257,7 @@ struct RoleplaySetupView: View {
         guard !objectLabel.isEmpty, !environmentLabel.isEmpty, !topicLabel.isEmpty else { return }
 
         isCreating = true
+        creationStartedAt = Date()
         errorMessage = nil
         let voiceName = RoleplayContent.voiceForObject(objectLabel)
         let sessionId = UUID()

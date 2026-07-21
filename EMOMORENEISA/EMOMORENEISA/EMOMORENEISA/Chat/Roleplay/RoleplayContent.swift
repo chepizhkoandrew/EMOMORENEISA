@@ -8,7 +8,10 @@ enum RoleplayContent {
     // folklore/literary characters, and personified concepts — all public
     // domain, all with an established voice, quirks, and story the model can
     // actually play, rather than a personality invented from scratch for a
-    // household object.
+    // household object. Plus a second, grounded/everyday set — real-life
+    // archetypes with edge and opinions, not just legendary/mythical figures —
+    // deliberately NOT named real living people (right-of-publicity risk a
+    // generic archetype doesn't carry).
     static let objects: [String] = [
         "Cleopatra, the last pharaoh of Egypt",
         "Leonardo da Vinci, Renaissance genius",
@@ -25,7 +28,11 @@ enum RoleplayContent {
         "Mother Nature herself",
         "Father Time, keeper of every clock",
         "a genie freshly freed from the lamp",
-        "the Sphinx, who speaks only in riddles"
+        "the Sphinx, who speaks only in riddles",
+        "a grizzled war veteran with a story for every scar",
+        "a chatty taxi driver who's seen it all",
+        "a market thief looking for one more score",
+        "a metal band singer, all leather and rasp"
     ]
 
     static let environments: [String] = [
