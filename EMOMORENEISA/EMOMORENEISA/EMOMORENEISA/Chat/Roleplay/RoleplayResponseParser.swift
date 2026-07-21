@@ -25,7 +25,13 @@ enum RoleplayResponseParser {
             body = text
         }
 
-        guard let regex = try? NSRegularExpression(pattern: #"\[(MADRID|OBJECT)\]"#) else {
+        // Matches [MADRID], [OBJECT], and — because the model sometimes tags
+        // the guest with their actual character name instead of the literal
+        // word OBJECT (e.g. "[SHERLOCK HOLMES]") despite being told not to —
+        // ANY all-caps bracketed tag. There are only two possible speakers,
+        // so anything that isn't recognizably Madrid defaults to the guest,
+        // rather than that whole line silently vanishing.
+        guard let regex = try? NSRegularExpression(pattern: #"\[([A-Z][A-Z .'\-]*)\]"#) else {
             return [Segment(speaker: "madrid", text: text)]
         }
 
@@ -38,7 +44,7 @@ enum RoleplayResponseParser {
         var segments: [Segment] = []
         for (i, match) in matches.enumerated() {
             let tag = nsBody.substring(with: match.range(at: 1))
-            let speaker = tag == "OBJECT" ? "object" : "madrid"
+            let speaker = tag.contains("MADRID") ? "madrid" : "object"
 
             let contentStart = match.range.location + match.range.length
             let contentEnd = i + 1 < matches.count ? matches[i + 1].range.location : nsBody.length
