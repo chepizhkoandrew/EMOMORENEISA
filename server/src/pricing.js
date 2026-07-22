@@ -16,6 +16,14 @@ export function analystCostUsd(inputTokens, outputTokens) {
   );
 }
 
+export function geminiLiteCostUsd(inputTokens, outputTokens) {
+  const p = config.pricing;
+  return (
+    (inputTokens / 1_000_000) * p.usdPerMTokInGeminiLite +
+    (outputTokens / 1_000_000) * p.usdPerMTokOutGeminiLite
+  );
+}
+
 export function ttsCostUsd(provider, seconds) {
   const p = config.pricing;
   const perMin = provider === "openai" ? p.usdPerMinTtsOpenAI : p.usdPerMinTtsGemini;

@@ -67,7 +67,13 @@ export const config = {
     // Onboarding reasoning models — Gemini text via generativelanguage API.
     // Probes run mid-quiz (must be quick); synthesis runs once at the end.
     onboardingProbe: str("MODEL_ONBOARDING_PROBE", "gemini-2.5-flash"),
-    onboardingSynthesis: str("MODEL_ONBOARDING_SYNTHESIS", "gemini-2.5-pro")
+    onboardingSynthesis: str("MODEL_ONBOARDING_SYNTHESIS", "gemini-2.5-pro"),
+    // Roleplay's per-message turn-taking referee (who speaks next): fires far
+    // more often than any other completion in the app, on a tiny prompt, so it
+    // gets Google's cheapest text tier rather than an OpenAI model — Gemini
+    // infra is already in use for TTS/images, and geminiText() enforces valid
+    // JSON natively (no code-fence/preamble parse failures to fall back from).
+    turnClassifier: str("MODEL_TURN_CLASSIFIER", "gemini-2.5-flash-lite")
   },
 
   // Voice synthesis behaviour. Spanish audio must stay on Gemini; the OpenAI
@@ -215,6 +221,8 @@ export const config = {
     usdPerMTokOutChat: num("USD_PER_MTOK_OUT_CHAT", 8.0),
     usdPerMTokInAnalyst: num("USD_PER_MTOK_IN_ANALYST", 0.15),
     usdPerMTokOutAnalyst: num("USD_PER_MTOK_OUT_ANALYST", 0.6),
+    usdPerMTokInGeminiLite: num("USD_PER_MTOK_IN_GEMINI_LITE", 0.10),
+    usdPerMTokOutGeminiLite: num("USD_PER_MTOK_OUT_GEMINI_LITE", 0.40),
     usdPerMinTtsGemini: num("USD_PER_MIN_TTS_GEMINI", 0.0048),
     usdPerMinTtsOpenAI: num("USD_PER_MIN_TTS_OPENAI", 0.015),
     // Vertex Gemini 2.5 Flash Image bills ~1290 output tokens/image (~$0.039).

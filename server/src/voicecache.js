@@ -89,8 +89,13 @@ async function cachePut(key, buf) {
 //           time) but a cache-miss still warms the AAC cache in the background so
 //           newer builds benefit. Old clients wrap PCM into WAV on-device.
 //
+// allowOpenAIFallback defaults to true so every existing caller's behavior is
+// unchanged. Pass false for pre-generation callers (see
+// scripts/render-say-it-better-assets.js) that must guarantee a clip is never
+// voiced by OpenAI, even on a Cloud TTS + Gemini outage.
+//
 // Returns { provider, audioBase64, mime, cached } or null when synthesis fails.
-export async function getVoice(text, { format = "pcm", context = "default", voiceOverride = null } = {}) {
+export async function getVoice(text, { format = "pcm", context = "default", voiceOverride = null, allowOpenAIFallback = true } = {}) {
   const key = cacheKey(text, context, voiceOverride);
 
   if (format === "aac" && config.audio.cacheEnabled) {
@@ -100,7 +105,7 @@ export async function getVoice(text, { format = "pcm", context = "default", voic
     }
   }
 
-  const pcm = await synthesizeVoice(text, { allowOpenAIFallback: true, context, voiceOverride });
+  const pcm = await synthesizeVoice(text, { allowOpenAIFallback, context, voiceOverride });
   if (!pcm) return null;
 
   // OpenAI fallback audio is live-only — must not pollute the shared cache.

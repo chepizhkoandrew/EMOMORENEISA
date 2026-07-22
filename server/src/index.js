@@ -6,7 +6,7 @@ import { getVoice, activeVoiceTag } from "./voicecache.js";
 import { probePass1Prompt, probePass2Prompt, synthesisPrompt, ONBOARDING_QUIZ_VERSION } from "./onboardingPrompts.js";
 import { getIllustration, getIllustrationFromPrompt } from "./imagecache.js";
 import { compositeMascot } from "./composite.js";
-import { chatCostUsd, ttsCostUsd, analystCostUsd, imageCostUsd } from "./pricing.js";
+import { chatCostUsd, ttsCostUsd, analystCostUsd, imageCostUsd, geminiLiteCostUsd } from "./pricing.js";
 import { getWallet, debit, credit, grantTrialIfNeeded, recordTopup } from "./wallet.js";
 import { supabase } from "./supabase.js";
 import { record } from "./meter.js";
@@ -191,6 +191,17 @@ app.post("/v1/tts", requireUser, async (req, res) => {
         voiceName: typeof req.body.voice.voiceName === "string" ? req.body.voice.voiceName : undefined
       }
     : null;
+  // Callers with pre-generated, pre-warmed-cache content (Say It Better's
+  // explanation script) request strict voice consistency: no OpenAI
+  // fallback, ever, even on a Cloud TTS + Gemini outage — a different voice
+  // appearing mid-message is worse than that one clip staying silent. This
+  // should be a near-dead code path in practice (the pre-warm script means a
+  // real request almost always hits the cache above `getVoice`'s own
+  // synthesizeVoice call), so a failure here is a real signal something
+  // needs attention, not an expected runtime condition. Defaults true so
+  // every other existing caller (regular chat, roleplay, onboarding, lesson
+  // feedback/Q&A) is unaffected.
+  const allowOpenAIFallback = req.body?.allowOpenAIFallback !== false;
 
   // Roleplay turns are billed as one flat charge on /v1/roleplay-chat that
   // already covers both persona voices for that turn — don't double-charge here.
@@ -206,9 +217,12 @@ app.post("/v1/tts", requireUser, async (req, res) => {
     }
   }
 
-  const audio = await getVoice(text, { format, context, voiceOverride });
+  const audio = await getVoice(text, { format, context, voiceOverride, allowOpenAIFallback });
   if (!audio) {
     if (pre.enforced) await credit(req.user.id, cost, "refund", "voice_message_failed", {});
+    if (!allowOpenAIFallback) {
+      console.error(`[TTS] STRICT-VOICE FAILURE — no fallback allowed and Cloud TTS + Gemini both failed. context=${context} textPreview="${text.slice(0, 60)}"`);
+    }
     return res.status(502).json({ error: "tts_failed" });
   }
 
@@ -267,25 +281,46 @@ app.post("/v1/transcribe", requireUser, async (req, res) => {
 // Utility completions (transcript enhancement, session summary, background analyst).
 // NOT debited: these are short, capped, and run on the user's behalf in the background.
 app.post("/v1/utility", requireUser, async (req, res) => {
-  if (!config.openaiKey) return res.status(503).json({ error: "chat_not_configured" });
   const { prompt, kind, maxTokens, temperature } = req.body || {};
   if (!prompt || typeof prompt !== "string") return res.status(400).json({ error: "missing_prompt" });
 
-  const model = kind === "analyst" ? config.models.analyst : config.models.chat;
   try {
-    const result = await openaiChat({
-      userText: prompt,
-      model,
-      maxTokens: maxTokens || 256,
-      temperature: temperature ?? 0
-    });
-    const rawCost = kind === "analyst"
-      ? analystCostUsd(result.usage.inputTokens, result.usage.outputTokens)
-      : chatCostUsd(result.usage.inputTokens, result.usage.outputTokens);
+    let result, rawCost, provider;
+
+    if (kind === "roleplay_turn") {
+      // Roleplay's per-message turn-taking referee: tiny, very frequent
+      // (fires after every single message), so it runs on Google's cheapest
+      // text tier instead of OpenAI. geminiText() also forces valid JSON via
+      // responseMimeType, removing the code-fence/preamble parse failures an
+      // OpenAI completion could return under this instruction.
+      if (!config.geminiKey) return res.status(503).json({ error: "chat_not_configured" });
+      result = await geminiText({
+        prompt,
+        model: config.models.turnClassifier,
+        maxOutputTokens: maxTokens || 40,
+        temperature: temperature ?? 0
+      });
+      rawCost = geminiLiteCostUsd(result.usage.inputTokens, result.usage.outputTokens);
+      provider = "gemini";
+    } else {
+      if (!config.openaiKey) return res.status(503).json({ error: "chat_not_configured" });
+      const model = kind === "analyst" ? config.models.analyst : config.models.chat;
+      result = await openaiChat({
+        userText: prompt,
+        model,
+        maxTokens: maxTokens || 256,
+        temperature: temperature ?? 0
+      });
+      rawCost = kind === "analyst"
+        ? analystCostUsd(result.usage.inputTokens, result.usage.outputTokens)
+        : chatCostUsd(result.usage.inputTokens, result.usage.outputTokens);
+      provider = "openai";
+    }
+
     await record({
       userId: req.user.id,
       kind: "utility",
-      provider: "openai",
+      provider,
       inputTokens: result.usage.inputTokens,
       outputTokens: result.usage.outputTokens,
       rawCostUsd: rawCost,
