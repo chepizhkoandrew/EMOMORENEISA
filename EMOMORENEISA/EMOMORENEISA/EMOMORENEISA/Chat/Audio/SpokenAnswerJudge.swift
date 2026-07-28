@@ -58,11 +58,19 @@ enum SpokenAnswerJudge {
     /// backend judge closure → local fallback if the backend call throws.
     /// `remoteCheck` receives the already-normalized transcript so callers
     /// don't have to normalize twice.
+    ///
+    /// One error rethrows instead of falling back: `ProxyError.insufficientTreats`.
+    /// `ProxyClient.send(...)` already flips `WalletManager.shared.showPaywall`
+    /// the instant a 402 comes back, regardless of who called it — but
+    /// silently awarding a local-fallback pass right after that would let
+    /// someone keep answering for free while the paywall they're supposed to
+    /// see is on its way up. Every other failure (offline, timeout, 5xx)
+    /// still degrades to the local fallback exactly as before.
     static func judge(
         transcribed: String,
         expected: String,
         remoteCheck: (_ normalizedTranscript: String) async throws -> Bool
-    ) async -> Bool {
+    ) async throws -> Bool {
         let normalized = normalizeTranscript(transcribed)
         let normalizedExpected = normalizeTranscript(expected)
         if !normalized.isEmpty && normalized == normalizedExpected {
@@ -70,6 +78,9 @@ enum SpokenAnswerJudge {
         }
         do {
             return try await remoteCheck(normalized)
+        } catch let error as ProxyError {
+            if case .insufficientTreats = error { throw error }
+            return localFallback(transcribed: normalized, expected: expected)
         } catch {
             return localFallback(transcribed: normalized, expected: expected)
         }

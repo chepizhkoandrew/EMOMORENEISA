@@ -53,6 +53,7 @@ struct LearnByBookSpokenQuizView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var page: Int
     @State private var answers: [String: Bool]
+    @State private var wallet = WalletManager.shared
 
     init(
         session: LearnByBookQuizSession,
@@ -96,6 +97,22 @@ struct LearnByBookSpokenQuizView: View {
             }
         }
         .ignoresSafeArea()
+        // Same reasoning as `HomeView`'s verb-game cover: `ProxyClient.send`
+        // already flips `wallet.showPaywall` on any 402 from `/v1/phrase-check`
+        // regardless of caller, but this screen (presented via its own
+        // fullScreenCover, no ancestor NavigationStack reachable while
+        // covered) never reacted to it before — the quiz just kept going on
+        // local fuzzy-matching alone once treats ran out.
+        .fullScreenCover(isPresented: $wallet.showPaywall) {
+            NavigationStack {
+                PaywallView()
+                    .toolbar {
+                        ToolbarItem(placement: .navigationBarLeading) {
+                            BackButton { wallet.showPaywall = false }
+                        }
+                    }
+            }
+        }
     }
 
     private func handleNext(_ correct: Bool, questionId: String, index: Int) {

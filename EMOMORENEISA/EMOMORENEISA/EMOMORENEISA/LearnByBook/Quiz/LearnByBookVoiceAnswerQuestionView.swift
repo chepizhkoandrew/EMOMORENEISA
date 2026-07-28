@@ -208,14 +208,22 @@ struct LearnByBookVoiceAnswerQuestionView: View {
             Task {
                 let transcript = await recorder.stopAndTranscribe()
                 await MainActor.run { state = .judging }
-                let correct = await SpokenAnswerJudge.judge(
-                    transcribed: transcript,
-                    expected: question.targetSpanish
-                ) { normalizedTranscript in
-                    try await ProxyClient.shared.phraseCheck(
-                        transcript: normalizedTranscript,
+                let correct: Bool
+                do {
+                    correct = try await SpokenAnswerJudge.judge(
+                        transcribed: transcript,
                         expected: question.targetSpanish
-                    )
+                    ) { normalizedTranscript in
+                        try await ProxyClient.shared.phraseCheck(
+                            transcript: normalizedTranscript,
+                            expected: question.targetSpanish
+                        )
+                    }
+                } catch {
+                    // Out of treats — WalletManager already flipped
+                    // showPaywall (ProxyClient.send does that unconditionally
+                    // on 402); don't award a free local-fallback pass here.
+                    correct = false
                 }
                 await MainActor.run {
                     state = .revealed(correct: correct, transcript: transcript)

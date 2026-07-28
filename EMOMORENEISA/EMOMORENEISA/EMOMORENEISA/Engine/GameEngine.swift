@@ -171,16 +171,25 @@ final class GameEngine: ObservableObject {
             glog("🤖 SERVER", "→ verb-check | expected: \"\(cell.expectedConjugation)\" | got: \"\(normalized)\"")
             let t0 = Date()
 
-            let correct = await SpokenAnswerJudge.judge(
-                transcribed: normalized,
-                expected: cell.expectedConjugation
-            ) { normalizedTranscript in
-                try await ProxyClient.shared.verbCheck(
-                    transcript: normalizedTranscript,
-                    expected: cell.expectedConjugation,
-                    infinitive: cell.verb.infinitive,
-                    pronoun: cell.pronoun.displayLabel
-                )
+            let correct: Bool
+            do {
+                correct = try await SpokenAnswerJudge.judge(
+                    transcribed: normalized,
+                    expected: cell.expectedConjugation
+                ) { normalizedTranscript in
+                    try await ProxyClient.shared.verbCheck(
+                        transcript: normalizedTranscript,
+                        expected: cell.expectedConjugation,
+                        infinitive: cell.verb.infinitive,
+                        pronoun: cell.pronoun.displayLabel
+                    )
+                }
+            } catch {
+                // Out of treats — WalletManager already flipped showPaywall
+                // (ProxyClient.send does that unconditionally on 402), so
+                // don't award a free local-fallback pass here.
+                glog("🤖 SERVER", "⚠️ verb-check: insufficient treats — no fallback, marking wrong")
+                correct = false
             }
 
             let latency = Date().timeIntervalSince(t0)
@@ -314,16 +323,22 @@ final class GameEngine: ObservableObject {
         glog("⚙️ ENGINE", "🔄 Retry STT: expected \"\(cell.expectedConjugation)\" | got '\(normalized)'")
 
         Task {
-            let correct = await SpokenAnswerJudge.judge(
-                transcribed: normalized,
-                expected: cell.expectedConjugation
-            ) { normalizedTranscript in
-                try await ProxyClient.shared.verbCheck(
-                    transcript: normalizedTranscript,
-                    expected: cell.expectedConjugation,
-                    infinitive: cell.verb.infinitive,
-                    pronoun: cell.pronoun.displayLabel
-                )
+            let correct: Bool
+            do {
+                correct = try await SpokenAnswerJudge.judge(
+                    transcribed: normalized,
+                    expected: cell.expectedConjugation
+                ) { normalizedTranscript in
+                    try await ProxyClient.shared.verbCheck(
+                        transcript: normalizedTranscript,
+                        expected: cell.expectedConjugation,
+                        infinitive: cell.verb.infinitive,
+                        pronoun: cell.pronoun.displayLabel
+                    )
+                }
+            } catch {
+                glog("🤖 SERVER", "⚠️ Retry verb-check: insufficient treats — no fallback, marking wrong")
+                correct = false
             }
             glog("🤖 SERVER", "🔄 Retry → \(correct ? "✅ CORRECT" : "❌ WRONG")")
             markActiveCell(correct: correct, cellIndex: cellIndex, transcript: transcribed)

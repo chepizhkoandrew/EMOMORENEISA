@@ -62,6 +62,7 @@ struct HomeView: View {
     @State private var speechPermissionGranted = false
     @State private var showModeSelector: Bool = false
     @State private var showOnboarding: Bool = false
+    @State private var wallet = WalletManager.shared
 
     var body: some View {
         ZStack {
@@ -180,6 +181,26 @@ struct HomeView: View {
             // this by accident before, masking the bug).
             showModeSelector = false
             showOnboarding = false
+        }
+        // The verb game screen (unlike SongListView/SessionListView/
+        // ProfileView) has no NavigationStack of its own to hang
+        // `.navigationDestination(isPresented:)` off of — it's a bare
+        // ZStack across every `engine.phase`. `ProxyClient.send(...)`
+        // already flips `wallet.showPaywall` the instant a verb-check call
+        // 402s (regardless of who called it), but until this cover existed
+        // nothing on this screen ever reacted to that — the game just kept
+        // going on local fuzzy-matching alone. Wrapping in its own
+        // NavigationStack here (not inside `PaywallView` itself) matches how
+        // `ModeSelectorView`'s leaf destinations add their own back button.
+        .fullScreenCover(isPresented: $wallet.showPaywall) {
+            NavigationStack {
+                PaywallView()
+                    .toolbar {
+                        ToolbarItem(placement: .navigationBarLeading) {
+                            BackButton { wallet.showPaywall = false }
+                        }
+                    }
+            }
         }
     }
 }
