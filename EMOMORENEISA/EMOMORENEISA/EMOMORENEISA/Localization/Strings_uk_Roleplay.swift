@@ -22,6 +22,10 @@ let ukRoleplayStrings: [String: String] = [
     "Host": "Ведучий",
     "Guest": "Гість",
 
+    // "Pass the word" quick actions
+    "Pass the word to": "Передати слово",
+    "the guest": "гостю",
+
     // Guests
     "Cleopatra, the last pharaoh of Egypt": "Клеопатра, остання фараонка Єгипту",
     "Leonardo da Vinci, Renaissance genius": "Леонардо да Вінчі, геній Ренесансу",

@@ -22,7 +22,9 @@ struct EMOMORENEISAApp: App {
             MemoryCard.self,
             StreetAnnotation.self,
             VerbAttempt.self,
-            SavedSong.self
+            SavedSong.self,
+            LessonProgress.self,
+            LearnByBookProgress.self
         ])
         let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
         return try! ModelContainer(for: schema, configurations: [config])

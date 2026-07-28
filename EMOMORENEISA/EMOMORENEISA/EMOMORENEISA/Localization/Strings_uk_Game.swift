@@ -3,6 +3,13 @@ import Foundation
 // Ukrainian translations for the verb-conjugation Game UI.
 let ukGameStrings: [String: String] = [
     "Choose a tense": "Обери час",
+
+    // Tense picker row titles (Tense.displayLabel) — the Spanish example
+    // conjugation shown as each row's subtitle stays Spanish, unlocalized.
+    "Presente": "Теперішній час",
+    "Pretérito": "Претеріт",
+    "Imperfecto": "Імперфект",
+    "Futuro": "Майбутній час",
     "NEW ROUND": "НОВИЙ РАУНД",
     "STOP": "СТОП",
     "REVIEW": "РОЗБІР",

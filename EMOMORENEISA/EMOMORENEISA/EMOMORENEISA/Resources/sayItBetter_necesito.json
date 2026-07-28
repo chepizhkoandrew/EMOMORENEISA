@@ -1,0 +1,205 @@
+{
+  "id": "necesito",
+  "titleByLocale": {
+    "en": "Say Instead of “Necesito”",
+    "uk": "Кажи замість «Necesito»"
+  },
+  "order": 12,
+  "chapters": [
+    {
+      "id": "phrase_finder",
+      "kind": "phraseFinder",
+      "explanation": [
+        {
+          "id": "intro",
+          "relatedItemId": null,
+          "textByLocale": {
+            "en": "Today you'll learn five real structures Spanish speakers use instead of \"necesito\" for every kind of need — from a firm obligation to a polite request.",
+            "uk": "Сьогодні ти вивчиш п'ять реальних конструкцій, які носії іспанської використовують замість «necesito» — від твердого обов'язку до ввічливого прохання."
+          },
+          "highlightsByLocale": {
+            "en": ["five real structures instead of \"necesito\""],
+            "uk": ["п'ять реальних конструкцій замість «necesito»"]
+          }
+        },
+        {
+          "id": "structure",
+          "relatedItemId": null,
+          "textByLocale": {
+            "en": "We'll go through tener que, hay que, me hace falta, me vendría bien, and quisiera. Native speakers use \"necesito\" far less than English speakers use \"I need\" — these are the structures that fill the gap.",
+            "uk": "Пройдемося по: tener que, hay que, me hace falta, me vendría bien та quisiera. Носії іспанської вживають «necesito» значно рідше, ніж англомовні — «I need», і саме ці конструкції заповнюють цю прогалину."
+          },
+          "highlightsByLocale": {
+            "en": ["tener que", "hay que", "me hace falta", "me vendría bien", "quisiera"],
+            "uk": ["tener que", "hay que", "me hace falta", "me vendría bien", "quisiera"]
+          }
+        },
+        {
+          "id": "explain_tener_que",
+          "relatedItemId": "tener_que",
+          "textByLocale": {
+            "en": "Let's start with tener que + infinitive — a personal obligation, something you have to do. \"Mañana tengo que ir al médico.\"",
+            "uk": "Почнімо з tener que + інфінітив — особистий обов'язок, те, що маєш зробити. «Mañana tengo que ir al médico.»"
+          },
+          "highlightsByLocale": {
+            "en": ["tener que"],
+            "uk": ["tener que"]
+          }
+        },
+        {
+          "id": "explain_hay_que",
+          "relatedItemId": "hay_que",
+          "textByLocale": {
+            "en": "Next, hay que + infinitive — the same idea, but impersonal. It never names who's responsible, which makes it perfect for general rules and instructions. \"Hay que limpiar el baño.\"",
+            "uk": "Далі — hay que + інфінітив, та сама ідея, але безособова. Ніколи не називає, хто відповідальний — ідеально для загальних правил та інструкцій. «Hay que limpiar el baño.»"
+          },
+          "highlightsByLocale": {
+            "en": ["hay que"],
+            "uk": ["hay que"]
+          }
+        },
+        {
+          "id": "explain_me_hace_falta",
+          "relatedItemId": "me_hace_falta",
+          "textByLocale": {
+            "en": "Now me hace falta — literally \"it's missing to me,\" the closest direct substitute for necesito. \"Me hace falta tiempo para hacer todo lo que quiero hacer.\"",
+            "uk": "Тепер me hace falta — буквально «мені цього бракує», найближчий прямий замінник necesito. «Me hace falta tiempo para hacer todo lo que quiero hacer.»"
+          },
+          "highlightsByLocale": {
+            "en": ["me hace falta"],
+            "uk": ["me hace falta"]
+          }
+        },
+        {
+          "id": "explain_me_vendria_bien",
+          "relatedItemId": "me_vendria_bien",
+          "textByLocale": {
+            "en": "Me vendría bien — \"it would do me good.\" Casual but very common, softer than necesito. \"Ahora mismo me vendría muy bien salir de compras.\"",
+            "uk": "Me vendría bien — «мені б це не завадило». Невимушено, але дуже вживано, м'якше за necesito. «Ahora mismo me vendría muy bien salir de compras.»"
+          },
+          "highlightsByLocale": {
+            "en": ["me vendría bien"],
+            "uk": ["me vendría bien"]
+          }
+        },
+        {
+          "id": "explain_quisiera",
+          "relatedItemId": "quisiera",
+          "textByLocale": {
+            "en": "And finally, quisiera — \"I would like.\" The most polite option here, ideal in shops, restaurants, or any formal request.",
+            "uk": "І нарешті quisiera — «я б хотів/хотіла». Найввічливіший варіант — ідеально для магазину, ресторану чи будь-якого офіційного прохання."
+          },
+          "highlightsByLocale": {
+            "en": ["quisiera"],
+            "uk": ["quisiera"]
+          }
+        }
+      ],
+      "items": [
+        {
+          "id": "tener_que",
+          "spanish": "tener que + infinitivo",
+          "englishMeaning": "to have to",
+          "registerNote": "neutral, a personal, direct obligation",
+          "exampleSentence": "Mañana tengo que ir al médico."
+        },
+        {
+          "id": "hay_que",
+          "spanish": "hay que + infinitivo",
+          "englishMeaning": "one must / it's necessary to",
+          "registerNote": "impersonal, doesn't name who's responsible, great for rules and instructions",
+          "exampleSentence": "Hay que limpiar el baño."
+        },
+        {
+          "id": "me_hace_falta",
+          "spanish": "me hace falta",
+          "englishMeaning": "I'm lacking / I need",
+          "registerNote": "neutral, the closest direct substitute for necesito",
+          "exampleSentence": "Me hace falta tiempo para hacer todo lo que quiero hacer."
+        },
+        {
+          "id": "me_vendria_bien",
+          "spanish": "me vendría bien",
+          "englishMeaning": "it would do me good",
+          "registerNote": "casual but very common, softer than necesito",
+          "exampleSentence": "Ahora mismo me vendría muy bien salir de compras."
+        },
+        {
+          "id": "quisiera",
+          "spanish": "quisiera",
+          "englishMeaning": "I would like",
+          "registerNote": "polite, ideal for shops, restaurants, and formal requests",
+          "exampleSentence": "Quisiera descansar un poco antes de salir de casa otra vez."
+        }
+      ],
+      "quiz": [
+        {
+          "id": "q1",
+          "type": "multipleChoice",
+          "promptByLocale": {
+            "en": "Which structure is impersonal — it never names who's responsible?",
+            "uk": "Яка конструкція безособова — ніколи не називає, хто відповідальний?"
+          },
+          "relatedItemId": "hay_que",
+          "options": ["tener que", "hay que", "quisiera", "me vendría bien"],
+          "correctOptionIndex": 1,
+          "sentenceTemplate": null,
+          "acceptedAnswers": null
+        },
+        {
+          "id": "q2",
+          "type": "fillBlank",
+          "promptByLocale": {
+            "en": "Complete the phrase.",
+            "uk": "Заверши фразу."
+          },
+          "relatedItemId": "tener_que",
+          "options": null,
+          "correctOptionIndex": null,
+          "sentenceTemplate": "Mañana tengo ___ ir al médico.",
+          "acceptedAnswers": ["que"]
+        },
+        {
+          "id": "q3",
+          "type": "multipleChoice",
+          "promptByLocale": {
+            "en": "Which one is the closest direct substitute for necesito, literally \"it's missing to me\"?",
+            "uk": "Яка конструкція — найближчий прямий замінник necesito, буквально «мені цього бракує»?"
+          },
+          "relatedItemId": "me_hace_falta",
+          "options": ["me hace falta", "hay que", "quisiera", "tener que"],
+          "correctOptionIndex": 0,
+          "sentenceTemplate": null,
+          "acceptedAnswers": null
+        },
+        {
+          "id": "q4",
+          "type": "fillBlank",
+          "promptByLocale": {
+            "en": "Complete the phrase.",
+            "uk": "Заверши фразу."
+          },
+          "relatedItemId": "quisiera",
+          "options": null,
+          "correctOptionIndex": null,
+          "sentenceTemplate": "___ descansar un poco antes de salir de casa otra vez.",
+          "acceptedAnswers": ["Quisiera", "quisiera"]
+        },
+        {
+          "id": "q5",
+          "type": "multipleChoice",
+          "promptByLocale": {
+            "en": "Which one is the most polite — ideal for a shop or restaurant?",
+            "uk": "Яка конструкція найввічливіша — ідеальна для магазину чи ресторану?"
+          },
+          "relatedItemId": "quisiera",
+          "options": ["hay que", "tener que", "me hace falta", "quisiera"],
+          "correctOptionIndex": 3,
+          "sentenceTemplate": null,
+          "acceptedAnswers": null
+        }
+      ],
+      "wordSwapItems": null
+    }
+  ]
+}

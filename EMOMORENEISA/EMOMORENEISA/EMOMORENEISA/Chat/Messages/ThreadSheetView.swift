@@ -182,7 +182,11 @@ struct ThreadSheetView: View {
     private func addThreadMessage(_ message: LocalChatMessage) {
         modelContext.insert(message)
         session.messages.append(message)
-        parentMessage.threadReplyCount = threadMessages.count + 1
+        // threadMessages is a live computed filter over session.messages, so
+        // it already reflects the append above — the previous "+ 1" here
+        // double-counted, inflating the badge (one user message + one Madrid
+        // reply showed as 3, not 2).
+        parentMessage.threadReplyCount = threadMessages.count
         try? modelContext.save()
         Task { await SupabaseSyncService.shared.insertMessage(message) }
     }

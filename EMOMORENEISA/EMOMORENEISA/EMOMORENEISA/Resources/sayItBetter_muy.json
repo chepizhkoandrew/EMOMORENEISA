@@ -1,0 +1,205 @@
+{
+  "id": "muy",
+  "titleByLocale": {
+    "en": "Say Instead of “Muy”",
+    "uk": "Кажи замість «Muy»"
+  },
+  "order": 7,
+  "chapters": [
+    {
+      "id": "phrase_finder",
+      "kind": "phraseFinder",
+      "explanation": [
+        {
+          "id": "intro",
+          "relatedItemId": null,
+          "textByLocale": {
+            "en": "Today you'll learn five real ways to sound more advanced instead of stacking muy in front of every adjective.",
+            "uk": "Сьогодні ти вивчиш п'ять реальних способів звучати просунутіше, замість того щоб постійно ставити muy перед прикметником."
+          },
+          "highlightsByLocale": {
+            "en": ["five real ways to sound more advanced"],
+            "uk": ["п'ять реальних способів звучати просунутіше"]
+          }
+        },
+        {
+          "id": "structure",
+          "relatedItemId": null,
+          "textByLocale": {
+            "en": "We'll go through enorme, diminuto, agotado, espectacular, and furioso — one upgraded adjective for muy grande, muy pequeño, muy cansado, muy bueno, and muy enojado.",
+            "uk": "Пройдемося по: enorme, diminuto, agotado, espectacular та furioso — по одному вдосконаленому прикметнику замість muy grande, muy pequeño, muy cansado, muy bueno та muy enojado."
+          },
+          "highlightsByLocale": {
+            "en": ["enorme", "diminuto", "agotado", "espectacular", "furioso"],
+            "uk": ["enorme", "diminuto", "agotado", "espectacular", "furioso"]
+          }
+        },
+        {
+          "id": "explain_enorme",
+          "relatedItemId": "enorme",
+          "textByLocale": {
+            "en": "Let's start with enorme instead of muy grande — \"huge.\" \"Este coche es enorme, es muy difícil encontrar un lugar para aparcar.\"",
+            "uk": "Почнімо з enorme замість muy grande — «величезний». «Este coche es enorme, es muy difícil encontrar un lugar para aparcar.»"
+          },
+          "highlightsByLocale": {
+            "en": ["enorme"],
+            "uk": ["enorme"]
+          }
+        },
+        {
+          "id": "explain_diminuto",
+          "relatedItemId": "diminuto",
+          "textByLocale": {
+            "en": "Next, diminuto instead of muy pequeño — \"tiny.\" \"Este suéter es diminuto, no me entra ni en el meñique.\"",
+            "uk": "Далі — diminuto замість muy pequeño — «крихітний». «Este suéter es diminuto, no me entra ni en el meñique.»"
+          },
+          "highlightsByLocale": {
+            "en": ["diminuto"],
+            "uk": ["diminuto"]
+          }
+        },
+        {
+          "id": "explain_agotado",
+          "relatedItemId": "agotado",
+          "textByLocale": {
+            "en": "Now agotado instead of muy cansado — \"exhausted.\" \"Después de un duro día de trabajo, todos terminamos agotados.\"",
+            "uk": "Тепер agotado замість muy cansado — «виснажений». «Después de un duro día de trabajo, todos terminamos agotados.»"
+          },
+          "highlightsByLocale": {
+            "en": ["agotado"],
+            "uk": ["agotado"]
+          }
+        },
+        {
+          "id": "explain_espectacular",
+          "relatedItemId": "espectacular",
+          "textByLocale": {
+            "en": "Espectacular instead of muy bueno — \"spectacular.\" \"La lasaña está espectacular.\"",
+            "uk": "Espectacular замість muy bueno — «вражаючий». «La lasaña está espectacular.»"
+          },
+          "highlightsByLocale": {
+            "en": ["espectacular"],
+            "uk": ["espectacular"]
+          }
+        },
+        {
+          "id": "explain_furioso",
+          "relatedItemId": "furioso",
+          "textByLocale": {
+            "en": "And finally, furioso instead of muy enojado — \"furious.\" \"Mi jefe estaba furioso porque bajaron las ventas.\"",
+            "uk": "І нарешті furioso замість muy enojado — «розлючений». «Mi jefe estaba furioso porque bajaron las ventas.»"
+          },
+          "highlightsByLocale": {
+            "en": ["furioso"],
+            "uk": ["furioso"]
+          }
+        }
+      ],
+      "items": [
+        {
+          "id": "enorme",
+          "spanish": "enorme",
+          "englishMeaning": "huge",
+          "registerNote": "upgrades muy grande, works in everyday and formal speech",
+          "exampleSentence": "Este coche es enorme, es muy difícil encontrar un lugar para aparcar."
+        },
+        {
+          "id": "diminuto",
+          "spanish": "diminuto",
+          "englishMeaning": "tiny",
+          "registerNote": "upgrades muy pequeño",
+          "exampleSentence": "Este suéter es diminuto, no me entra ni en el meñique."
+        },
+        {
+          "id": "agotado",
+          "spanish": "agotado",
+          "englishMeaning": "exhausted",
+          "registerNote": "upgrades muy cansado, agrees in gender (agotada for a woman)",
+          "exampleSentence": "Después de un duro día de trabajo, todos terminamos agotados."
+        },
+        {
+          "id": "espectacular",
+          "spanish": "espectacular",
+          "englishMeaning": "spectacular",
+          "registerNote": "upgrades muy bueno for food, shows, or experiences",
+          "exampleSentence": "La lasaña está espectacular."
+        },
+        {
+          "id": "furioso",
+          "spanish": "furioso",
+          "englishMeaning": "furious",
+          "registerNote": "upgrades muy enojado, agrees in gender (furiosa for a woman)",
+          "exampleSentence": "Mi jefe estaba furioso porque bajaron las ventas."
+        }
+      ],
+      "quiz": [
+        {
+          "id": "q1",
+          "type": "multipleChoice",
+          "promptByLocale": {
+            "en": "Which one upgrades muy grande?",
+            "uk": "Яке слово вдосконалює muy grande?"
+          },
+          "relatedItemId": "enorme",
+          "options": ["diminuto", "enorme", "agotado", "furioso"],
+          "correctOptionIndex": 1,
+          "sentenceTemplate": null,
+          "acceptedAnswers": null
+        },
+        {
+          "id": "q2",
+          "type": "fillBlank",
+          "promptByLocale": {
+            "en": "Complete the phrase.",
+            "uk": "Заверши фразу."
+          },
+          "relatedItemId": "diminuto",
+          "options": null,
+          "correctOptionIndex": null,
+          "sentenceTemplate": "Este suéter es ___, no me entra ni en el meñique.",
+          "acceptedAnswers": ["diminuto"]
+        },
+        {
+          "id": "q3",
+          "type": "multipleChoice",
+          "promptByLocale": {
+            "en": "Which one upgrades muy cansado, and agrees in gender?",
+            "uk": "Яке слово вдосконалює muy cansado та узгоджується за родом?"
+          },
+          "relatedItemId": "agotado",
+          "options": ["espectacular", "enorme", "agotado", "diminuto"],
+          "correctOptionIndex": 2,
+          "sentenceTemplate": null,
+          "acceptedAnswers": null
+        },
+        {
+          "id": "q4",
+          "type": "fillBlank",
+          "promptByLocale": {
+            "en": "Complete the phrase.",
+            "uk": "Заверши фразу."
+          },
+          "relatedItemId": "espectacular",
+          "options": null,
+          "correctOptionIndex": null,
+          "sentenceTemplate": "La lasaña está ___.",
+          "acceptedAnswers": ["espectacular"]
+        },
+        {
+          "id": "q5",
+          "type": "multipleChoice",
+          "promptByLocale": {
+            "en": "Which one means \"furious\" and upgrades muy enojado?",
+            "uk": "Яке слово означає «розлючений» і вдосконалює muy enojado?"
+          },
+          "relatedItemId": "furioso",
+          "options": ["furioso", "agotado", "diminuto", "espectacular"],
+          "correctOptionIndex": 0,
+          "sentenceTemplate": null,
+          "acceptedAnswers": null
+        }
+      ],
+      "wordSwapItems": null
+    }
+  ]
+}

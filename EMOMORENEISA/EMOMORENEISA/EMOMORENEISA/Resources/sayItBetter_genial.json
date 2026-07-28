@@ -1,0 +1,205 @@
+{
+  "id": "genial",
+  "titleByLocale": {
+    "en": "Say Instead of “Genial”",
+    "uk": "Кажи замість «Genial»"
+  },
+  "order": 8,
+  "chapters": [
+    {
+      "id": "phrase_finder",
+      "kind": "phraseFinder",
+      "explanation": [
+        {
+          "id": "intro",
+          "relatedItemId": null,
+          "textByLocale": {
+            "en": "Today you'll learn five real ways to say \"cool\" in Spanish — genial works everywhere, but every region has its own local flavor.",
+            "uk": "Сьогодні ти вивчиш п'ять реальних способів сказати «круто» іспанською — genial підходить будь-де, але в кожному регіоні є свій колорит."
+          },
+          "highlightsByLocale": {
+            "en": ["five real ways to say \"cool\""],
+            "uk": ["п'ять реальних способів сказати «круто»"]
+          }
+        },
+        {
+          "id": "structure",
+          "relatedItemId": null,
+          "textByLocale": {
+            "en": "We'll go through guay, padre, chévere, bacán, and mola. Each one is tied to a different region, so picking the right one signals where your Spanish comes from.",
+            "uk": "Пройдемося по: guay, padre, chévere, bacán та mola. Кожне слово прив'язане до свого регіону, тож правильний вибір показує, звідки твоя іспанська."
+          },
+          "highlightsByLocale": {
+            "en": ["guay", "padre", "chévere", "bacán", "mola"],
+            "uk": ["guay", "padre", "chévere", "bacán", "mola"]
+          }
+        },
+        {
+          "id": "explain_guay",
+          "relatedItemId": "guay",
+          "textByLocale": {
+            "en": "Let's start with guay — the go-to word for \"cool\" in Spain. \"¡Qué guay tu chaqueta!\"",
+            "uk": "Почнімо з guay — головне слово для «круто» в Іспанії. «¡Qué guay tu chaqueta!»"
+          },
+          "highlightsByLocale": {
+            "en": ["guay"],
+            "uk": ["guay"]
+          }
+        },
+        {
+          "id": "explain_padre",
+          "relatedItemId": "padre",
+          "textByLocale": {
+            "en": "Next, padre — Mexico's version of \"cool.\" Nothing to do with fathers here, just an everyday exclamation. \"¡Qué padre está la fiesta!\"",
+            "uk": "Далі — padre, мексиканський варіант «круто». Нічого спільного з батьками — просто повсякденний вигук. «¡Qué padre está la fiesta!»"
+          },
+          "highlightsByLocale": {
+            "en": ["padre"],
+            "uk": ["padre"]
+          }
+        },
+        {
+          "id": "explain_chevere",
+          "relatedItemId": "chevere",
+          "textByLocale": {
+            "en": "Now chévere — heard across Colombia, Venezuela, and much of the Caribbean. \"¡Qué chévere tu carro!\"",
+            "uk": "Тепер chévere — чуєш у Колумбії, Венесуелі та значній частині Карибського басейну. «¡Qué chévere tu carro!»"
+          },
+          "highlightsByLocale": {
+            "en": ["chévere"],
+            "uk": ["chévere"]
+          }
+        },
+        {
+          "id": "explain_bacan",
+          "relatedItemId": "bacan",
+          "textByLocale": {
+            "en": "Bacán — common in Peru and Chile. \"¡Qué bacán tu casa!\"",
+            "uk": "Bacán — поширене в Перу та Чилі. «¡Qué bacán tu casa!»"
+          },
+          "highlightsByLocale": {
+            "en": ["bacán"],
+            "uk": ["bacán"]
+          }
+        },
+        {
+          "id": "explain_mola",
+          "relatedItemId": "mola",
+          "textByLocale": {
+            "en": "And finally, mola — another one from Spain, but a real verb (molar), not just an adjective. It conjugates to match what's cool. \"Esta camiseta mola.\" \"Me mola mucho esta canción.\"",
+            "uk": "І нарешті mola — ще одне слово з Іспанії, але це справжнє дієслово (molar), а не просто прикметник. Воно відмінюється залежно від того, що саме круте. «Esta camiseta mola.» «Me mola mucho esta canción.»"
+          },
+          "highlightsByLocale": {
+            "en": ["mola"],
+            "uk": ["mola"]
+          }
+        }
+      ],
+      "items": [
+        {
+          "id": "guay",
+          "spanish": "guay",
+          "englishMeaning": "cool",
+          "registerNote": "casual, the everyday word for cool in Spain",
+          "exampleSentence": "¡Qué guay tu chaqueta!"
+        },
+        {
+          "id": "padre",
+          "spanish": "padre",
+          "englishMeaning": "cool",
+          "registerNote": "casual, Mexican slang — unrelated to \"father\" in this sense",
+          "exampleSentence": "¡Qué padre está la fiesta!"
+        },
+        {
+          "id": "chevere",
+          "spanish": "chévere",
+          "englishMeaning": "cool",
+          "registerNote": "casual, widely used in Colombia, Venezuela, and the Caribbean",
+          "exampleSentence": "¡Qué chévere tu carro!"
+        },
+        {
+          "id": "bacan",
+          "spanish": "bacán",
+          "englishMeaning": "cool",
+          "registerNote": "casual, common in Peru and Chile",
+          "exampleSentence": "¡Qué bacán tu casa!"
+        },
+        {
+          "id": "mola",
+          "spanish": "mola / molar",
+          "englishMeaning": "is cool (verb)",
+          "registerNote": "casual, Spain, a verb that conjugates rather than a plain adjective",
+          "exampleSentence": "Esta camiseta mola."
+        }
+      ],
+      "quiz": [
+        {
+          "id": "q1",
+          "type": "multipleChoice",
+          "promptByLocale": {
+            "en": "Which one is the everyday word for \"cool\" in Spain?",
+            "uk": "Яке слово в Іспанії означає «круто» у повсякденному мовленні?"
+          },
+          "relatedItemId": "guay",
+          "options": ["padre", "chévere", "guay", "bacán"],
+          "correctOptionIndex": 2,
+          "sentenceTemplate": null,
+          "acceptedAnswers": null
+        },
+        {
+          "id": "q2",
+          "type": "fillBlank",
+          "promptByLocale": {
+            "en": "Complete the phrase.",
+            "uk": "Заверши фразу."
+          },
+          "relatedItemId": "padre",
+          "options": null,
+          "correctOptionIndex": null,
+          "sentenceTemplate": "¡Qué ___ está la fiesta!",
+          "acceptedAnswers": ["padre"]
+        },
+        {
+          "id": "q3",
+          "type": "multipleChoice",
+          "promptByLocale": {
+            "en": "Which word is widely used in Colombia, Venezuela, and the Caribbean?",
+            "uk": "Яке слово поширене в Колумбії, Венесуелі та Карибському басейні?"
+          },
+          "relatedItemId": "chevere",
+          "options": ["guay", "chévere", "mola", "bacán"],
+          "correctOptionIndex": 1,
+          "sentenceTemplate": null,
+          "acceptedAnswers": null
+        },
+        {
+          "id": "q4",
+          "type": "fillBlank",
+          "promptByLocale": {
+            "en": "Complete the phrase.",
+            "uk": "Заверши фразу."
+          },
+          "relatedItemId": "bacan",
+          "options": null,
+          "correctOptionIndex": null,
+          "sentenceTemplate": "¡Qué ___ tu casa!",
+          "acceptedAnswers": ["bacán", "bacan"]
+        },
+        {
+          "id": "q5",
+          "type": "multipleChoice",
+          "promptByLocale": {
+            "en": "Which one is a verb, not a plain adjective — it conjugates to match what's cool?",
+            "uk": "Яке слово є дієсловом, а не прикметником, і відмінюється залежно від того, що круте?"
+          },
+          "relatedItemId": "mola",
+          "options": ["guay", "padre", "chévere", "mola"],
+          "correctOptionIndex": 3,
+          "sentenceTemplate": null,
+          "acceptedAnswers": null
+        }
+      ],
+      "wordSwapItems": null
+    }
+  ]
+}

@@ -12,6 +12,11 @@ final class MemoryCard {
     var illustrationPath: String?
     var sourceWordId: UUID?
     var sourceParrotId: UUID?
+    /// "\(lessonId).\(phraseId)" for a card manually saved from Say It
+    /// Better — stable across repeated saves/lesson retakes, unlike
+    /// `sourceParrotId` (a fresh UUID per generation), so it's what dedup
+    /// keys off for this source.
+    var sourceLessonPhraseId: String?
 
     var exposureCount: Int
     var lastPlayedAt: Date?
@@ -32,6 +37,7 @@ final class MemoryCard {
         illustrationPath: String? = nil,
         sourceWordId: UUID? = nil,
         sourceParrotId: UUID? = nil,
+        sourceLessonPhraseId: String? = nil,
         exposureCount: Int = 1,
         lastPlayedAt: Date? = nil,
         nextDueAt: Date? = nil,
@@ -48,6 +54,7 @@ final class MemoryCard {
         self.illustrationPath = illustrationPath
         self.sourceWordId = sourceWordId
         self.sourceParrotId = sourceParrotId
+        self.sourceLessonPhraseId = sourceLessonPhraseId
         self.exposureCount = exposureCount
         self.lastPlayedAt = lastPlayedAt
         self.nextDueAt = nextDueAt
@@ -69,6 +76,23 @@ final class MemoryCard {
             sourceParrotId: phrase.id,
             exposureCount: 1,
             repetitionsPerPhaseBase: max(1, loops)
+        )
+    }
+
+    /// A manually-saved Say It Better phrase. Reuses the same server-side
+    /// "loro" pipeline as Parrot (via a throwaway `ParrotPhrase` driving
+    /// `ParrotService.generate`, never persisted) rather than duplicating its
+    /// audio-generation logic, so the 7-segment shape and quality are
+    /// identical — `phrase` here is that already-generated result, not the
+    /// caller's own text.
+    convenience init(fromSayItBetterPhrase phrase: ParrotPhrase, lessonId: String, phraseId: String) {
+        self.init(
+            content: phrase.spanishPhrase,
+            translation: phrase.englishTranslation,
+            audioSegmentPaths: phrase.segmentPaths,
+            illustrationPath: phrase.illustrationPath,
+            sourceLessonPhraseId: "\(lessonId).\(phraseId)",
+            exposureCount: 1
         )
     }
 

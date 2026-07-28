@@ -1,0 +1,205 @@
+{
+  "id": "megusta",
+  "titleByLocale": {
+    "en": "Say Instead of “Me Gusta”",
+    "uk": "Кажи замість «Me Gusta»"
+  },
+  "order": 11,
+  "chapters": [
+    {
+      "id": "phrase_finder",
+      "kind": "phraseFinder",
+      "explanation": [
+        {
+          "id": "intro",
+          "relatedItemId": null,
+          "textByLocale": {
+            "en": "Today you'll learn five real ways to say you like something in Spanish — from mild interest to genuine passion.",
+            "uk": "Сьогодні ти вивчиш п'ять реальних способів сказати, що тобі щось подобається іспанською — від легкого інтересу до справжньої пристрасті."
+          },
+          "highlightsByLocale": {
+            "en": ["five real ways to say you like something"],
+            "uk": ["п'ять реальних способів сказати, що тобі щось подобається"]
+          }
+        },
+        {
+          "id": "structure",
+          "relatedItemId": null,
+          "textByLocale": {
+            "en": "We'll go through me interesa, me llama la atención, me encanta, me fascina, and me apasiona. Each one turns up the intensity a little more than the last.",
+            "uk": "Пройдемося по: me interesa, me llama la atención, me encanta, me fascina та me apasiona. Кожна наступна фраза трохи інтенсивніша за попередню."
+          },
+          "highlightsByLocale": {
+            "en": ["me interesa", "me llama la atención", "me encanta", "me fascina", "me apasiona"],
+            "uk": ["me interesa", "me llama la atención", "me encanta", "me fascina", "me apasiona"]
+          }
+        },
+        {
+          "id": "explain_me_interesa",
+          "relatedItemId": "me_interesa",
+          "textByLocale": {
+            "en": "Let's start with me interesa — \"it interests me.\" A mild, thoughtful step up from me gusta, for things you're curious about rather than crazy about.",
+            "uk": "Почнімо з me interesa — «мене це цікавить». Легкий, вдумливий крок вище за me gusta — для того, що цікавить, а не викликає захват."
+          },
+          "highlightsByLocale": {
+            "en": ["me interesa"],
+            "uk": ["me interesa"]
+          }
+        },
+        {
+          "id": "explain_me_llama_la_atencion",
+          "relatedItemId": "me_llama_la_atencion",
+          "textByLocale": {
+            "en": "Next, me llama la atención — literally \"it calls my attention.\" Use it for something that catches your eye or intrigues you.",
+            "uk": "Далі — me llama la atención, буквально «це привертає мою увагу». Використовуй для того, що привертає погляд або інтригує."
+          },
+          "highlightsByLocale": {
+            "en": ["me llama la atención"],
+            "uk": ["me llama la atención"]
+          }
+        },
+        {
+          "id": "explain_me_encanta",
+          "relatedItemId": "me_encanta",
+          "textByLocale": {
+            "en": "Now me encanta — \"I love it.\" One of the most common upgrades to me gusta, warm and genuinely enthusiastic.",
+            "uk": "Тепер me encanta — «я це обожнюю». Один із найпоширеніших замінників me gusta — тепло і щиро захоплено."
+          },
+          "highlightsByLocale": {
+            "en": ["me encanta"],
+            "uk": ["me encanta"]
+          }
+        },
+        {
+          "id": "explain_me_fascina",
+          "relatedItemId": "me_fascina",
+          "textByLocale": {
+            "en": "Me fascina — \"I'm fascinated by it.\" A step beyond me encanta, for something that genuinely captivates you.",
+            "uk": "Me fascina — «мене це захоплює». Крок далі за me encanta — для того, що по-справжньому захоплює тебе."
+          },
+          "highlightsByLocale": {
+            "en": ["me fascina"],
+            "uk": ["me fascina"]
+          }
+        },
+        {
+          "id": "explain_me_apasiona",
+          "relatedItemId": "me_apasiona",
+          "textByLocale": {
+            "en": "And finally, me apasiona — \"I'm passionate about it.\" The most intense option here, save it for something you truly love doing or following.",
+            "uk": "І нарешті me apasiona — «я захоплений/захоплена цим». Найінтенсивніший варіант — для того, що ти справді любиш робити чи цікавитися цим."
+          },
+          "highlightsByLocale": {
+            "en": ["me apasiona"],
+            "uk": ["me apasiona"]
+          }
+        }
+      ],
+      "items": [
+        {
+          "id": "me_interesa",
+          "spanish": "me interesa",
+          "englishMeaning": "it interests me",
+          "registerNote": "mild, thoughtful, for things you're curious about",
+          "exampleSentence": "Me interesa mucho la historia de España."
+        },
+        {
+          "id": "me_llama_la_atencion",
+          "spanish": "me llama la atención",
+          "englishMeaning": "it catches my attention / I'm intrigued by it",
+          "registerNote": "neutral, for something that catches your eye",
+          "exampleSentence": "Me llama la atención ese cuadro."
+        },
+        {
+          "id": "me_encanta",
+          "spanish": "me encanta",
+          "englishMeaning": "I love it",
+          "registerNote": "warm, enthusiastic, one of the most common upgrades to me gusta",
+          "exampleSentence": "Me encanta hablar español."
+        },
+        {
+          "id": "me_fascina",
+          "spanish": "me fascina",
+          "englishMeaning": "I'm fascinated by it",
+          "registerNote": "a step beyond me encanta, for something that captivates you",
+          "exampleSentence": "Me fascina la cultura latinoamericana."
+        },
+        {
+          "id": "me_apasiona",
+          "spanish": "me apasiona",
+          "englishMeaning": "I'm passionate about it",
+          "registerNote": "the most intense option, for something you truly love",
+          "exampleSentence": "Me apasiona la música en vivo."
+        }
+      ],
+      "quiz": [
+        {
+          "id": "q1",
+          "type": "multipleChoice",
+          "promptByLocale": {
+            "en": "Which one is a mild, thoughtful step up from me gusta — for something you're curious about?",
+            "uk": "Яка фраза — легкий, вдумливий крок вище за me gusta, для того, що цікаво?"
+          },
+          "relatedItemId": "me_interesa",
+          "options": ["me interesa", "me encanta", "me fascina", "me apasiona"],
+          "correctOptionIndex": 0,
+          "sentenceTemplate": null,
+          "acceptedAnswers": null
+        },
+        {
+          "id": "q2",
+          "type": "fillBlank",
+          "promptByLocale": {
+            "en": "Complete the phrase.",
+            "uk": "Заверши фразу."
+          },
+          "relatedItemId": "me_encanta",
+          "options": null,
+          "correctOptionIndex": null,
+          "sentenceTemplate": "Me ___ hablar español.",
+          "acceptedAnswers": ["encanta"]
+        },
+        {
+          "id": "q3",
+          "type": "multipleChoice",
+          "promptByLocale": {
+            "en": "Which one literally means \"it calls my attention\"?",
+            "uk": "Яка фраза буквально означає «це привертає мою увагу»?"
+          },
+          "relatedItemId": "me_llama_la_atencion",
+          "options": ["me apasiona", "me fascina", "me llama la atención", "me interesa"],
+          "correctOptionIndex": 2,
+          "sentenceTemplate": null,
+          "acceptedAnswers": null
+        },
+        {
+          "id": "q4",
+          "type": "fillBlank",
+          "promptByLocale": {
+            "en": "Complete the phrase.",
+            "uk": "Заверши фразу."
+          },
+          "relatedItemId": "me_fascina",
+          "options": null,
+          "correctOptionIndex": null,
+          "sentenceTemplate": "Me ___ la cultura latinoamericana.",
+          "acceptedAnswers": ["fascina"]
+        },
+        {
+          "id": "q5",
+          "type": "multipleChoice",
+          "promptByLocale": {
+            "en": "Which one is the most intense — for something you're truly passionate about?",
+            "uk": "Яка фраза найінтенсивніша — для того, чим ти справді захоплений?"
+          },
+          "relatedItemId": "me_apasiona",
+          "options": ["me interesa", "me llama la atención", "me encanta", "me apasiona"],
+          "correctOptionIndex": 3,
+          "sentenceTemplate": null,
+          "acceptedAnswers": null
+        }
+      ],
+      "wordSwapItems": null
+    }
+  ]
+}

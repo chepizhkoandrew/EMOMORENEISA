@@ -1,0 +1,205 @@
+{
+  "id": "convertirse",
+  "titleByLocale": {
+    "en": "Say Instead of “Convertirse”",
+    "uk": "Кажи замість «Convertirse»"
+  },
+  "order": 14,
+  "chapters": [
+    {
+      "id": "phrase_finder",
+      "kind": "phraseFinder",
+      "explanation": [
+        {
+          "id": "intro",
+          "relatedItemId": null,
+          "textByLocale": {
+            "en": "Today's about \"to become\" — Spanish has a whole family of change verbs, and convertirse is only the right choice for a radical, life-changing transformation.",
+            "uk": "Сьогодні про «to become» — в іспанській є ціла родина дієслів зміни, і convertirse підходить лише для радикальної, кардинальної трансформації."
+          },
+          "highlightsByLocale": {
+            "en": ["a whole family of change verbs"],
+            "uk": ["ціла родина дієслів зміни"]
+          }
+        },
+        {
+          "id": "structure",
+          "relatedItemId": null,
+          "textByLocale": {
+            "en": "We'll go through ponerse, quedarse, volverse, llegar a ser, and hacerse. Each one fits a different kind of change — temporary, negative, sudden, gradual, or ideological.",
+            "uk": "Пройдемося по: ponerse, quedarse, volverse, llegar a ser та hacerse. Кожне дієслово підходить для свого типу зміни — тимчасової, негативної, раптової, поступової чи світоглядної."
+          },
+          "highlightsByLocale": {
+            "en": ["ponerse", "quedarse", "volverse", "llegar a ser", "hacerse"],
+            "uk": ["ponerse", "quedarse", "volverse", "llegar a ser", "hacerse"]
+          }
+        },
+        {
+          "id": "explain_ponerse",
+          "relatedItemId": "ponerse",
+          "textByLocale": {
+            "en": "Let's start with ponerse — for a temporary physical or emotional change. \"Martha se puso muy nerviosa cuando empezó la entrevista de trabajo.\"",
+            "uk": "Почнімо з ponerse — для тимчасової фізичної чи емоційної зміни. «Martha se puso muy nerviosa cuando empezó la entrevista de trabajo.»"
+          },
+          "highlightsByLocale": {
+            "en": ["ponerse"],
+            "uk": ["ponerse"]
+          }
+        },
+        {
+          "id": "explain_quedarse",
+          "relatedItemId": "quedarse",
+          "textByLocale": {
+            "en": "Next, quedarse — for a change with a lasting, usually negative consequence. \"Carlos se quedó sin trabajo.\"",
+            "uk": "Далі — quedarse, для зміни з тривалим, зазвичай негативним наслідком. «Carlos se quedó sin trabajo.»"
+          },
+          "highlightsByLocale": {
+            "en": ["quedarse"],
+            "uk": ["quedarse"]
+          }
+        },
+        {
+          "id": "explain_volverse",
+          "relatedItemId": "volverse",
+          "textByLocale": {
+            "en": "Now volverse — for a sudden, dramatic change in character or attitude, often involuntary. \"Claudia se volvió loca cuando vio el mensaje.\"",
+            "uk": "Тепер volverse — для раптової, різкої зміни характеру чи ставлення, часто мимовільної. «Claudia se volvió loca cuando vio el mensaje.»"
+          },
+          "highlightsByLocale": {
+            "en": ["volverse"],
+            "uk": ["volverse"]
+          }
+        },
+        {
+          "id": "explain_llegar_a_ser",
+          "relatedItemId": "llegar_a_ser",
+          "textByLocale": {
+            "en": "Llegar a ser — for a gradual change earned through effort, dedication, and time. \"Gabriela Mistral llegó a ser la primera mujer latinoamericana en ganar el premio Nobel de literatura.\"",
+            "uk": "Llegar a ser — для поступової зміни, досягнутої зусиллями, старанністю й часом. «Gabriela Mistral llegó a ser la primera mujer latinoamericana en ganar el premio Nobel de literatura.»"
+          },
+          "highlightsByLocale": {
+            "en": ["llegar a ser"],
+            "uk": ["llegar a ser"]
+          }
+        },
+        {
+          "id": "explain_hacerse",
+          "relatedItemId": "hacerse",
+          "textByLocale": {
+            "en": "And finally, hacerse — for a change in ideology, profession, or with the passage of time. \"Cristian se hizo vegano.\"",
+            "uk": "І нарешті hacerse — для зміни світогляду, професії або з плином часу. «Cristian se hizo vegano.»"
+          },
+          "highlightsByLocale": {
+            "en": ["hacerse"],
+            "uk": ["hacerse"]
+          }
+        }
+      ],
+      "items": [
+        {
+          "id": "ponerse",
+          "spanish": "ponerse",
+          "englishMeaning": "to become / to turn (temporarily)",
+          "registerNote": "for a temporary physical or emotional change",
+          "exampleSentence": "Martha se puso muy nerviosa cuando empezó la entrevista de trabajo."
+        },
+        {
+          "id": "quedarse",
+          "spanish": "quedarse",
+          "englishMeaning": "to become / to be left (a lasting change)",
+          "registerNote": "for a change with a lasting, usually negative consequence",
+          "exampleSentence": "Carlos se quedó sin trabajo."
+        },
+        {
+          "id": "volverse",
+          "spanish": "volverse",
+          "englishMeaning": "to become / to turn (suddenly)",
+          "registerNote": "sudden, dramatic, often involuntary change in character or attitude",
+          "exampleSentence": "Claudia se volvió loca cuando vio el mensaje."
+        },
+        {
+          "id": "llegar_a_ser",
+          "spanish": "llegar a ser",
+          "englishMeaning": "to become (through effort)",
+          "registerNote": "gradual change earned through effort, dedication, and time",
+          "exampleSentence": "Gabriela Mistral llegó a ser la primera mujer latinoamericana en ganar el premio Nobel de literatura."
+        },
+        {
+          "id": "hacerse",
+          "spanish": "hacerse",
+          "englishMeaning": "to become",
+          "registerNote": "for a change in ideology, profession, or with the passage of time",
+          "exampleSentence": "Cristian se hizo vegano."
+        }
+      ],
+      "quiz": [
+        {
+          "id": "q1",
+          "type": "multipleChoice",
+          "promptByLocale": {
+            "en": "Which one is for a temporary physical or emotional change?",
+            "uk": "Яке дієслово для тимчасової фізичної чи емоційної зміни?"
+          },
+          "relatedItemId": "ponerse",
+          "options": ["quedarse", "ponerse", "hacerse", "llegar a ser"],
+          "correctOptionIndex": 1,
+          "sentenceTemplate": null,
+          "acceptedAnswers": null
+        },
+        {
+          "id": "q2",
+          "type": "fillBlank",
+          "promptByLocale": {
+            "en": "Complete the phrase.",
+            "uk": "Заверши фразу."
+          },
+          "relatedItemId": "quedarse",
+          "options": null,
+          "correctOptionIndex": null,
+          "sentenceTemplate": "Carlos se ___ sin trabajo.",
+          "acceptedAnswers": ["quedó"]
+        },
+        {
+          "id": "q3",
+          "type": "multipleChoice",
+          "promptByLocale": {
+            "en": "Which one is for a sudden, dramatic, often involuntary change?",
+            "uk": "Яке дієслово для раптової, різкої, часто мимовільної зміни?"
+          },
+          "relatedItemId": "volverse",
+          "options": ["ponerse", "hacerse", "volverse", "llegar a ser"],
+          "correctOptionIndex": 2,
+          "sentenceTemplate": null,
+          "acceptedAnswers": null
+        },
+        {
+          "id": "q4",
+          "type": "fillBlank",
+          "promptByLocale": {
+            "en": "Complete the phrase.",
+            "uk": "Заверши фразу."
+          },
+          "relatedItemId": "hacerse",
+          "options": null,
+          "correctOptionIndex": null,
+          "sentenceTemplate": "Cristian se ___ vegano.",
+          "acceptedAnswers": ["hizo"]
+        },
+        {
+          "id": "q5",
+          "type": "multipleChoice",
+          "promptByLocale": {
+            "en": "Which one is for a gradual change earned through effort and dedication?",
+            "uk": "Яке дієслово для поступової зміни, досягнутої зусиллями й старанністю?"
+          },
+          "relatedItemId": "llegar_a_ser",
+          "options": ["quedarse", "volverse", "ponerse", "llegar a ser"],
+          "correctOptionIndex": 3,
+          "sentenceTemplate": null,
+          "acceptedAnswers": null
+        }
+      ],
+      "wordSwapItems": null
+    }
+  ]
+}

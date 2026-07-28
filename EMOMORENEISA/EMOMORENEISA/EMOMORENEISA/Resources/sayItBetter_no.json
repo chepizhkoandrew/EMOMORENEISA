@@ -1,0 +1,205 @@
+{
+  "id": "no",
+  "titleByLocale": {
+    "en": "Say Instead of “No”",
+    "uk": "Кажи замість «No»"
+  },
+  "order": 5,
+  "chapters": [
+    {
+      "id": "phrase_finder",
+      "kind": "phraseFinder",
+      "explanation": [
+        {
+          "id": "intro",
+          "relatedItemId": null,
+          "textByLocale": {
+            "en": "Today you'll learn five real ways to say no in Spanish — from a firm, formal refusal to a breezy, casual one.",
+            "uk": "Сьогодні ти вивчиш п'ять реальних способів сказати «ні» іспанською — від рішучої офіційної відмови до невимушеної."
+          },
+          "highlightsByLocale": {
+            "en": ["five real ways to say no"],
+            "uk": ["п'ять реальних способів сказати «ні»"]
+          }
+        },
+        {
+          "id": "structure",
+          "relatedItemId": null,
+          "textByLocale": {
+            "en": "We'll go through de ningún modo, bajo ningún concepto, ni pensarlo, qué va (or ni en un millón de años), and para nada. They range from formal refusals to casual, everyday ones.",
+            "uk": "Пройдемося по: de ningún modo, bajo ningún concepto, ni pensarlo, qué va (або ni en un millón de años) та para nada. Вони охоплюють діапазон від офіційної відмови до невимушеної, повсякденної."
+          },
+          "highlightsByLocale": {
+            "en": ["de ningún modo", "bajo ningún concepto", "ni pensarlo", "qué va", "ni en un millón de años", "para nada"],
+            "uk": ["de ningún modo", "bajo ningún concepto", "ni pensarlo", "qué va", "ni en un millón de años", "para nada"]
+          }
+        },
+        {
+          "id": "explain_de_ningun_modo",
+          "relatedItemId": "de_ningun_modo",
+          "textByLocale": {
+            "en": "Let's start with de ningún modo — \"no way\" or \"absolutely not.\" A firm, formal refusal you can use with anyone. \"¿Usarías tus ahorros para las vacaciones? De ningún modo.\"",
+            "uk": "Почнімо з de ningún modo — «ніяк» або «аж ніяк». Рішуча офіційна відмова, яку можна використати з будь-ким. «¿Usarías tus ahorros para las vacaciones? De ningún modo.»"
+          },
+          "highlightsByLocale": {
+            "en": ["de ningún modo"],
+            "uk": ["de ningún modo"]
+          }
+        },
+        {
+          "id": "explain_bajo_ningun_concepto",
+          "relatedItemId": "bajo_ningun_concepto",
+          "textByLocale": {
+            "en": "Next, bajo ningún concepto — \"under no circumstances.\" It's even more emphatic than de ningún modo, the kind of no you use when setting a firm rule.",
+            "uk": "Далі — bajo ningún concepto, «за жодних обставин». Емоційніше за de ningún modo — таке «ні» вживають, встановлюючи тверде правило."
+          },
+          "highlightsByLocale": {
+            "en": ["bajo ningún concepto"],
+            "uk": ["bajo ningún concepto"]
+          }
+        },
+        {
+          "id": "explain_ni_pensarlo",
+          "relatedItemId": "ni_pensarlo",
+          "textByLocale": {
+            "en": "Now ni pensarlo — \"don't even think about it.\" Neutral register, a natural reaction when someone suggests something you're just not doing.",
+            "uk": "Тепер ni pensarlo — «навіть не думай про це». Нейтральний регістр, природна реакція, коли хтось пропонує те, чого ти точно не зробиш."
+          },
+          "highlightsByLocale": {
+            "en": ["ni pensarlo"],
+            "uk": ["ni pensarlo"]
+          }
+        },
+        {
+          "id": "explain_que_va",
+          "relatedItemId": "que_va",
+          "textByLocale": {
+            "en": "Qué va and ni en un millón de años both mean a casual, everyday no — but they're regional. Qué va is common in Spain; ni en un millón de años (\"not in a million years\") is heard more in Argentina.",
+            "uk": "Qué va та ni en un millón de años обидва означають невимушене повсякденне «ні», але це регіональні варіанти. Qué va часто чуєш в Іспанії; ni en un millón de años («навіть за мільйон років») — переважно в Аргентині."
+          },
+          "highlightsByLocale": {
+            "en": ["Qué va", "ni en un millón de años"],
+            "uk": ["Qué va", "ni en un millón de años"]
+          }
+        },
+        {
+          "id": "explain_para_nada",
+          "relatedItemId": "para_nada",
+          "textByLocale": {
+            "en": "And finally, para nada — \"not at all.\" It's the lightest, most casual option here, perfect for shutting down a simple yes/no question.",
+            "uk": "І нарешті para nada — «зовсім ні». Найлегший, найневимушеніший варіант, ідеальний для короткої відповіді на просте запитання."
+          },
+          "highlightsByLocale": {
+            "en": ["para nada"],
+            "uk": ["para nada"]
+          }
+        }
+      ],
+      "items": [
+        {
+          "id": "de_ningun_modo",
+          "spanish": "de ningún modo",
+          "englishMeaning": "no way / absolutely not",
+          "registerNote": "formal, a firm refusal that works with anyone",
+          "exampleSentence": "¿Usarías tus ahorros para las vacaciones? De ningún modo."
+        },
+        {
+          "id": "bajo_ningun_concepto",
+          "spanish": "bajo ningún concepto",
+          "englishMeaning": "under no circumstances",
+          "registerNote": "formal, even more emphatic — used for firm rules",
+          "exampleSentence": "Bajo ningún concepto vamos a aceptar que lleguen tarde."
+        },
+        {
+          "id": "ni_pensarlo",
+          "spanish": "ni pensarlo",
+          "englishMeaning": "don't even think about it",
+          "registerNote": "neutral, a natural reaction to an unwanted suggestion",
+          "exampleSentence": "¿Quieres que trabaje todo el fin de semana? Ni pensarlo."
+        },
+        {
+          "id": "que_va",
+          "spanish": "qué va / ni en un millón de años",
+          "englishMeaning": "no way / not in a million years",
+          "registerNote": "casual, regional — qué va in Spain, ni en un millón de años in Argentina",
+          "exampleSentence": "¿Vas a la fiesta el viernes? ¡Qué va, no tengo tiempo!"
+        },
+        {
+          "id": "para_nada",
+          "spanish": "para nada",
+          "englishMeaning": "not at all",
+          "registerNote": "casual, the lightest option, great for a quick yes/no answer",
+          "exampleSentence": "¿Te gusta el pepino? Para nada."
+        }
+      ],
+      "quiz": [
+        {
+          "id": "q1",
+          "type": "multipleChoice",
+          "promptByLocale": {
+            "en": "Which one is the most emphatic — used for setting a firm rule?",
+            "uk": "Яка фраза найемоційніша — вживається для встановлення твердого правила?"
+          },
+          "relatedItemId": "bajo_ningun_concepto",
+          "options": ["ni pensarlo", "para nada", "bajo ningún concepto", "qué va"],
+          "correctOptionIndex": 2,
+          "sentenceTemplate": null,
+          "acceptedAnswers": null
+        },
+        {
+          "id": "q2",
+          "type": "fillBlank",
+          "promptByLocale": {
+            "en": "Complete the phrase.",
+            "uk": "Заверши фразу."
+          },
+          "relatedItemId": "de_ningun_modo",
+          "options": null,
+          "correctOptionIndex": null,
+          "sentenceTemplate": "¿Usarías tus ahorros para las vacaciones? De ningún ___.",
+          "acceptedAnswers": ["modo"]
+        },
+        {
+          "id": "q3",
+          "type": "multipleChoice",
+          "promptByLocale": {
+            "en": "Which phrase is heard more in Argentina specifically?",
+            "uk": "Яка фраза переважно вживається в Аргентині?"
+          },
+          "relatedItemId": "que_va",
+          "options": ["qué va", "ni en un millón de años", "para nada", "ni pensarlo"],
+          "correctOptionIndex": 1,
+          "sentenceTemplate": null,
+          "acceptedAnswers": null
+        },
+        {
+          "id": "q4",
+          "type": "fillBlank",
+          "promptByLocale": {
+            "en": "Complete the phrase.",
+            "uk": "Заверши фразу."
+          },
+          "relatedItemId": "ni_pensarlo",
+          "options": null,
+          "correctOptionIndex": null,
+          "sentenceTemplate": "¿Quieres que trabaje todo el fin de semana? Ni ___.",
+          "acceptedAnswers": ["pensarlo"]
+        },
+        {
+          "id": "q5",
+          "type": "multipleChoice",
+          "promptByLocale": {
+            "en": "Which one is the lightest, most casual — good for a quick yes/no question?",
+            "uk": "Яка фраза найлегша, найневимушеніша — годиться для короткої відповіді?"
+          },
+          "relatedItemId": "para_nada",
+          "options": ["bajo ningún concepto", "de ningún modo", "para nada", "ni pensarlo"],
+          "correctOptionIndex": 2,
+          "sentenceTemplate": null,
+          "acceptedAnswers": null
+        }
+      ],
+      "wordSwapItems": null
+    }
+  ]
+}

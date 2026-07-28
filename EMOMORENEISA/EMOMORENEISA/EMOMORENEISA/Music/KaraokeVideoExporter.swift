@@ -376,7 +376,12 @@ private nonisolated final class FrameRenderer {
         let words = text.split(separator: " ").map(String.init)
         let result = NSMutableAttributedString()
         for (i, word) in words.enumerated() {
-            if i > 0 { result.append(NSAttributedString(string: " ")) }
+            if i > 0 {
+                result.append(NSAttributedString(string: " ", attributes: [
+                    .font: font,
+                    .paragraphStyle: style
+                ]))
+            }
             let red = UIColor(red: 1.0, green: 0.22, blue: 0.34, alpha: 1)
             result.append(NSAttributedString(string: word, attributes: [
                 .font: font,

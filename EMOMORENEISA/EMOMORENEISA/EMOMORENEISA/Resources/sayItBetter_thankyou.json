@@ -1,0 +1,205 @@
+{
+  "id": "thankyou",
+  "titleByLocale": {
+    "en": "Say Instead of “Gracias”",
+    "uk": "Кажи замість «Gracias»"
+  },
+  "order": 2,
+  "chapters": [
+    {
+      "id": "phrase_finder",
+      "kind": "phraseFinder",
+      "explanation": [
+        {
+          "id": "intro",
+          "relatedItemId": null,
+          "textByLocale": {
+            "en": "Today you'll learn five real ways to say thank you in Spanish — from a quick nod of thanks to something much more heartfelt.",
+            "uk": "Сьогодні ти вивчиш п'ять реальних способів подякувати іспанською — від швидкого «дякую» до чогось набагато щирішого."
+          },
+          "highlightsByLocale": {
+            "en": ["five real ways to say thank you"],
+            "uk": ["п'ять реальних способів подякувати"]
+          }
+        },
+        {
+          "id": "structure",
+          "relatedItemId": null,
+          "textByLocale": {
+            "en": "We'll go through gracias, muchas gracias, mil gracias, te lo agradezco, and gracias de corazón. Each one turns up the warmth a little more than the last.",
+            "uk": "Пройдемося по: gracias, muchas gracias, mil gracias, te lo agradezco та gracias de corazón. Кожна наступна фраза трохи тепліша за попередню."
+          },
+          "highlightsByLocale": {
+            "en": ["gracias", "muchas gracias", "mil gracias", "te lo agradezco", "gracias de corazón"],
+            "uk": ["gracias", "muchas gracias", "mil gracias", "te lo agradezco", "gracias de corazón"]
+          }
+        },
+        {
+          "id": "explain_gracias",
+          "relatedItemId": "gracias",
+          "textByLocale": {
+            "en": "Let's start with gracias — the default, works-everywhere thank you. Say it to a waiter, a stranger, or a close friend and it always lands right. \"Gracias por tu ayuda.\"",
+            "uk": "Почнімо з gracias — універсальне «дякую», яке підходить будь-де. Скажи офіціанту, незнайомцю чи близькому другу — воно завжди звучить доречно. «Gracias por tu ayuda.»"
+          },
+          "highlightsByLocale": {
+            "en": ["gracias"],
+            "uk": ["gracias"]
+          }
+        },
+        {
+          "id": "explain_muchas_gracias",
+          "relatedItemId": "muchas_gracias",
+          "textByLocale": {
+            "en": "Next, muchas gracias — literally \"many thanks.\" It's the natural next step up when a plain gracias feels a little too small for what someone did.",
+            "uk": "Далі — muchas gracias, буквально «багато подяк». Це природний крок вище, коли просте gracias здається замалим для того, що людина зробила."
+          },
+          "highlightsByLocale": {
+            "en": ["muchas gracias"],
+            "uk": ["muchas gracias"]
+          }
+        },
+        {
+          "id": "explain_mil_gracias",
+          "relatedItemId": "mil_gracias",
+          "textByLocale": {
+            "en": "Now mil gracias — \"a thousand thanks.\" It's warmer and more animated than muchas gracias, the kind you'd use when you're genuinely thrilled.",
+            "uk": "Тепер mil gracias — «тисяча подяк». Тепліше й емоційніше за muchas gracias — так кажуть, коли справді щиро зраділи."
+          },
+          "highlightsByLocale": {
+            "en": ["mil gracias"],
+            "uk": ["mil gracias"]
+          }
+        },
+        {
+          "id": "explain_te_lo_agradezco",
+          "relatedItemId": "te_lo_agradezco",
+          "textByLocale": {
+            "en": "Te lo agradezco means \"I appreciate it\" — more sincere and a bit more formal, often used for something that took real effort on the other person's part.",
+            "uk": "Te lo agradezco означає «я це ціную» — щиріше й трохи офіційніше, часто вживається, коли людина доклала справжніх зусиль."
+          },
+          "highlightsByLocale": {
+            "en": ["Te lo agradezco"],
+            "uk": ["Te lo agradezco"]
+          }
+        },
+        {
+          "id": "explain_gracias_de_corazon",
+          "relatedItemId": "gracias_de_corazon",
+          "textByLocale": {
+            "en": "And finally, gracias de corazón — \"thanks from the heart.\" It's the most heartfelt option here, saved for the moments that really move you.",
+            "uk": "І нарешті gracias de corazón — «дякую від серця». Найщиріший варіант із усіх, для тих моментів, які справді зворушують."
+          },
+          "highlightsByLocale": {
+            "en": ["gracias de corazón"],
+            "uk": ["gracias de corazón"]
+          }
+        }
+      ],
+      "items": [
+        {
+          "id": "gracias",
+          "spanish": "gracias",
+          "englishMeaning": "thanks",
+          "registerNote": "neutral, the universal default, works anywhere",
+          "exampleSentence": "Gracias por tu ayuda."
+        },
+        {
+          "id": "muchas_gracias",
+          "spanish": "muchas gracias",
+          "englishMeaning": "thank you very much",
+          "registerNote": "neutral, one clear step up from a plain gracias",
+          "exampleSentence": "Muchas gracias por venir hoy."
+        },
+        {
+          "id": "mil_gracias",
+          "spanish": "mil gracias",
+          "englishMeaning": "a thousand thanks",
+          "registerNote": "warm and animated, used when genuinely thrilled",
+          "exampleSentence": "¡Mil gracias por el regalo, me encantó!"
+        },
+        {
+          "id": "te_lo_agradezco",
+          "spanish": "te lo agradezco",
+          "englishMeaning": "I appreciate it",
+          "registerNote": "sincere, slightly formal, for real effort someone made",
+          "exampleSentence": "Te lo agradezco de verdad, no tenías que hacerlo."
+        },
+        {
+          "id": "gracias_de_corazon",
+          "spanish": "gracias de corazón",
+          "englishMeaning": "thanks from the heart",
+          "registerNote": "the most heartfelt option, save it for moments that move you",
+          "exampleSentence": "Gracias de corazón por estar siempre ahí."
+        }
+      ],
+      "quiz": [
+        {
+          "id": "q1",
+          "type": "multipleChoice",
+          "promptByLocale": {
+            "en": "Which is the plain, works-anywhere thank you?",
+            "uk": "Яка фраза — просте «дякую», що підходить будь-де?"
+          },
+          "relatedItemId": "gracias",
+          "options": ["mil gracias", "gracias", "te lo agradezco", "gracias de corazón"],
+          "correctOptionIndex": 1,
+          "sentenceTemplate": null,
+          "acceptedAnswers": null
+        },
+        {
+          "id": "q2",
+          "type": "fillBlank",
+          "promptByLocale": {
+            "en": "Complete the phrase.",
+            "uk": "Заверши фразу."
+          },
+          "relatedItemId": "muchas_gracias",
+          "options": null,
+          "correctOptionIndex": null,
+          "sentenceTemplate": "___ gracias por venir hoy.",
+          "acceptedAnswers": ["Muchas"]
+        },
+        {
+          "id": "q3",
+          "type": "multipleChoice",
+          "promptByLocale": {
+            "en": "Which one means \"a thousand thanks\" — warm and animated?",
+            "uk": "Яка фраза означає «тисяча подяк» — тепла й емоційна?"
+          },
+          "relatedItemId": "mil_gracias",
+          "options": ["gracias", "mil gracias", "muchas gracias", "te lo agradezco"],
+          "correctOptionIndex": 1,
+          "sentenceTemplate": null,
+          "acceptedAnswers": null
+        },
+        {
+          "id": "q4",
+          "type": "fillBlank",
+          "promptByLocale": {
+            "en": "Complete the phrase.",
+            "uk": "Заверши фразу."
+          },
+          "relatedItemId": "te_lo_agradezco",
+          "options": null,
+          "correctOptionIndex": null,
+          "sentenceTemplate": "Te lo ___, no tenías que hacerlo.",
+          "acceptedAnswers": ["agradezco"]
+        },
+        {
+          "id": "q5",
+          "type": "multipleChoice",
+          "promptByLocale": {
+            "en": "Which is the most heartfelt, \"thanks from the heart\"?",
+            "uk": "Яка фраза найщиріша — «дякую від серця»?"
+          },
+          "relatedItemId": "gracias_de_corazon",
+          "options": ["gracias", "mil gracias", "gracias de corazón", "te lo agradezco"],
+          "correctOptionIndex": 2,
+          "sentenceTemplate": null,
+          "acceptedAnswers": null
+        }
+      ],
+      "wordSwapItems": null
+    }
+  ]
+}

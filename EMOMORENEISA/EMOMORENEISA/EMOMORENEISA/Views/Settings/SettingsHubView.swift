@@ -5,6 +5,7 @@ import SwiftUI
 ///   Settings → Words queue         (Seagull's SRS scheduling & capacity)
 ///            → Verbs & times        (verb-conjugation game)
 ///            → User settings        (language, pronoun, voice replies)
+///            → Level                (stage, immersion, CEFR skills)
 ///
 /// Presented as a full-screen cover from `BurgerMenuOverlay`; the "Done" button
 /// closes the whole cover, while the NavigationStack handles push/pop between
@@ -41,6 +42,14 @@ struct SettingsHubView: View {
                             row(title: L("User settings"),
                                 subtitle: L("Language, pronoun & voice replies"),
                                 systemImage: "person.crop.circle.badge.checkmark")
+                        }
+
+                        NavigationLink {
+                            LevelSettingsView()
+                        } label: {
+                            row(title: L("Level"),
+                                subtitle: L("Stage, immersion & CEFR skills"),
+                                systemImage: "chart.bar.fill")
                         }
 
                         Spacer(minLength: 0)

@@ -10,6 +10,12 @@ struct SessionListView: View {
     @State private var showProfile = false
     @State private var navigateToNewSession: LocalChatSession? = nil
     @State private var wallet = WalletManager.shared
+    @State private var activeFilter: SessionMode? = nil
+
+    private var filteredSessions: [LocalChatSession] {
+        guard let activeFilter else { return sessions }
+        return sessions.filter { $0.modeEnum == activeFilter }
+    }
 
     var body: some View {
         NavigationStack {
@@ -19,7 +25,10 @@ struct SessionListView: View {
                 if sessions.isEmpty {
                     emptyState
                 } else {
-                    sessionList
+                    VStack(spacing: 0) {
+                        filterChipRow
+                        sessionList
+                    }
                 }
             }
             .navigationTitle(L("Chat Tutor"))
@@ -114,10 +123,50 @@ struct SessionListView: View {
         .buttonStyle(.plain)
     }
 
+    private var filterChipRow: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 10) {
+                filterChip(label: L("All"), assetName: nil, isActive: activeFilter == nil) {
+                    activeFilter = nil
+                }
+                ForEach(SessionMode.allCases) { mode in
+                    filterChip(label: L(mode.displayLabel), assetName: mode.homeMenuAssetName, isActive: activeFilter == mode) {
+                        activeFilter = (activeFilter == mode) ? nil : mode
+                    }
+                }
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 10)
+        }
+    }
+
+    @ViewBuilder
+    private func filterChip(label: String, assetName: String?, isActive: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 6) {
+                if let assetName {
+                    Image(assetName)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 20, height: 20)
+                }
+                Text(label)
+                    .font(.system(size: 14, weight: .semibold, design: .rounded))
+            }
+            .foregroundColor(isActive ? .black : AppColors.textSecondary)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 8)
+            .background(isActive ? Color.yellow : AppColors.cardBackground)
+            .overlay(Capsule().stroke(isActive ? Color.clear : AppColors.cardBorder, lineWidth: 1))
+            .clipShape(Capsule())
+        }
+        .buttonStyle(.plain)
+    }
+
     private var sessionList: some View {
         ScrollView {
             LazyVStack(spacing: 12) {
-                ForEach(sessions) { session in
+                ForEach(filteredSessions) { session in
                     NavigationLink(value: session) {
                         SessionRowView(session: session)
                     }
@@ -203,9 +252,10 @@ struct SessionRowView: View {
                 RoundedRectangle(cornerRadius: 14)
                     .fill(modeColor.opacity(0.18))
                     .frame(width: 54, height: 54)
-                Image(systemName: session.modeEnum.icon)
-                    .font(.system(size: 26, design: .rounded))
-                    .foregroundColor(modeColor)
+                Image(session.modeEnum.homeMenuAssetName)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 36, height: 36)
             }
 
             VStack(alignment: .leading, spacing: 4) {
@@ -236,6 +286,8 @@ struct SessionRowView: View {
         case .topic:    return .yellow
         case .visual:   return .cyan
         case .roleplay: return .purple
+        case .lesson:   return .pink
+        case .freeForum: return .mint
         }
     }
 

@@ -1,11 +1,11 @@
-New: Roleplay — a live podcast with Professor Madrid
+New: Personalized learning levels
 
-Pick a guest (a historical figure, a mythical character, anyone with personality) and a setting, and step into a three-way Spanish conversation. Madrid hosts, your guest plays their part, and you join right in — the conversation flows naturally, so who speaks next isn't always the same. Each episode gets its own illustrated scene and a distinct voice for your guest.
+Professor Madrid now truly adapts to how much Spanish you know. Brand-new learners start mostly in their own language, with just a word or two of Spanish introduced at a time — no more being thrown into full Spanish sentences on day one. As you practice, the app gradually brings in more Spanish, at your pace.
 
-New: Friends & song sharing
+New: Level settings
 
-Invite a friend by email, and once you're connected, share any song you've created together.
+A new Level tab (Settings → Level) lets you see your current stage, fine-tune how much Spanish vs. your own language is used, turn on translation helpers, and get a friendly nudge on Home when you're ready to level up.
 
-Also new: Remember with Music — turn your vocabulary into a song. Pick a genre and some words from your memory queue, and Professor Madrid writes and sings a short original Spanish song built around them, played back karaoke-style with synced lyrics and illustrated pictures.
+Sharper, more focused teaching moments in Speaking, Street View, and Roleplay conversations — each message now clearly teaches one word or phrase at a time for newer learners, instead of rushing past it.
 
-We also reorganized the home menu for clearer, more intuitive navigation between Speaking, Memory, and Grammar.
+Various polish and bug fixes.

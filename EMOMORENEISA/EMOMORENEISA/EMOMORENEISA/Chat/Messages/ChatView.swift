@@ -25,6 +25,8 @@ struct ChatView: View {
     @State private var isVoiceSending = false
     @State private var suggestedReplies: [String] = []
     @State private var showSuggestionsSheet = false
+    @State private var lessonState: LessonSessionState? = nil
+    @State private var practiceSession: PracticeSession? = nil
     @AppStorage("autoVoiceEnabled") private var autoVoiceEnabled: Bool = true
 
     private let openAI = ChatOpenAIService()
@@ -33,6 +35,27 @@ struct ChatView: View {
         session.messages
             .filter { $0.threadParentId == nil }
             .sorted { $0.createdAt < $1.createdAt }
+    }
+
+    // Real short name for the guest's chat-bubble label — same source the
+    // "pass the word" buttons and the turn classifier use, so what's shown on
+    // screen matches what the student can actually address by name.
+    private var roleplayGuestDisplayName: String {
+        shortGuestName(L(session.roleplayObjectLabel ?? ""))
+    }
+
+    /// "Edit Goal" only makes sense where `session.sessionGoal`/`topic`
+    /// actually drives the assistant's behavior (Topic/Visual/Free Forum).
+    /// Roleplay's target is the object/environment picked at session
+    /// creation, not this field — and Roleplay already lets a student steer
+    /// the conversation just by saying so in chat, since the character reads
+    /// the full conversation and responds naturally rather than being locked
+    /// to a fixed subject. Say It Better is the same story: its content is a
+    /// fixed, scripted `lessonId` (chapters/quiz authored ahead of time), not
+    /// anything `session.sessionGoal` drives.
+    private var goalEditorMenuItems: [BurgerMenuItem] {
+        guard session.modeEnum != .roleplay, session.modeEnum != .lesson else { return [] }
+        return [BurgerMenuItem(label: "Edit Goal", systemImage: "scope") { showGoalEditor = true }]
     }
 
     private var canSend: Bool {
@@ -83,7 +106,11 @@ struct ChatView: View {
                 if !pendingImages.isEmpty {
                     imageStrip
                 }
-                if !suggestedReplies.isEmpty && !isGenerating {
+                if session.modeEnum == .lesson, let dock = lessonState, !dock.isCompleted,
+                   dock.currentPhase == .beforePracticeCheckpoint || dock.currentPhase == .afterPracticeCheckpoint
+                    || dock.currentPhase == .practice {
+                    nextStepsDock(for: dock)
+                } else if (!suggestedReplies.isEmpty || session.modeEnum == .roleplay) && !isGenerating {
                     suggestionsButton
                 }
                 inputBar
@@ -111,10 +138,11 @@ struct ChatView: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
-        .withBurgerMenu(extraItems: [
-            BurgerMenuItem(label: "Edit Goal", systemImage: "scope") { showGoalEditor = true }
-        ])
-        .task { await openingMessage() }
+        .withBurgerMenu(extraItems: goalEditorMenuItems)
+        .task {
+            setUpLessonStateIfNeeded()
+            await openingMessage()
+        }
         .sheet(isPresented: $showThread) {
             if let parent = threadParent {
                 ThreadSheetView(session: session, parentMessage: parent)
@@ -158,6 +186,30 @@ struct ChatView: View {
                 updateSessionGoal(newGoal)
             }
         }
+        .fullScreenCover(item: $practiceSession) { ps in
+            PracticeCarouselView(
+                session: ps,
+                onFinish: { result in
+                    practiceSession = nil
+                    lessonState?.recordPracticeResult(result)
+                    Task { await generateLessonReply(userText: nil) }
+                },
+                onCancel: {
+                    practiceSession = nil
+                    lessonState?.cancelPractice()
+                },
+                onProgress: { index, answers in
+                    lessonState?.recordPracticeProgress(index: index, answers: answers)
+                }
+            )
+        }
+        .onChange(of: lessonState?.currentPhase) { _, phase in
+            // Fires when a later chapter's explain beat starts (not reachable
+            // with v1's single-chapter content, but keeps the multi-chapter
+            // path correct for when Word Swap topics add a second chapter).
+            guard phase == .explain, (lessonState?.currentChapterIndex ?? 0) > 0 else { return }
+            Task { await beginOrResumeLesson() }
+        }
     }
 
     // MARK: - Message List
@@ -193,7 +245,10 @@ struct ChatView: View {
                                         userMessage: userMsg
                                     )
                                 }
-                            }
+                            },
+                            highlightTerms: lessonState?.highlights(forMessageId: message.id) ?? [],
+                            practiceSummary: lessonState?.practiceSummary(forMessageId: message.id),
+                            guestDisplayName: roleplayGuestDisplayName
                         )
                         .id(message.id)
                     }
@@ -207,7 +262,7 @@ struct ChatView: View {
             }
             .scrollBounceBehavior(.basedOnSize)
             .onAppear {
-                proxy.scrollTo("bottom", anchor: .bottom)
+                scrollToFocusPoint(proxy)
             }
             .onChange(of: rootMessages.count) { _, _ in
                 withAnimation { proxy.scrollTo("bottom") }
@@ -217,9 +272,33 @@ struct ChatView: View {
             }
             .onChange(of: scenePhase) { _, newPhase in
                 if newPhase == .active {
-                    proxy.scrollTo("bottom", anchor: .bottom)
+                    scrollToFocusPoint(proxy)
                 }
             }
+            .onChange(of: TTSService.shared.playingMessageId) { _, newValue in
+                guard let newValue else { return }
+                session.lastPlayedMessageId = newValue
+                try? modelContext.save()
+            }
+        }
+    }
+
+    /// Picks up where the learner actually left off instead of always
+    /// jumping to the newest message:
+    /// - Brand-new session (nothing played yet) → the first message.
+    /// - Returning mid-lesson → the last message that was played (or is
+    ///   currently playing), so what's on screen matches what's audible.
+    /// - Lesson fully played through → that "last played" message is by
+    ///   definition the last message, so this naturally lands at the bottom.
+    private func scrollToFocusPoint(_ proxy: ScrollViewProxy) {
+        if let lastPlayedId = session.lastPlayedMessageId,
+           rootMessages.contains(where: { $0.id == lastPlayedId }) {
+            let isLastMessage = rootMessages.last?.id == lastPlayedId
+            proxy.scrollTo(lastPlayedId, anchor: isLastMessage ? .bottom : .top)
+        } else if let firstId = rootMessages.first?.id {
+            proxy.scrollTo(firstId, anchor: .top)
+        } else {
+            proxy.scrollTo("bottom", anchor: .bottom)
         }
     }
 
@@ -288,8 +367,9 @@ struct ChatView: View {
                             showSuggestionsSheet = false
                         } label: {
                             Text(suggestion)
-                                .font(.system(size: 18, weight: .medium, design: .rounded))
+                                .font(.system(size: 20, weight: .regular, design: .rounded))
                                 .foregroundColor(AppColors.textPrimary)
+                                .lineSpacing(5)
                                 .multilineTextAlignment(.leading)
                                 .frame(maxWidth: .infinity, alignment: .leading)
                                 .padding(16)
@@ -301,6 +381,17 @@ struct ChatView: View {
                                 .clipShape(RoundedRectangle(cornerRadius: 16))
                         }
                         .buttonStyle(.plain)
+                    }
+
+                    if session.modeEnum == .roleplay {
+                        passWordButton(
+                            label: "🎙️ \(L("Pass the word to")) Madrid",
+                            speaker: "madrid"
+                        )
+                        passWordButton(
+                            label: "🎙️ \(L("Pass the word to")) \(roleplayGuestDisplayName)",
+                            speaker: "object"
+                        )
                     }
                 }
                 .padding(20)
@@ -317,6 +408,59 @@ struct ChatView: View {
             }
         }
         .presentationDetents([.medium])
+    }
+
+    private func passWordButton(label: String, speaker: String) -> some View {
+        Button {
+            passWordTo(speaker)
+        } label: {
+            Text(label)
+                .font(.system(size: 16, weight: .semibold, design: .rounded))
+                .foregroundColor(.black)
+                .multilineTextAlignment(.leading)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(16)
+                .background(Color.yellow)
+                .clipShape(RoundedRectangle(cornerRadius: 16))
+        }
+        .buttonStyle(.plain)
+    }
+
+    // Extracts a short spoken name for the "pass the word" buttons — most
+    // curated guests are "Name, description" (e.g. "Cleopatra, the last
+    // pharaoh of Egypt"), so the part before the comma reads naturally. The
+    // grounded/everyday archetypes (e.g. "a market thief looking for one more
+    // score") have no proper name, so those fall back to a generic label
+    // rather than an awkward "a a market thief...".
+    private func shortGuestName(_ label: String) -> String {
+        if let commaIndex = label.firstIndex(of: ",") {
+            return String(label[label.startIndex..<commaIndex]).trimmingCharacters(in: .whitespaces)
+        }
+        let lower = label.lowercased()
+        if lower.hasPrefix("a ") || lower.hasPrefix("an ") || lower.hasPrefix("the ") {
+            return L("the guest")
+        }
+        return label
+    }
+
+    // Explicit hand-off, chosen by the student rather than inferred by the
+    // turn classifier — so the next speaker is forced directly instead of
+    // asking the classifier to guess who a canned line was addressed to.
+    private func passWordTo(_ speaker: String) {
+        let guestName = roleplayGuestDisplayName
+        let text = speaker == "madrid" ? "Madrid, cuéntanos tú." : "\(guestName), ¿tú qué dices?"
+
+        showSuggestionsSheet = false
+        suggestedReplies = []
+
+        let msg = LocalChatMessage(
+            sessionId: session.id,
+            sender: .user,
+            type: .text,
+            textContent: text
+        )
+        addMessage(msg)
+        Task { await generateRoleplayReply(userText: text, forcedFirstSpeaker: speaker) }
     }
 
     // MARK: - Pending Images Strip
@@ -520,7 +664,32 @@ struct ChatView: View {
             await generateAssistantReply(userText: nil, imageData: [])
         case .roleplay:
             await generateRoleplayReply(userText: nil)
+        case .lesson:
+            await beginOrResumeLesson()
+        case .freeForum:
+            if let input = FreeFormInputStore.shared.consume(for: session.id) {
+                await openingMessageWithFreeFormInput(text: input.text, images: input.images)
+            }
         }
+    }
+
+    private func openingMessageWithFreeFormInput(text: String?, images: [UIImage]) async {
+        let imageData = images.compactMap { $0.jpegData(compressionQuality: 0.72) }
+        let imagePaths = saveImages(images, sessionId: session.id)
+        let trimmedText = text?.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard (trimmedText?.isEmpty == false) || !imageData.isEmpty else { return }
+
+        let type: MessageType = imageData.isEmpty ? .text : (trimmedText?.isEmpty == false ? .mixed : .image)
+        let userMsg = LocalChatMessage(
+            sessionId: session.id,
+            sender: .user,
+            type: type,
+            textContent: trimmedText?.isEmpty == false ? trimmedText : nil,
+            imageLocalPaths: imagePaths
+        )
+        addMessage(userMsg)
+
+        await generateAssistantReply(userText: trimmedText?.isEmpty == false ? trimmedText : nil, imageData: imageData)
     }
 
     private func openingMessageWithPhotos(_ images: [UIImage]) async {
@@ -623,6 +792,14 @@ struct ChatView: View {
             await generateRoleplayReply(userText: userText)
             return
         }
+        guard session.modeEnum != .lesson else {
+            await generateLessonReply(userText: userText)
+            return
+        }
+        guard session.modeEnum != .freeForum else {
+            await generateFreeFormReply(userText: userText, imageData: imageData)
+            return
+        }
         isGenerating = true
         errorMessage = nil
 
@@ -640,11 +817,15 @@ struct ChatView: View {
             )
         case .roleplay:
             systemPrompt = "" // unreachable — handled by the guard above
+        case .lesson:
+            systemPrompt = "" // unreachable — handled by the guard above
+        case .freeForum:
+            systemPrompt = "" // unreachable — handled by the guard above
         }
 
         let history = Array(rootMessages.filter { $0.textContent != nil }.suffix(20))
         let topic = session.sessionGoal ?? session.topic ?? "español general"
-        let openingInstruction = "Empieza ya. Sin saludo. Primera frase directamente en español practicando: \(topic)."
+        let openingInstruction = PromptBuilder.openingSeedInstruction(profile: authState.profile, topic: topic)
         let userInput = userText ?? (imageData.isEmpty ? openingInstruction : "")
 
         do {
@@ -653,7 +834,7 @@ struct ChatView: View {
                 history: history,
                 userText: userInput,
                 imageData: imageData,
-                maxTokens: authState.profile?.levelEnum.maxTokens ?? 300
+                maxTokens: authState.profile?.effectiveStage.maxTokens ?? 300
             )
 
             let assistantMsg = LocalChatMessage(
@@ -702,84 +883,480 @@ struct ChatView: View {
         isGenerating = false
     }
 
+    // MARK: - Say It Better (Lesson) — dock
+
+    /// Builds `lessonState` once per session — regardless of whether this is
+    /// a brand-new lesson session (no messages yet) or a resumed one — so the
+    /// dock reflects whatever phase was persisted even when `openingMessage()`
+    /// skips re-running the explain beat.
+    private func setUpLessonStateIfNeeded() {
+        guard session.modeEnum == .lesson, lessonState == nil,
+              let lessonId = session.lessonId,
+              let lesson = SayItBetterContentBank.shared.lesson(id: lessonId) else { return }
+
+        let progress = existingLessonProgress(lessonId: lessonId)
+            ?? {
+                let created = LessonProgress(lessonId: lessonId, sessionId: session.id)
+                modelContext.insert(created)
+                try? modelContext.save()
+                return created
+            }()
+
+        lessonState = LessonSessionState(lesson: lesson, progress: progress, modelContext: modelContext)
+        // Covers the resumed-session case, where beginOrResumeLesson() won't
+        // re-run (rootMessages isn't empty) but the save-to-memory affordance
+        // still needs its message→phrase map rebuilt.
+        lessonState?.linkExplanationMessages(rootMessages)
+
+        // Fixes the gap beginOrResumeLesson()'s doc comment used to flag:
+        // openingMessage() only (re)inserts a chapter's explanation and calls
+        // markExplainDone() when rootMessages is empty, i.e. only on a
+        // session's very first load. If that first pass is interrupted
+        // (backgrounded, force-quit, backed out mid-autoplay) the messages
+        // are already persisted, so on reopen rootMessages is non-empty,
+        // beginOrResumeLesson() never re-runs, and the phase was stuck at
+        // .explain forever — the Next Steps dock never appears and the
+        // lesson becomes permanently stuck. Non-empty rootMessages at this
+        // point can only mean the explanation was already (at least
+        // partially) shown, so it's always safe to fast-forward the phase
+        // rather than leave the learner with no way to proceed.
+        if lessonState?.currentPhase == .explain, !rootMessages.isEmpty {
+            lessonState?.markExplainDone()
+        }
+    }
+
+    private func existingLessonProgress(lessonId: String) -> LessonProgress? {
+        let descriptor = FetchDescriptor<LessonProgress>(
+            predicate: #Predicate { $0.lessonId == lessonId }
+        )
+        return try? modelContext.fetch(descriptor).first
+    }
+
+    @ViewBuilder
+    private func nextStepsDock(for state: LessonSessionState) -> some View {
+        if state.currentPhase == .beforePracticeCheckpoint {
+            NextStepsDockView(
+                primaryLabel: L("Start practice"),
+                secondaryLabel: L("Skip to lesson 2"),
+                onPrimary: { practiceSession = state.buildPracticeSession() },
+                onSecondary: { state.skipToNextChapter() }
+            )
+        } else if state.currentPhase == .practice {
+            // Reached only when a prior attempt was interrupted (app
+            // backgrounded/force-quit mid-quiz) — `recordPracticeResult()`
+            // is the only other place that moves the phase off `.practice`,
+            // so landing here always means there's a resumable position.
+            NextStepsDockView(
+                primaryLabel: L("Continue the quiz"),
+                secondaryLabel: L("Restart the quiz"),
+                onPrimary: { practiceSession = state.resumePracticeSession() },
+                onSecondary: { practiceSession = state.buildPracticeSession() }
+            )
+        } else if state.practiceWasWeak {
+            // Weak result (fewer than half correct): "Retake the quiz" reads
+            // as the recommended action instead of "Next chapter" — same two
+            // actions, swapped emphasis, not a third button.
+            NextStepsDockView(
+                primaryLabel: L("Retake the quiz"),
+                secondaryLabel: L("Next chapter anyway"),
+                onPrimary: { practiceSession = state.buildPracticeSession() },
+                onSecondary: { state.skipToNextChapter() },
+                tertiaryLabel: L("Listen to this chapter again"),
+                onTertiary: { replayChapterExplanation(state) }
+            )
+        } else {
+            NextStepsDockView(
+                primaryLabel: L("Next chapter"),
+                secondaryLabel: L("Retake the quiz"),
+                onPrimary: { state.skipToNextChapter() },
+                onSecondary: { practiceSession = state.buildPracticeSession() },
+                tertiaryLabel: L("Listen to this chapter again"),
+                onTertiary: { replayChapterExplanation(state) }
+            )
+        }
+    }
+
+    /// Replays the current chapter's already-inserted explanation bubbles
+    /// from the start — no new messages, just audio, reusing the same
+    /// pre-warmed-cache guarantee as the original autoplay (see
+    /// beginOrResumeLesson). A natural "review before retaking" step,
+    /// distinct from and lower-emphasis than the two real decisions above.
+    private func replayChapterExplanation(_ state: LessonSessionState) {
+        guard let firstId = state.firstExplanationMessageId else { return }
+        TTSService.shared.speakQueue(
+            startingFrom: firstId,
+            in: state.explanationMessages,
+            context: "sentence",
+            allowOpenAIFallback: false
+        )
+    }
+
+    // MARK: - Say It Better (Lesson)
+    // beginOrResumeLesson() inserts chapter 1's explanation chunks as plain
+    // text bubbles and autoplays them back-to-back via the same
+    // TTSService.speakTurn queue Roleplay uses for its generated turns —
+    // reused completely unmodified, since it's fully decoupled from how the
+    // underlying messages were created. This still hits live TTS (fine for
+    // dev iteration; must not ship this way — Phase 8 pre-warms the voice
+    // cache so it's always a cache hit before any real user sees this).
+    // Phase 4+ adds the Next Steps dock/practice-phase resume logic on top of
+    // this. generateLessonReply will grow into the grounded before/after-
+    // practice free-form Q&A path (Phase 4/6), using
+    // PromptBuilder.lessonModePrompt instead of the topic/roleplay system
+    // prompts.
+    // `openingMessage()` only calls this when `rootMessages` is empty, so a
+    // user who backs out mid-autoplay (or gets backgrounded/killed) and
+    // returns will see the partial explanation with the phase still stuck at
+    // `.explain` — nothing here re-inserts or advances it. That's fine
+    // because `setUpLessonStateIfNeeded()` runs on every load, resumed or
+    // not, and fast-forwards a stuck `.explain` phase to
+    // `.beforePracticeCheckpoint` whenever messages already exist, so the
+    // dock still shows up on the next load even if this exact autoplay pass
+    // never finishes.
+    private func beginOrResumeLesson() async {
+        guard let state = lessonState, let chapter = state.currentChapter else {
+            assertionFailure("No Say It Better lesson content found for session.lessonId")
+            return
+        }
+
+        let language = LocalizationManager.shared.language
+        var turnItems: [(id: UUID, text: String, voice: (languageCode: String, voiceName: String)?)] = []
+        for chunk in chapter.explanation {
+            let text = chunk.text(for: language)
+            let msg = LocalChatMessage(
+                sessionId: session.id,
+                sender: .assistant,
+                type: .text,
+                textContent: text
+            )
+            addMessage(msg)
+            turnItems.append((id: msg.id, text: text, voice: nil))
+        }
+
+        if autoVoiceEnabled, !turnItems.isEmpty {
+            // "sentence" — not a custom "lesson" tag — deliberately: the server's
+            // context allowlist doesn't include "lesson" (an unrecognized value
+            // silently coerces to "default" server-side), and "sentence" already
+            // gets exactly the right treatment for narrated multi-sentence
+            // content (sentence-boundary pauses). Reusing it avoids a server
+            // change and keeps the pre-warm script's cache keys trivially
+            // correct — see render-say-it-better-assets.js.
+            //
+            // allowOpenAIFallback: false — this content is pre-generated and
+            // pre-warmed, so a real request should always hit the shared
+            // cache before this flag even matters. If it ever doesn't (a
+            // pre-warm gap, an evicted cache entry), a different voice
+            // appearing mid-explanation is worse than that one clip staying
+            // silent — the server logs this case loudly since it should be
+            // rare enough to always be worth investigating, not a normal
+            // runtime condition to paper over.
+            TTSService.shared.speakTurn(turnItems, context: "sentence", allowOpenAIFallback: false)
+        }
+
+        state.linkExplanationMessages(rootMessages)
+        state.markExplainDone()
+    }
+
+    /// The manual "add to memory queue" affordance — user-initiated, not an
+    /// automatic side effect. Reuses the same server-side "loro" pipeline
+    /// Parrot already uses (a throwaway `ParrotPhrase`, never persisted,
+    /// purely to drive `ParrotService.generate`) rather than duplicating its
+    /// audio-generation logic, so quality and the 7-segment shape match
+    /// exactly. Checks dedup before generating anything, so re-tapping an
+    /// already-saved phrase costs nothing.
+    // Handles both cases with one path: a real typed question during a
+    // checkpoint (userText != nil, routed here via generateAssistantReply's
+    // guard), and the automatic after-practice feedback message (userText ==
+    // nil, triggered right after the practice carousel closes — see the
+    // practiceSession fullScreenCover closure). Both are "Madrid answers
+    // grounded in this lesson," just with a different trigger; no turn
+    // classifier needed since the Next Steps dock's buttons are what
+    // disambiguate act-vs-ask, not this call.
+    //
+    // This is ordinary live-generated chat — unlike the pre-written
+    // explanation script (which Phase 8 guarantees never touches OpenAI and
+    // is never synthesized live), a feedback/Q&A reply is inherently dynamic
+    // per user, so it can't be pre-generated ahead of time. It uses the same
+    // TTSService.speak(...) path and the same default voice fallback
+    // behavior every other live chat reply in the app already has — that's
+    // an existing, app-wide behavior this feature doesn't change, not a new
+    // gap specific to Say It Better.
+    private func generateLessonReply(userText: String?) async {
+        guard let state = lessonState, let chapter = state.currentChapter else { return }
+        isGenerating = true
+        errorMessage = nil
+
+        let practiceResults: [(question: String, wasCorrect: Bool)]? = state.lastPracticeResult.map { result in
+            result.answers.map { answer in
+                let prompt = chapter.quiz.first(where: { $0.id == answer.questionId })?.prompt(for: LocalizationManager.shared.language) ?? answer.questionId
+                return (question: prompt, wasCorrect: answer.wasCorrect)
+            }
+        }
+
+        let systemPrompt = PromptBuilder.lessonModePrompt(
+            profile: authState.profile,
+            lessonTitle: state.lesson.title(for: LocalizationManager.shared.language),
+            currentChapterSummary: chapterSummary(for: chapter),
+            practiceResults: practiceResults
+        )
+
+        let history = Array(rootMessages.filter { $0.textContent != nil }.suffix(20))
+        let input = userText ?? "Dame tu feedback sobre cómo me fue en la práctica que acabo de terminar."
+
+        do {
+            let reply = try await openAI.sendMessage(
+                systemPrompt: systemPrompt,
+                history: history,
+                userText: input,
+                imageData: [],
+                maxTokens: authState.profile?.effectiveStage.maxTokens ?? 300
+            )
+            let assistantMsg = LocalChatMessage(
+                sessionId: session.id,
+                sender: .assistant,
+                type: .text,
+                textContent: reply
+            )
+            addMessage(assistantMsg)
+            // userText == nil is exactly the auto-triggered post-practice
+            // call (see the practiceSession fullScreenCover closure) — a
+            // genuine typed question never reaches here with nil userText.
+            if userText == nil {
+                state.markFeedbackMessage(assistantMsg.id)
+            }
+            if autoVoiceEnabled && !TTSService.shared.isQueueActive {
+                TTSService.shared.speak(text: reply, messageId: assistantMsg.id, context: "sentence")
+            }
+
+            ProfileAnalystService.shared.analyzeExchange(
+                userMessage: rootMessages.last(where: { $0.isUser }),
+                tutorMessage: assistantMsg,
+                session: session,
+                authState: authState
+            )
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+        isGenerating = false
+    }
+
+    // MARK: - Ask in a Free Forum
+
+    // Every message (opening or follow-up) is classified fresh — see
+    // FreeFormScenarioClassifierService — since one session can drift
+    // between scenarios (homework, then a plain question, then a
+    // correctness check). Text-only mode throughout: no TTSService call
+    // anywhere in this function, on purpose — see SessionMode.isTextOnly.
+    private func generateFreeFormReply(userText: String?, imageData: [Data]) async {
+        isGenerating = true
+        errorMessage = nil
+
+        let classifierHistory = Array(rootMessages.filter { $0.textContent != nil }.suffix(4))
+        let scenario = await FreeFormScenarioClassifierService.shared.classify(
+            userMessage: userText ?? "",
+            hasImages: !imageData.isEmpty,
+            recentHistory: classifierHistory
+        )
+
+        let firstSystemPrompt: String
+        switch scenario {
+        case .homeworkHelp: firstSystemPrompt = PromptBuilder.freeFormHomeworkHelpPrompt(profile: authState.profile)
+        case .isItCorrect:  firstSystemPrompt = PromptBuilder.freeFormCorrectionPrompt(profile: authState.profile)
+        case .explainMe:    firstSystemPrompt = PromptBuilder.freeFormExplainMePrompt(profile: authState.profile)
+        }
+
+        let history = Array(rootMessages.filter { $0.textContent != nil }.suffix(20))
+        let input = userText ?? ""
+
+        do {
+            let firstReply = try await openAI.sendMessage(
+                systemPrompt: firstSystemPrompt,
+                history: history,
+                userText: input,
+                imageData: imageData,
+                maxTokens: authState.profile?.effectiveStage.maxTokens ?? 300
+            )
+            let firstMsg = LocalChatMessage(
+                sessionId: session.id,
+                sender: .assistant,
+                type: .text,
+                textContent: firstReply
+            )
+            addMessage(firstMsg)
+
+            var lastAssistantMsg = firstMsg
+            if scenario == .isItCorrect {
+                let explanationHistory = Array(rootMessages.filter { $0.textContent != nil }.suffix(20))
+                let explanationInput = "Explica en detalle por qué esa versión es más correcta o más natural que lo que escribí originalmente."
+                let explanation = try await openAI.sendMessage(
+                    systemPrompt: PromptBuilder.freeFormExplanationPrompt(profile: authState.profile),
+                    history: explanationHistory,
+                    userText: explanationInput,
+                    imageData: [],
+                    maxTokens: authState.profile?.effectiveStage.maxTokens ?? 300
+                )
+                let explanationMsg = LocalChatMessage(
+                    sessionId: session.id,
+                    sender: .assistant,
+                    type: .text,
+                    textContent: explanation
+                )
+                addMessage(explanationMsg)
+                lastAssistantMsg = explanationMsg
+            }
+
+            ProfileAnalystService.shared.analyzeExchange(
+                userMessage: rootMessages.last(where: { $0.isUser }),
+                tutorMessage: lastAssistantMsg,
+                session: session,
+                authState: authState
+            )
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+        isGenerating = false
+    }
+
+    private func chapterSummary(for chapter: Chapter) -> String {
+        chapter.items.map { item in
+            "\"\(item.spanish)\" = \(item.englishMeaning) (\(item.registerNote)). Ejemplo: \(item.exampleSentence)"
+        }.joined(separator: "\n")
+    }
+
     // MARK: - Roleplay LLM
 
-    private func generateRoleplayReply(userText: String?) async {
+    // After every user message (or the opening instruction), a cheap
+    // classifier call (RoleplayTurnClassifierService) decides who speaks
+    // first, then who speaks next after EVERY subsequent AI message — Madrid,
+    // the guest, or handing back to the student — capped at 3 AI messages in
+    // a row. This replaces the old single-call "whole multi-line round"
+    // design: there's no round boundary left for a cross-question to get
+    // stranded at, since the classifier re-evaluates after each message.
+    private static let maxAIMessagesPerRound = 3
+
+    private func generateRoleplayReply(userText: String?, forcedFirstSpeaker: String? = nil) async {
         isGenerating = true
         errorMessage = nil
 
         let objectLabel = session.roleplayObjectLabel ?? "a mysterious guest"
         let environmentLabel = session.roleplayEnvironmentLabel ?? "a cozy studio"
         let topic = session.topic ?? "everyday life"
+        let objectVoiceName = session.roleplayObjectVoice ?? RoleplayContent.voiceForObject(objectLabel)
 
-        let systemPrompt = PromptBuilder.roleplaySystemPrompt(
-            profile: authState.profile,
-            objectLabel: objectLabel,
-            environmentLabel: environmentLabel,
-            topic: topic
-        )
-
-        let history = Array(rootMessages.filter { $0.textContent != nil }.suffix(20))
         let openingInstruction = "Empieza el programa ya. Preséntate brevemente, presenta a tu invitado de hoy y deja que reaccione."
         let userInput = userText ?? openingInstruction
-        // A round can now be a variable-length sequence of up to ~4 lines
-        // (dynamic turn-taking) rather than a fixed Madrid+Object pair, so
-        // give the model some extra headroom over the normal per-turn budget.
-        let baseMaxTokens = authState.profile?.levelEnum.maxTokens ?? 300
-        let roleplayMaxTokens = Int(Double(baseMaxTokens) * 1.4)
+        // Each call now produces just one short spoken line instead of a
+        // whole multi-line round, so it needs far less headroom than before.
+        let roleplayMaxTokens = 160
 
-        let studentName = authState.profile?.displayName ?? "Student"
+        var turnItems: [(id: UUID, text: String, voice: (languageCode: String, voiceName: String)?)] = []
+        var lastAddedMessage: LocalChatMessage?
+
+        // The very first exchange of a session must establish that this is a
+        // 3-way conversation, not just Madrid. Leaving that entirely to the
+        // classifier meant it could (and did, in testing) hand straight back
+        // to the student right after Madrid's opening line, before the guest
+        // ever got a turn. So the opening is a guaranteed, hardcoded
+        // sequence — Madrid introduces, then the guest reacts — and only from
+        // the 3rd message onward (if the cap allows it) does the classifier
+        // get a say, exactly like every other round.
+        let isOpening = userText == nil
 
         do {
-            let raw = try await ProxyClient.shared.chatRoleplay(
-                systemPrompt: systemPrompt,
-                history: history,
-                userText: userInput,
-                maxTokens: roleplayMaxTokens
-            )
-            var segments = RoleplayResponseParser.parse(raw)
-
-            // The prompt tells the model never to end a round with one of its
-            // own two voices asking the OTHER a question that's left hanging
-            // (nothing can make them "continue" without a new user message —
-            // there's no such mechanism), but this isn't fully reliable in
-            // practice — confirmed by direct simulation against the real
-            // model. One silent, corrective retry before anything is ever
-            // shown to the user is cheap insurance against a visibly stuck
-            // conversation.
-            if endsWithUnresolvedCrossQuestion(segments, studentName: studentName) {
-                let retryUserInput = userInput + "\n\n(Nota: en tu respuesta anterior, uno de ustedes dos le hizo una pregunta directa al otro y la ronda terminó sin que la respondiera. Esta vez, si eso ocurre, responde la pregunta dentro de la MISMA ronda antes de [END_TURN].)"
-                if let retryRaw = try? await ProxyClient.shared.chatRoleplay(
-                    systemPrompt: systemPrompt,
-                    history: history,
-                    userText: retryUserInput,
-                    maxTokens: roleplayMaxTokens,
-                    isRetry: true
-                ) {
-                    segments = RoleplayResponseParser.parse(retryRaw)
-                }
+            var speaker: String
+            if let forcedFirstSpeaker {
+                // The student explicitly chose who speaks next (a "pass the
+                // word" tap) — no need to ask the classifier to infer that
+                // from the canned line's wording.
+                speaker = forcedFirstSpeaker
+            } else if isOpening {
+                speaker = "madrid"
+            } else {
+                let initialHistory = Array(rootMessages.filter { $0.textContent != nil }.suffix(4))
+                speaker = await RoleplayTurnClassifierService.shared.classifyNextSpeaker(
+                    recentHistory: initialHistory,
+                    objectLabel: objectLabel,
+                    allowHandToUser: false
+                )
             }
 
-            let objectVoiceName = session.roleplayObjectVoice ?? RoleplayContent.voiceForObject(objectLabel)
+            var aiTurnsThisRound = 0
+            var isFirstGeneration = true
 
-            var turnItems: [(id: UUID, text: String, voice: (languageCode: String, voiceName: String)?)] = []
-            for segment in segments {
+            while aiTurnsThisRound < Self.maxAIMessagesPerRound {
+                let systemPrompt = PromptBuilder.roleplaySinglespeakerPrompt(
+                    profile: authState.profile,
+                    objectLabel: objectLabel,
+                    environmentLabel: environmentLabel,
+                    topic: topic,
+                    speaker: speaker
+                )
+                let currentHistory = Array(rootMessages.filter { $0.textContent != nil }.suffix(20))
+                let generationInput = isFirstGeneration ? userInput : "Sigue tú — continúa el programa con tu siguiente línea, en tu papel."
+
+                let raw = try await ProxyClient.shared.chatRoleplay(
+                    systemPrompt: systemPrompt,
+                    history: currentHistory,
+                    userText: generationInput,
+                    maxTokens: roleplayMaxTokens,
+                    // Only the first generation call of the round is billed —
+                    // every continuation within the same user-triggered round
+                    // is a free follow-up, same flat charge as before.
+                    isRetry: !isFirstGeneration
+                )
+                isFirstGeneration = false
+
+                let text = stripLeakedSpeakerLabel(
+                    raw.trimmingCharacters(in: .whitespacesAndNewlines),
+                    objectLabel: objectLabel
+                )
+                guard !text.isEmpty else { break }
+
                 let msg = LocalChatMessage(
                     sessionId: session.id,
                     sender: .assistant,
                     type: .text,
-                    textContent: segment.text,
-                    speakerId: segment.speaker
+                    textContent: text,
+                    speakerId: speaker
                 )
                 addMessage(msg)
+                lastAddedMessage = msg
 
                 let voice: (languageCode: String, voiceName: String)? =
-                    segment.speaker == "object" ? (languageCode: "es-ES", voiceName: objectVoiceName) : nil
-                turnItems.append((id: msg.id, text: segment.text, voice: voice))
+                    speaker == "object" ? (languageCode: "es-ES", voiceName: objectVoiceName) : nil
+                turnItems.append((id: msg.id, text: text, voice: voice))
+
+                aiTurnsThisRound += 1
+                if aiTurnsThisRound >= Self.maxAIMessagesPerRound { break }
+
+                if isOpening && aiTurnsThisRound == 1 {
+                    // Second forced beat: the guest reacts to Madrid's intro,
+                    // no classifier involved yet.
+                    speaker = "object"
+                    continue
+                }
+
+                let nextHistory = Array(rootMessages.filter { $0.textContent != nil }.suffix(4))
+                let next = await RoleplayTurnClassifierService.shared.classifyNextSpeaker(
+                    recentHistory: nextHistory,
+                    objectLabel: objectLabel,
+                    allowHandToUser: true
+                )
+                if next == "user" { break }
+                speaker = next
             }
 
             if autoVoiceEnabled, !turnItems.isEmpty {
                 TTSService.shared.speakTurn(turnItems)
+            }
+
+            if let lastAddedMessage {
+                ProfileAnalystService.shared.analyzeExchange(
+                    userMessage: rootMessages.last(where: { $0.isUser }),
+                    tutorMessage: lastAddedMessage,
+                    session: session,
+                    authState: authState
+                )
             }
 
             refreshSuggestedReplies(objectLabel: objectLabel, topic: topic)
@@ -789,18 +1366,22 @@ struct ChatView: View {
         isGenerating = false
     }
 
-    // Heuristic, not exact: a round's last line ending in "?" without naming
-    // the student is almost always Madrid/the guest asking EACH OTHER
-    // something (in every observed case, a line actually addressed to the
-    // student names them directly, e.g. "¿Y tú, Andriy...?"). There's no
-    // mechanism for the other voice to "continue" and answer once a round
-    // ends, so a question like that left dangling would visibly stall the
-    // conversation until the student happens to bring the same thing back up.
-    private func endsWithUnresolvedCrossQuestion(_ segments: [RoleplayResponseParser.Segment], studentName: String) -> Bool {
-        guard let last = segments.last else { return false }
-        let text = last.text.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard text.hasSuffix("?") else { return false }
-        return !text.localizedCaseInsensitiveContains(studentName)
+    // Defensive cleanup: even though the single-speaker prompt says "no tags,
+    // no labels, no name prefix", the model sometimes imitates whatever
+    // speaker-tagging shape appears in the fed history (confirmed by direct
+    // simulation, across two different history-tagging formats) and prefixes
+    // its own new line with something like "[MADRID] ..." or "Madrid: ...".
+    // Strip a leaking leading label deterministically rather than chasing
+    // prompt wording further.
+    private func stripLeakedSpeakerLabel(_ text: String, objectLabel: String) -> String {
+        let escapedObject = NSRegularExpression.escapedPattern(for: objectLabel)
+        let pattern = "^\\[?(?:MADRID|OBJECT|Madrid|\(escapedObject))\\]?:?\\s+"
+        guard let regex = try? NSRegularExpression(pattern: pattern, options: [.caseInsensitive]) else {
+            return text
+        }
+        let range = NSRange(text.startIndex..., in: text)
+        let stripped = regex.stringByReplacingMatches(in: text, range: range, withTemplate: "")
+        return stripped.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     // Fire-and-forget: kicks off the 3 suggested-reply chips for the student's

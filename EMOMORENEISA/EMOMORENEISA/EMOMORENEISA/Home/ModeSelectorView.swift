@@ -15,7 +15,7 @@ struct ModeSelectorView: View {
     /// A genuinely separate screen reached from a card (as opposed to a
     /// `level` switch, which stays on this same screen).
     private enum LeafDestination: Identifiable {
-        case topicFlow, streetViewFlow, rolePlay, memoryCalendar, musicPlaceholder, explainRules, freeForum, verbTensePicker
+        case topicFlow, streetViewFlow, rolePlay, memoryCalendar, musicPlaceholder, sayItBetterFlow, freeForum, verbTensePicker, learnByBookFlow
         var id: Self { self }
     }
     @State private var activeLeaf: LeafDestination? = nil
@@ -41,6 +41,11 @@ struct ModeSelectorView: View {
     @Environment(AuthState.self) private var authState
     @Environment(\.modelContext) private var modelContext
 
+    /// Local-only "not now" for the level-up banner — no persisted
+    /// "don't ask again" flag (that's what the Level Settings toggle is
+    /// for), so it's fine for this to reappear on a future launch.
+    @State private var levelUpBannerDismissed = false
+
     private let phrases: [(es: String, meaning: String)] = [
         ("¡Soy Proffesssorrro!", "I'm the Proffessorrr!"),
         ("Vamos a ensenar me", "Let's teach… me!"),
@@ -62,12 +67,13 @@ struct ModeSelectorView: View {
     @State private var showOnboarding = false
 
     /// Reserved height for the row below the dog, sized to the level with the
-    /// most cards there (2, after the promotion below) and top-aligned. Every
-    /// level renders inside the exact same total height now, so switching
-    /// levels never re-centers the whole dog+cards block — before this, a
-    /// level with fewer cards was a shorter VStack, and the `Spacer` on both
-    /// sides recentered it, which read as everything "bumping" up or down.
-    private static let remainingCardsMaxCount = 2
+    /// most cards there (3, after adding the "Learn by the Book" top-level
+    /// card) and top-aligned. Every level renders inside the exact same total
+    /// height now, so switching levels never re-centers the whole dog+cards
+    /// block — before this, a level with fewer cards was a shorter VStack,
+    /// and the `Spacer` on both sides recentered it, which read as everything
+    /// "bumping" up or down.
+    private static let remainingCardsMaxCount = 3
     private static var remainingCardsHeight: CGFloat {
         CGFloat(remainingCardsMaxCount) * HomeLayout.cardHeight
             + CGFloat(remainingCardsMaxCount - 1) * HomeLayout.cardSpacing
@@ -132,6 +138,15 @@ struct ModeSelectorView: View {
                 startTypewriter()
             }
             .onDisappear { pauseAmbient() }
+        }
+        // Inset rather than laid inline in the GeometryReader above — that
+        // view's height math (`HomeLayout.dogHeight`, `remainingCardsHeight`)
+        // is tightly choreographed so every home-level renders at the same
+        // total height; an inset never perturbs it.
+        .safeAreaInset(edge: .top) {
+            if showLevelUpBanner {
+                levelUpBanner
+            }
         }
         // The burger menu's own destinations (My Songs, Your Chats, Profile,
         // Settings) are presented from state entirely private to that
@@ -239,20 +254,24 @@ struct ModeSelectorView: View {
             } else {
                 SignInView().environment(authState)
             }
-        case .explainRules:
-            ComingSoonView(
-                title: L("Explain Rules"),
-                message: L("browse grammar topics & lessons"),
-                systemImage: "text.book.closed.fill"
-            )
+        case .sayItBetterFlow:
+            if authState.isSignedIn {
+                SayItBetterEntryView(onSessionCreated: handleSessionCreated)
+                    .environment(authState)
+            } else {
+                SignInView().environment(authState)
+            }
         case .freeForum:
-            ComingSoonView(
-                title: L("Ask in a Free Forum"),
-                message: L("ask anything, attach a photo"),
-                systemImage: "questionmark.bubble.fill"
-            )
+            if authState.isSignedIn {
+                NewSessionView(initialStep: .freeFormInput, onSessionCreated: handleSessionCreated)
+                    .environment(authState)
+            } else {
+                SignInView().environment(authState)
+            }
         case .verbTensePicker:
             TensePickerView(onSelect: handleTenseSelected)
+        case .learnByBookFlow:
+            LearnByBookEntryView()
         }
     }
 
@@ -310,6 +329,71 @@ struct ModeSelectorView: View {
     }
 
     // MARK: - Ambient (dog phrases + background music)
+
+    // MARK: - Level-up suggestion banner
+
+    /// Which stage a level-up accept would actually reveal — usually
+    /// `learnerStage`'s `next`, but if `absoluteBeginnerOverride` is masking
+    /// a more advanced stored stage, accepting just clears the override and
+    /// reveals that stored stage instead of bumping forward from Absolute
+    /// Beginner (mirrors `ESPProfile.advanceStage()`'s own logic).
+    private var levelUpTarget: LearnerStage? {
+        guard let p = authState.profile else { return nil }
+        if p.absoluteBeginnerOverride, p.learnerStageEnum != .absoluteBeginner {
+            return p.learnerStageEnum
+        }
+        return p.effectiveStage.next
+    }
+
+    private var showLevelUpBanner: Bool {
+        guard !levelUpBannerDismissed else { return false }
+        guard let p = authState.profile, p.autoSuggestLevelUp else { return false }
+        guard let threshold = p.effectiveStage.levelUpThreshold else { return false }
+        guard levelUpTarget != nil else { return false }
+        return p.stageProgressCount >= threshold
+    }
+
+    private var levelUpBanner: some View {
+        HStack(spacing: 12) {
+            Text(L("Ready to level up to %@?", L(levelUpTarget?.displayLabel ?? "")))
+                .font(.system(size: 15, weight: .bold, design: .rounded))
+                .foregroundColor(AppColors.textPrimary)
+                .fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 8)
+            Button(action: acceptLevelUp) {
+                Text(L("Level up"))
+                    .font(.system(size: 14, weight: .bold, design: .rounded))
+                    .foregroundColor(.black)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 8)
+                    .background(Color.yellow)
+                    .clipShape(Capsule())
+            }
+            .buttonStyle(.plain)
+            Button {
+                levelUpBannerDismissed = true
+            } label: {
+                Image(systemName: "xmark")
+                    .font(.system(size: 13, weight: .bold, design: .rounded))
+                    .foregroundColor(AppColors.textTertiary)
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .background(AppColors.cardBackground)
+        .overlay(RoundedRectangle(cornerRadius: 14).stroke(AppColors.cardBorder, lineWidth: 1))
+        .clipShape(RoundedRectangle(cornerRadius: 14))
+        .padding(.horizontal, HomeLayout.hPadding)
+        .padding(.top, 8)
+    }
+
+    private func acceptLevelUp() {
+        guard var p = authState.profile else { return }
+        p.advanceStage()
+        authState.profile = p
+        Task { await SupabaseSyncService.shared.updateProfile(p) }
+    }
 
     /// Every presentation mechanism that covers this screen — `activeLeaf`,
     /// onboarding, a launched session, and the burger menu's own state —
@@ -453,9 +537,9 @@ struct ModeSelectorView: View {
             )
         case .grammar:
             return HomeCardContent(
-                key: "explain_rules", title: L("Explain Rules"),
-                subtitle: L("browse grammar topics & lessons"),
-                assetName: "btn_explain_rules", badge: 0, destination: .leaf(.explainRules)
+                key: "say_it_better", title: L("Say It Better"),
+                subtitle: L("real phrases for real situations"),
+                assetName: "btn_explain_rules", badge: 0, destination: .leaf(.sayItBetterFlow)
             )
         }
     }
@@ -473,6 +557,11 @@ struct ModeSelectorView: View {
                     key: "grammar", title: L("Grammar"),
                     subtitle: L("rules, verbs & tenses explained"),
                     assetName: "btn_grammar", badge: 0, destination: .level(.grammar)
+                ),
+                HomeCardContent(
+                    key: "learn_by_book", title: L("Learn by the Book"),
+                    subtitle: L("structured lessons, topic by topic"),
+                    assetName: "btn_learn_book", badge: 0, destination: .leaf(.learnByBookFlow)
                 )
             ]
         case .speaking:

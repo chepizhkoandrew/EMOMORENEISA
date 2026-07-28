@@ -1,0 +1,205 @@
+{
+  "id": "tequiero",
+  "titleByLocale": {
+    "en": "Say Instead of “Te Quiero”",
+    "uk": "Кажи замість «Te Quiero»"
+  },
+  "order": 9,
+  "chapters": [
+    {
+      "id": "phrase_finder",
+      "kind": "phraseFinder",
+      "explanation": [
+        {
+          "id": "intro",
+          "relatedItemId": null,
+          "textByLocale": {
+            "en": "Today you'll learn five real levels of affection in Spanish — from a first spark of attraction to the deepest, most serious declaration.",
+            "uk": "Сьогодні ти вивчиш п'ять реальних рівнів вияву почуттів іспанською — від першої іскри до найглибшого й найсерйознішого освідчення."
+          },
+          "highlightsByLocale": {
+            "en": ["five real levels of affection"],
+            "uk": ["п'ять реальних рівнів вияву почуттів"]
+          }
+        },
+        {
+          "id": "structure",
+          "relatedItemId": null,
+          "textByLocale": {
+            "en": "We'll go through me gustas, te quiero, te quiero mucho, estoy enamorado/a de ti, and te amo. Each one is a genuine step up in seriousness from the last.",
+            "uk": "Пройдемося по: me gustas, te quiero, te quiero mucho, estoy enamorado/a de ti та te amo. Кожна наступна фраза — справжній крок до серйозніших почуттів."
+          },
+          "highlightsByLocale": {
+            "en": ["me gustas", "te quiero", "te quiero mucho", "estoy enamorado", "estoy enamorada", "te amo"],
+            "uk": ["me gustas", "te quiero", "te quiero mucho", "estoy enamorado", "estoy enamorada", "te amo"]
+          }
+        },
+        {
+          "id": "explain_me_gustas",
+          "relatedItemId": "me_gustas",
+          "textByLocale": {
+            "en": "Let's start with me gustas — \"I like you.\" The first level: more than friends, feelings developing, but not love yet. Save it for a new romantic interest, not friends or family.",
+            "uk": "Почнімо з me gustas — «ти мені подобаєшся». Перший рівень: більше, ніж дружба, почуття щойно з'являються, але це ще не кохання. Використовуй для нового романтичного інтересу, а не для друзів чи родини."
+          },
+          "highlightsByLocale": {
+            "en": ["me gustas"],
+            "uk": ["me gustas"]
+          }
+        },
+        {
+          "id": "explain_te_quiero",
+          "relatedItemId": "te_quiero",
+          "textByLocale": {
+            "en": "Next, te quiero — \"I love you,\" but warmer and less final than te amo. It works for an early relationship, and just as naturally for close friends and family.",
+            "uk": "Далі — te quiero, «я тебе люблю», але тепліше і менш остаточне за te amo. Підходить і для нових стосунків, і природно — для близьких друзів та родини."
+          },
+          "highlightsByLocale": {
+            "en": ["te quiero"],
+            "uk": ["te quiero"]
+          }
+        },
+        {
+          "id": "explain_te_quiero_mucho",
+          "relatedItemId": "te_quiero_mucho",
+          "textByLocale": {
+            "en": "Now te quiero mucho — \"I love you a lot.\" The natural way to add emphasis to te quiero without jumping all the way to te amo.",
+            "uk": "Тепер te quiero mucho — «я дуже тебе люблю». Природний спосіб підсилити te quiero, не переходячи одразу до te amo."
+          },
+          "highlightsByLocale": {
+            "en": ["te quiero mucho"],
+            "uk": ["te quiero mucho"]
+          }
+        },
+        {
+          "id": "explain_estoy_enamorado",
+          "relatedItemId": "estoy_enamorado",
+          "textByLocale": {
+            "en": "Estoy enamorado (or enamorada) de ti — \"I'm in love with you.\" It describes the state of having fallen in love, a notch more serious than te quiero and strictly romantic.",
+            "uk": "Estoy enamorado (або enamorada) de ti — «я закоханий/закохана в тебе». Описує стан закоханості — трохи серйозніше за te quiero і виключно романтичне."
+          },
+          "highlightsByLocale": {
+            "en": ["estoy enamorado", "estoy enamorada"],
+            "uk": ["estoy enamorado", "estoy enamorada"]
+          }
+        },
+        {
+          "id": "explain_te_amo",
+          "relatedItemId": "te_amo",
+          "textByLocale": {
+            "en": "And finally, te amo — the deepest, most serious \"I love you\" there is. It's the one you'll hear in every song and telenovela — reserved for a relationship that's genuinely serious.",
+            "uk": "І нарешті te amo — найглибше й найсерйозніше «я тебе кохаю». Саме цю фразу чуєш у піснях і теленовелах — для по-справжньому серйозних стосунків."
+          },
+          "highlightsByLocale": {
+            "en": ["te amo"],
+            "uk": ["te amo"]
+          }
+        }
+      ],
+      "items": [
+        {
+          "id": "me_gustas",
+          "spanish": "me gustas",
+          "englishMeaning": "I like you",
+          "registerNote": "the first spark, for a new romantic interest only, not friends or family",
+          "exampleSentence": "Creo que me gustas desde que nos conocimos."
+        },
+        {
+          "id": "te_quiero",
+          "spanish": "te quiero",
+          "englishMeaning": "I love you",
+          "registerNote": "warm, less final than te amo, used for early relationships, close friends, and family",
+          "exampleSentence": "Te quiero, eres muy importante para mí."
+        },
+        {
+          "id": "te_quiero_mucho",
+          "spanish": "te quiero mucho",
+          "englishMeaning": "I love you a lot",
+          "registerNote": "an easy way to add emphasis to te quiero",
+          "exampleSentence": "Te quiero mucho, nunca lo olvides."
+        },
+        {
+          "id": "estoy_enamorado",
+          "spanish": "estoy enamorado / enamorada de ti",
+          "englishMeaning": "I'm in love with you",
+          "registerNote": "strictly romantic, describes the state of having fallen in love",
+          "exampleSentence": "Estoy enamorado de ti desde hace meses."
+        },
+        {
+          "id": "te_amo",
+          "spanish": "te amo",
+          "englishMeaning": "I love you",
+          "registerNote": "the deepest, most serious declaration, reserved for genuinely serious relationships",
+          "exampleSentence": "Te amo más que a nada en este mundo."
+        }
+      ],
+      "quiz": [
+        {
+          "id": "q1",
+          "type": "multipleChoice",
+          "promptByLocale": {
+            "en": "Which one is the first spark of attraction — used only for a new romantic interest?",
+            "uk": "Яка фраза означає першу іскру симпатії — тільки для нового романтичного інтересу?"
+          },
+          "relatedItemId": "me_gustas",
+          "options": ["me gustas", "te quiero", "estoy enamorado de ti", "te amo"],
+          "correctOptionIndex": 0,
+          "sentenceTemplate": null,
+          "acceptedAnswers": null
+        },
+        {
+          "id": "q2",
+          "type": "fillBlank",
+          "promptByLocale": {
+            "en": "Complete the phrase.",
+            "uk": "Заверши фразу."
+          },
+          "relatedItemId": "te_quiero",
+          "options": null,
+          "correctOptionIndex": null,
+          "sentenceTemplate": "___ quiero, eres muy importante para mí.",
+          "acceptedAnswers": ["Te", "te"]
+        },
+        {
+          "id": "q3",
+          "type": "multipleChoice",
+          "promptByLocale": {
+            "en": "Which phrase works naturally for close friends and family too, not just romantic partners?",
+            "uk": "Яка фраза природно підходить і для близьких друзів та родини, а не лише для партнера?"
+          },
+          "relatedItemId": "te_quiero",
+          "options": ["te amo", "te quiero", "estoy enamorado de ti", "me gustas"],
+          "correctOptionIndex": 1,
+          "sentenceTemplate": null,
+          "acceptedAnswers": null
+        },
+        {
+          "id": "q4",
+          "type": "fillBlank",
+          "promptByLocale": {
+            "en": "Complete the phrase.",
+            "uk": "Заверши фразу."
+          },
+          "relatedItemId": "estoy_enamorado",
+          "options": null,
+          "correctOptionIndex": null,
+          "sentenceTemplate": "Estoy ___ de ti desde hace meses.",
+          "acceptedAnswers": ["enamorado", "enamorada"]
+        },
+        {
+          "id": "q5",
+          "type": "multipleChoice",
+          "promptByLocale": {
+            "en": "Which one is the deepest, most serious declaration — the one from every song and telenovela?",
+            "uk": "Яка фраза найглибша й найсерйозніша — та, що звучить у кожній пісні й теленовелі?"
+          },
+          "relatedItemId": "te_amo",
+          "options": ["me gustas", "te quiero", "te quiero mucho", "te amo"],
+          "correctOptionIndex": 3,
+          "sentenceTemplate": null,
+          "acceptedAnswers": null
+        }
+      ],
+      "wordSwapItems": null
+    }
+  ]
+}

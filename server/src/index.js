@@ -718,6 +718,77 @@ Reply with exactly one word: CORRECT or WRONG`;
   }
 });
 
+// Validate a spoken Spanish word/phrase against an expected vocabulary item —
+// same shape as /v1/verb-check but for Learn by the Book's voice quiz, where
+// the answer is a whole vocabulary item rather than a specific conjugation
+// (no infinitive/pronoun fields).
+app.post("/v1/phrase-check", requireUser, async (req, res) => {
+  const { transcript, expected } = req.body || {};
+  if (!transcript || !expected) {
+    return res.status(400).json({ error: "missing_fields" });
+  }
+
+  const normalizedTranscript = transcript.trim().toLowerCase().replace(/[.,!?¿¡;:"'()\[\]]+$/, "").replace(/^[.,!?¿¡;:"'()\[\]]+/, "").trim();
+
+  const cost = config.actionCosts.phraseCheck;
+  const pre = await debit(req.user.id, cost, "phrase_check", {});
+  if (!pre.ok && pre.error === "insufficient_treats") {
+    return res.status(402).json({ error: "insufficient_treats", balance: pre.balance });
+  }
+
+  const prompt = `Spanish word/phrase pronunciation check.
+Expected answer: "${expected}"
+User said (speech-to-text): "${normalizedTranscript}"
+
+RULES — mark CORRECT if:
+- The user said the expected word or phrase (with or without minor extra words like "es" or "el/la" attached).
+- Capitalization differences are CORRECT — ignore case entirely.
+- Accent marks differ only (está vs esta are the same word for this check).
+- A single-character STT artifact (b/v swap, missing or extra 's', similar-sounding letter) is the only difference.
+- Trailing punctuation from speech recognition (period, comma) should be ignored.
+
+Mark WRONG if:
+- The user said a different word or phrase, or left out a key part of a multi-word answer.
+- The user said the English meaning instead of the Spanish.
+
+Reply with exactly one word: CORRECT or WRONG`;
+
+  try {
+    const geminiKey = config.geminiKey;
+    if (!geminiKey) {
+      if (pre.enforced) await credit(req.user.id, cost, "refund", "phrase_check_no_key", {});
+      return res.status(503).json({ error: "phrase_check_not_configured" });
+    }
+
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`;
+    const body = {
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: { temperature: 0, maxOutputTokens: 8 }
+    };
+
+    const response = await fetch(geminiUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(8000)
+    });
+
+    if (!response.ok) {
+      if (pre.enforced) await credit(req.user.id, cost, "refund", "phrase_check_api_error", {});
+      return res.status(502).json({ error: "phrase_check_api_error" });
+    }
+
+    const json = await response.json();
+    const text = json?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+    const correct = text.trim().toUpperCase().startsWith("CORRECT");
+
+    res.json({ correct, treatsCharged: cost });
+  } catch (e) {
+    if (pre.enforced) await credit(req.user.id, cost, "refund", "phrase_check_failed", {});
+    res.status(502).json({ error: "phrase_check_failed", detail: e.message });
+  }
+});
+
 // Verify a StoreKit 2 signed transaction (JWS) and credit the matching pack.
 app.post("/v1/topup", requireUser, async (req, res) => {
   const { signedTransaction } = req.body || {};

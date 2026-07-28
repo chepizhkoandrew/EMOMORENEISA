@@ -27,6 +27,16 @@ npm-debug.log*
 server/.env
 .railway/
 
+# Community/lead-gen research — outreach data, not app code
+partnership/ukraine-spain-communities/
+
+# Local model training scratch (large binary weights + training photos) and
+# App Store analytics dumps — not application code, keep out of git history
+server/madrid-lora-modal/
+marketdata/
+__pycache__/
+*.pyc
+
 # Fastlane
 fastlane/report.xml
 fastlane/Preview.html

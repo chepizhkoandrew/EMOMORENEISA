@@ -77,6 +77,40 @@ final class MemoryCardService {
         return card
     }
 
+    /// True once the user has manually saved this specific Say It Better
+    /// phrase before — check this before spending a "loro" generation call,
+    /// not just before inserting, so a repeat tap never re-generates audio.
+    func hasSayItBetterCard(lessonId: String, phraseId: String) -> Bool {
+        let key = "\(lessonId).\(phraseId)"
+        return allCards().contains { $0.sourceLessonPhraseId == key && !$0.isArchived }
+    }
+
+    /// The manual "add to memory queue" creation path — user-initiated, not
+    /// an automatic side effect of finishing something (contrast
+    /// `createCard(from:loops:)` above). `phrase` is the already-generated
+    /// result of a throwaway `ParrotPhrase` run through `ParrotService`, so
+    /// this reuses the exact same audio pipeline and quality as Parrot.
+    @discardableResult
+    func createCard(fromSayItBetterPhrase phrase: ParrotPhrase, lessonId: String, phraseId: String) -> MemoryCard? {
+        guard phrase.hasAudio else {
+            glog("🧠 MEM", "Skip createCard — Say It Better phrase \(phraseId) has no audio")
+            return nil
+        }
+        if hasSayItBetterCard(lessonId: lessonId, phraseId: phraseId) {
+            glog("🧠 MEM", "Card already exists for lesson phrase \(lessonId).\(phraseId) — no-op")
+            return allCards().first { $0.sourceLessonPhraseId == "\(lessonId).\(phraseId)" }
+        }
+
+        let card = MemoryCard(fromSayItBetterPhrase: phrase, lessonId: lessonId, phraseId: phraseId)
+        card.nextDueAt = MemorizeScheduler.nextDueAt(exposureCount: 1)
+        card.isPaused = UserDefaults.standard.bool(forKey: "loro.vacationMode")
+        context.insert(card)
+        try? context.save()
+        emitEvent(.scheduled, for: card)
+        glog("🧠 MEM", "Created card \(card.id) '\(card.content)' from Say It Better (\(lessonId).\(phraseId))")
+        return card
+    }
+
     // MARK: - Queue construction (spec §8)
 
     /// Live query: due, non-archived, non-paused cards, ordered Learning →

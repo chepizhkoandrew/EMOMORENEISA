@@ -6,6 +6,21 @@ struct MessageBubbleView: View {
     let onPlayFromHere: () -> Void
     let onParrot: () -> Void
     var onAnnotate: (() -> Void)? = nil
+    /// Author-specified substrings of this message's text to render in the
+    /// accent color — the Spanish phrase(s) being taught plus the general
+    /// topic phrase — so the key vocabulary stands out from the surrounding
+    /// narration at a glance.
+    var highlightTerms: [String] = []
+    /// Non-nil only for Madrid's one auto-triggered post-practice feedback
+    /// message — drives the result chips and the distinct background that
+    /// set it apart from an ordinary explanation or Q&A bubble.
+    var practiceSummary: PracticeResult? = nil
+    // Real names instead of generic "Host"/"Guest" labels — this also matters
+    // beyond the label itself: if the student types something like "let the
+    // driver answer" or "let Madrid answer", the name shown here is the same
+    // name the turn classifier and generation prompts reason about, so what's
+    // on screen matches what the student can actually refer to.
+    var guestDisplayName: String = ""
 
     var body: some View {
         HStack(alignment: .bottom, spacing: 10) {
@@ -13,12 +28,12 @@ struct MessageBubbleView: View {
 
             VStack(alignment: message.isUser ? .trailing : .leading, spacing: 5) {
                 if isObjectSpeaker {
-                    Label(L("Guest"), systemImage: "theatermasks.fill")
+                    Label(guestDisplayName.isEmpty ? L("Guest") : guestDisplayName, systemImage: "theatermasks.fill")
                         .font(.system(size: 12, weight: .semibold, design: .rounded))
                         .foregroundColor(.purple.opacity(0.85))
                         .padding(.leading, 4)
                 } else if isHostSpeaker {
-                    Label(L("Host"), systemImage: "mic.fill")
+                    Label("Madrid", systemImage: "mic.fill")
                         .font(.system(size: 12, weight: .semibold, design: .rounded))
                         .foregroundColor(.yellow.opacity(0.85))
                         .padding(.leading, 4)
@@ -61,8 +76,11 @@ struct MessageBubbleView: View {
             if !images.isEmpty {
                 imageThumbnails(images)
             }
+            if let summary = practiceSummary {
+                practiceSummaryHeader(summary)
+            }
             if let text = message.textContent, !text.isEmpty {
-                Text(text)
+                Text(highlightedText(text))
                     .font(.system(size: 20, weight: .regular, design: .rounded))
                     .foregroundColor(message.isUser ? .black : AppColors.textPrimary)
                     .lineSpacing(5)
@@ -77,6 +95,44 @@ struct MessageBubbleView: View {
             BubbleShape(isUser: message.isUser)
                 .stroke(bubbleBorder, lineWidth: 1)
         )
+    }
+
+    /// Case/accent-insensitive-free (exact substring) highlighting of the
+    /// author-specified key terms — longest terms first so e.g. "hasta
+    /// luego" is matched whole rather than leaving a shorter substring
+    /// double-matched inside it.
+    private func highlightedText(_ text: String) -> AttributedString {
+        var attributed = AttributedString(text)
+        guard !highlightTerms.isEmpty else { return attributed }
+        for term in highlightTerms.sorted(by: { $0.count > $1.count }) where !term.isEmpty {
+            var searchStart = attributed.startIndex
+            while let range = attributed[searchStart...].range(of: term, options: .caseInsensitive) {
+                attributed[range].foregroundColor = AppColors.accent
+                attributed[range].font = .system(size: 20, weight: .semibold, design: .rounded)
+                searchStart = range.upperBound
+            }
+        }
+        return attributed
+    }
+
+    /// Quick at-a-glance summary: one small chip per question, green/red for
+    /// correct/incorrect, before the reader gets to the paragraph explaining
+    /// why — this is what actually marks a bubble as "practice results" from
+    /// across the room, not just its wording.
+    private func practiceSummaryHeader(_ summary: PracticeResult) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(L("PRACTICE RESULTS"))
+                .font(.system(size: 11, weight: .bold, design: .rounded))
+                .foregroundColor(GameColors.gold)
+                .tracking(0.5)
+            HStack(spacing: 6) {
+                ForEach(Array(summary.answers.enumerated()), id: \.offset) { _, answer in
+                    Image(systemName: answer.wasCorrect ? "checkmark.circle.fill" : "xmark.circle.fill")
+                        .font(.system(size: 18))
+                        .foregroundColor(answer.wasCorrect ? GameColors.verde : GameColors.rojo)
+                }
+            }
+        }
     }
 
     private func imageThumbnails(_ images: [UIImage]) -> some View {
@@ -109,10 +165,9 @@ struct MessageBubbleView: View {
             HStack(spacing: 0) {
                 parrotButton
                 Spacer()
+                replyButton
+                Spacer()
                 speakerButton
-                if message.threadReplyCount > 0 {
-                    replyBadge.padding(.leading, 16)
-                }
             }
         }
         .padding(.horizontal, 4)
@@ -201,8 +256,10 @@ struct MessageBubbleView: View {
             Button(action: onParrot) {
                 Image("icon_brain")
                     .resizable()
-                    .scaledToFill()
+                    .scaledToFit()
+                    .padding(6)
                     .frame(width: actionButtonSize, height: actionButtonSize)
+                    .background(Color.white.opacity(0.07))
                     .clipShape(Circle())
                     .overlay(Circle().stroke(Color.white.opacity(0.12), lineWidth: 1))
             }
@@ -222,20 +279,32 @@ struct MessageBubbleView: View {
     }
 
     @ViewBuilder
-    private var replyBadge: some View {
-        if message.threadReplyCount > 0 {
+    private var replyButton: some View {
+        if message.isAssistant, let text = message.textContent, !text.isEmpty {
             Button(action: onReplyInThread) {
-                HStack(spacing: 6) {
-                    Image(systemName: "bubble.left.and.bubble.right")
-                        .font(.system(size: 19, design: .rounded))
-                    Text(LPlural(message.threadReplyCount,
-                                 en: "%d reply", "%d replies",
-                                 uk: "%d відповідь", "%d відповіді", "%d відповідей"))
-                        .font(.system(size: 20, weight: .medium, design: .rounded))
-                }
-                .foregroundColor(.yellow.opacity(0.8))
+                Image(systemName: "arrowshape.turn.up.left.fill")
+                    .font(.system(size: 17, design: .rounded))
+                    .foregroundColor(AppColors.textTertiary)
+                    .frame(width: actionButtonSize, height: actionButtonSize)
+                    .background(Color.white.opacity(0.07))
+                    .clipShape(Circle())
+                    .overlay(Circle().stroke(Color.white.opacity(0.12), lineWidth: 1))
+                    .overlay(alignment: .topTrailing) {
+                        if message.threadReplyCount > 0 {
+                            replyCountBadge
+                        }
+                    }
             }
         }
+    }
+
+    private var replyCountBadge: some View {
+        Text("\(message.threadReplyCount)")
+            .font(.system(size: 10, weight: .bold, design: .rounded))
+            .foregroundColor(.black)
+            .frame(minWidth: 16, minHeight: 16)
+            .background(Circle().fill(Color.yellow))
+            .offset(x: 4, y: -4)
     }
 
     private var isObjectSpeaker: Bool {
@@ -248,12 +317,21 @@ struct MessageBubbleView: View {
 
     private var bubbleBackground: Color {
         if message.isUser { return .yellow }
-        return isObjectSpeaker ? Color.purple.opacity(0.22) : AppColors.cardBackground
+        if practiceSummary != nil { return GameColors.gold.opacity(0.14) }
+        // Roleplay bubbles sit on top of a busy scene photo (unlike regular
+        // chat's flat background), so they need much more opacity than the
+        // generic glass-card look to keep text legible.
+        if isObjectSpeaker { return Color.purple.opacity(0.55) }
+        if isHostSpeaker { return Color.black.opacity(0.55) }
+        return AppColors.cardBackground
     }
 
     private var bubbleBorder: Color {
         if message.isUser { return .yellow.opacity(0.6) }
-        return isObjectSpeaker ? Color.purple.opacity(0.5) : AppColors.cardBorder
+        if practiceSummary != nil { return GameColors.gold.opacity(0.45) }
+        if isObjectSpeaker { return Color.purple.opacity(0.7) }
+        if isHostSpeaker { return Color.white.opacity(0.25) }
+        return AppColors.cardBorder
     }
 }
 

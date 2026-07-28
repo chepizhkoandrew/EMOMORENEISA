@@ -1,0 +1,205 @@
+{
+  "id": "bien",
+  "titleByLocale": {
+    "en": "Say Instead of “Bien”",
+    "uk": "Кажи замість «Bien»"
+  },
+  "order": 6,
+  "chapters": [
+    {
+      "id": "phrase_finder",
+      "kind": "phraseFinder",
+      "explanation": [
+        {
+          "id": "intro",
+          "relatedItemId": null,
+          "textByLocale": {
+            "en": "Today you'll learn five real ways to answer \"¿cómo estás?\" in Spanish — from a neutral \"getting by\" to genuine excitement.",
+            "uk": "Сьогодні ти вивчиш п'ять реальних способів відповісти на «¿cómo estás?» іспанською — від нейтрального «потихеньку» до щирого захвату."
+          },
+          "highlightsByLocale": {
+            "en": ["five real ways to answer"],
+            "uk": ["п'ять реальних способів відповісти"]
+          }
+        },
+        {
+          "id": "structure",
+          "relatedItemId": null,
+          "textByLocale": {
+            "en": "We'll go through ahí vamos, más o menos, no me puedo quejar, genial, and no podría estar mejor. Each one carries a bit more energy than the last.",
+            "uk": "Пройдемося по: ahí vamos, más o menos, no me puedo quejar, genial та no podría estar mejor. Кожна наступна фраза трохи енергійніша за попередню."
+          },
+          "highlightsByLocale": {
+            "en": ["ahí vamos", "más o menos", "no me puedo quejar", "genial", "no podría estar mejor"],
+            "uk": ["ahí vamos", "más o menos", "no me puedo quejar", "genial", "no podría estar mejor"]
+          }
+        },
+        {
+          "id": "explain_ahi_vamos",
+          "relatedItemId": "ahi_vamos",
+          "textByLocale": {
+            "en": "Let's start with ahí vamos (or ahí andamos) — \"getting by.\" It means things are staying normal, nothing new. \"¿Cómo estás? Ahí vamos.\"",
+            "uk": "Почнімо з ahí vamos (або ahí andamos) — «потихеньку». Означає, що все йде як завжди, нічого нового. «¿Cómo estás? Ahí vamos.»"
+          },
+          "highlightsByLocale": {
+            "en": ["ahí vamos"],
+            "uk": ["ahí vamos"]
+          }
+        },
+        {
+          "id": "explain_mas_o_menos",
+          "relatedItemId": "mas_o_menos",
+          "textByLocale": {
+            "en": "Next, más o menos — \"so-so.\" Not great, not bad, right in the middle. Spanish speakers often pair it with a side-to-side hand wobble.",
+            "uk": "Далі — más o menos, «так собі». Не добре й не погано, десь посередині. Іспаномовні часто супроводжують цю фразу похитуванням руки з боку в бік."
+          },
+          "highlightsByLocale": {
+            "en": ["más o menos"],
+            "uk": ["más o menos"]
+          }
+        },
+        {
+          "id": "explain_no_me_puedo_quejar",
+          "relatedItemId": "no_me_puedo_quejar",
+          "textByLocale": {
+            "en": "Now no me puedo quejar — \"I can't complain.\" A mild, genuine positive — things are decent and you have no real gripes.",
+            "uk": "Тепер no me puedo quejar — «не можу поскаржитись». М'який, щирий позитив — усе більш-менш добре, і нарікати нема на що."
+          },
+          "highlightsByLocale": {
+            "en": ["no me puedo quejar"],
+            "uk": ["no me puedo quejar"]
+          }
+        },
+        {
+          "id": "explain_genial",
+          "relatedItemId": "genial",
+          "textByLocale": {
+            "en": "Genial — \"great!\" Said with real enthusiasm, a big step up from a plain bien.",
+            "uk": "Genial — «чудово!» Кажуть зі щирим ентузіазмом — значно емоційніше за просте bien."
+          },
+          "highlightsByLocale": {
+            "en": ["genial"],
+            "uk": ["genial"]
+          }
+        },
+        {
+          "id": "explain_no_podria_estar_mejor",
+          "relatedItemId": "no_podria_estar_mejor",
+          "textByLocale": {
+            "en": "And finally, no podría estar mejor (or mejor imposible) — \"couldn't be better.\" The most energetic option here, save it for when life is genuinely great.",
+            "uk": "І нарешті no podría estar mejor (або mejor imposible) — «краще не буває». Найенергійніший варіант, для тих моментів, коли справді все чудово."
+          },
+          "highlightsByLocale": {
+            "en": ["no podría estar mejor"],
+            "uk": ["no podría estar mejor"]
+          }
+        }
+      ],
+      "items": [
+        {
+          "id": "ahi_vamos",
+          "spanish": "ahí vamos",
+          "englishMeaning": "getting by",
+          "registerNote": "neutral, things staying normal, nothing new",
+          "exampleSentence": "¿Cómo estás? Ahí vamos."
+        },
+        {
+          "id": "mas_o_menos",
+          "spanish": "más o menos",
+          "englishMeaning": "so-so",
+          "registerNote": "neutral, right in the middle, often paired with a hand wobble",
+          "exampleSentence": "¿Cómo estás? Más o menos."
+        },
+        {
+          "id": "no_me_puedo_quejar",
+          "spanish": "no me puedo quejar",
+          "englishMeaning": "I can't complain",
+          "registerNote": "mildly positive, things are decent",
+          "exampleSentence": "¿Cómo estás? No me puedo quejar."
+        },
+        {
+          "id": "genial",
+          "spanish": "genial",
+          "englishMeaning": "great",
+          "registerNote": "enthusiastic, a real step up from bien",
+          "exampleSentence": "¿Cómo estás? ¡Genial!"
+        },
+        {
+          "id": "no_podria_estar_mejor",
+          "spanish": "no podría estar mejor",
+          "englishMeaning": "couldn't be better",
+          "registerNote": "the most energetic option, for when life is genuinely great",
+          "exampleSentence": "¿Cómo estás? No podría estar mejor."
+        }
+      ],
+      "quiz": [
+        {
+          "id": "q1",
+          "type": "multipleChoice",
+          "promptByLocale": {
+            "en": "Which one means \"so-so\" — often said with a hand wobble?",
+            "uk": "Яка фраза означає «так собі» — часто з похитуванням руки?"
+          },
+          "relatedItemId": "mas_o_menos",
+          "options": ["genial", "más o menos", "ahí vamos", "no me puedo quejar"],
+          "correctOptionIndex": 1,
+          "sentenceTemplate": null,
+          "acceptedAnswers": null
+        },
+        {
+          "id": "q2",
+          "type": "fillBlank",
+          "promptByLocale": {
+            "en": "Complete the phrase.",
+            "uk": "Заверши фразу."
+          },
+          "relatedItemId": "no_me_puedo_quejar",
+          "options": null,
+          "correctOptionIndex": null,
+          "sentenceTemplate": "¿Cómo estás? No me puedo ___.",
+          "acceptedAnswers": ["quejar"]
+        },
+        {
+          "id": "q3",
+          "type": "multipleChoice",
+          "promptByLocale": {
+            "en": "Which phrase is the most energetic — for when life is genuinely great?",
+            "uk": "Яка фраза найенергійніша — коли справді все чудово?"
+          },
+          "relatedItemId": "no_podria_estar_mejor",
+          "options": ["ahí vamos", "más o menos", "genial", "no podría estar mejor"],
+          "correctOptionIndex": 3,
+          "sentenceTemplate": null,
+          "acceptedAnswers": null
+        },
+        {
+          "id": "q4",
+          "type": "fillBlank",
+          "promptByLocale": {
+            "en": "Complete the phrase.",
+            "uk": "Заверши фразу."
+          },
+          "relatedItemId": "ahi_vamos",
+          "options": null,
+          "correctOptionIndex": null,
+          "sentenceTemplate": "¿Cómo estás? Ahí ___.",
+          "acceptedAnswers": ["vamos"]
+        },
+        {
+          "id": "q5",
+          "type": "multipleChoice",
+          "promptByLocale": {
+            "en": "Which one means \"great\" and is said with real enthusiasm?",
+            "uk": "Яка фраза означає «чудово» і звучить зі щирим ентузіазмом?"
+          },
+          "relatedItemId": "genial",
+          "options": ["más o menos", "genial", "ahí vamos", "no me puedo quejar"],
+          "correctOptionIndex": 1,
+          "sentenceTemplate": null,
+          "acceptedAnswers": null
+        }
+      ],
+      "wordSwapItems": null
+    }
+  ]
+}

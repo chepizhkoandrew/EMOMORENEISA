@@ -1,0 +1,205 @@
+{
+  "id": "goodbye",
+  "titleByLocale": {
+    "en": "Say Instead of “Adiós”",
+    "uk": "Кажи замість «Adiós»"
+  },
+  "order": 0,
+  "chapters": [
+    {
+      "id": "phrase_finder",
+      "kind": "phraseFinder",
+      "explanation": [
+        {
+          "id": "intro",
+          "relatedItemId": null,
+          "textByLocale": {
+            "en": "Today you'll learn five real ways to say goodbye in Spanish — from super casual to properly formal.",
+            "uk": "Сьогодні ти вивчиш п'ять реальних способів попрощатися іспанською — від зовсім невимушеного до цілком офіційного."
+          },
+          "highlightsByLocale": {
+            "en": ["five real ways to say goodbye"],
+            "uk": ["п'ять реальних способів попрощатися"]
+          }
+        },
+        {
+          "id": "structure",
+          "relatedItemId": null,
+          "textByLocale": {
+            "en": "We'll go through chao, nos vemos, hasta luego, hasta pronto, and adiós. Each one carries a different weight, so by the end you'll know exactly which fits the moment.",
+            "uk": "Пройдемося по: chao, nos vemos, hasta luego, hasta pronto та adiós. Кожне з них має свою вагу, тож наприкінці ти точно знатимеш, яке підходить для якої ситуації."
+          },
+          "highlightsByLocale": {
+            "en": ["chao", "nos vemos", "hasta luego", "hasta pronto", "adiós"],
+            "uk": ["chao", "nos vemos", "hasta luego", "hasta pronto", "adiós"]
+          }
+        },
+        {
+          "id": "explain_chao",
+          "relatedItemId": "chao",
+          "textByLocale": {
+            "en": "Let's start with chao — about as informal as it gets. Friends toss it back and forth constantly, no ceremony at all. \"Chao, nos vemos mañana!\"",
+            "uk": "Почнімо з chao — це майже гранично неформально. Друзі кажуть його одне одному постійно, без жодних церемоній. «Chao, nos vemos mañana!»"
+          },
+          "highlightsByLocale": {
+            "en": ["chao"],
+            "uk": ["chao"]
+          }
+        },
+        {
+          "id": "explain_nos_vemos",
+          "relatedItemId": "nos_vemos",
+          "textByLocale": {
+            "en": "Next, nos vemos — literally \"we see each other.\" It's neutral and works almost anywhere, whether you'll see them tomorrow or in a month.",
+            "uk": "Далі — nos vemos, буквально «ми побачимо одне одного». Нейтральний варіант, який підходить майже завжди — побачитесь ви завтра чи через місяць."
+          },
+          "highlightsByLocale": {
+            "en": ["nos vemos"],
+            "uk": ["nos vemos"]
+          }
+        },
+        {
+          "id": "explain_hasta_luego",
+          "relatedItemId": "hasta_luego",
+          "textByLocale": {
+            "en": "Now hasta luego — the safest all-purpose option. If you're not sure which goodbye fits, this one almost always works.",
+            "uk": "Тепер hasta luego — найбезпечніший універсальний варіант. Якщо не впевнений, яке прощання обрати, це майже завжди спрацює."
+          },
+          "highlightsByLocale": {
+            "en": ["hasta luego"],
+            "uk": ["hasta luego"]
+          }
+        },
+        {
+          "id": "explain_hasta_pronto",
+          "relatedItemId": "hasta_pronto",
+          "textByLocale": {
+            "en": "Hasta pronto leans specifically on \"soon\" — reach for it when you actually expect to see the person again in the near future.",
+            "uk": "Hasta pronto наголошує саме на «скоро» — використовуй його, коли справді очікуєш побачити людину найближчим часом."
+          },
+          "highlightsByLocale": {
+            "en": ["Hasta pronto"],
+            "uk": ["Hasta pronto"]
+          }
+        },
+        {
+          "id": "explain_adios",
+          "relatedItemId": "adios",
+          "textByLocale": {
+            "en": "And finally, adiós — the one everyone already knows. It's more formal and final than it sounds, so save it for real goodbyes rather than a friend you'll see tomorrow.",
+            "uk": "І нарешті adiós — те, яке всі вже знають. Воно офіційніше й остаточніше, ніж здається, тож бережи його для справжніх прощань, а не для друга, з яким побачишся завтра."
+          },
+          "highlightsByLocale": {
+            "en": ["adiós"],
+            "uk": ["adiós"]
+          }
+        }
+      ],
+      "items": [
+        {
+          "id": "chao",
+          "spanish": "chao",
+          "englishMeaning": "bye",
+          "registerNote": "very informal, friends only, used constantly",
+          "exampleSentence": "¡Chao, nos vemos mañana!"
+        },
+        {
+          "id": "nos_vemos",
+          "spanish": "nos vemos",
+          "englishMeaning": "see you around",
+          "registerNote": "neutral, versatile, works almost anywhere",
+          "exampleSentence": "Nos vemos en el parque a las cinco."
+        },
+        {
+          "id": "hasta_luego",
+          "spanish": "hasta luego",
+          "englishMeaning": "see you later",
+          "registerNote": "neutral, the safest all-purpose default",
+          "exampleSentence": "Hasta luego, que tengas un buen día."
+        },
+        {
+          "id": "hasta_pronto",
+          "spanish": "hasta pronto",
+          "englishMeaning": "see you soon",
+          "registerNote": "neutral, implies a near-term reunion",
+          "exampleSentence": "Hasta pronto, nos vemos la próxima semana."
+        },
+        {
+          "id": "adios",
+          "spanish": "adiós",
+          "englishMeaning": "goodbye",
+          "registerNote": "formal and final — don't overuse it with friends",
+          "exampleSentence": "Adiós, fue un placer conocerte."
+        }
+      ],
+      "quiz": [
+        {
+          "id": "q1",
+          "type": "multipleChoice",
+          "promptByLocale": {
+            "en": "Which is closest to \"see you later\"?",
+            "uk": "Яка фраза найближча до «see you later»?"
+          },
+          "relatedItemId": "hasta_luego",
+          "options": ["adiós", "hasta luego", "chao", "nos vemos"],
+          "correctOptionIndex": 1,
+          "sentenceTemplate": null,
+          "acceptedAnswers": null
+        },
+        {
+          "id": "q2",
+          "type": "fillBlank",
+          "promptByLocale": {
+            "en": "Complete the phrase.",
+            "uk": "Заверши фразу."
+          },
+          "relatedItemId": "nos_vemos",
+          "options": null,
+          "correctOptionIndex": null,
+          "sentenceTemplate": "¡Nos ___ pronto!",
+          "acceptedAnswers": ["vemos"]
+        },
+        {
+          "id": "q3",
+          "type": "multipleChoice",
+          "promptByLocale": {
+            "en": "Which one is the most informal, friends-only option?",
+            "uk": "Яка з них найбільш неформальна, лише для друзів?"
+          },
+          "relatedItemId": "chao",
+          "options": ["adiós", "hasta pronto", "chao", "hasta luego"],
+          "correctOptionIndex": 2,
+          "sentenceTemplate": null,
+          "acceptedAnswers": null
+        },
+        {
+          "id": "q4",
+          "type": "fillBlank",
+          "promptByLocale": {
+            "en": "Complete the phrase.",
+            "uk": "Заверши фразу."
+          },
+          "relatedItemId": "hasta_pronto",
+          "options": null,
+          "correctOptionIndex": null,
+          "sentenceTemplate": "Nos vemos la próxima semana — hasta ___.",
+          "acceptedAnswers": ["pronto"]
+        },
+        {
+          "id": "q5",
+          "type": "multipleChoice",
+          "promptByLocale": {
+            "en": "Which goodbye is the most formal and final?",
+            "uk": "Яке прощання найбільш офіційне й остаточне?"
+          },
+          "relatedItemId": "adios",
+          "options": ["chao", "nos vemos", "adiós", "hasta luego"],
+          "correctOptionIndex": 2,
+          "sentenceTemplate": null,
+          "acceptedAnswers": null
+        }
+      ],
+      "wordSwapItems": null
+    }
+  ]
+}

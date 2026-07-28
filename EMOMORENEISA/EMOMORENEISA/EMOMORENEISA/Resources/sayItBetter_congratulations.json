@@ -1,0 +1,205 @@
+{
+  "id": "congratulations",
+  "titleByLocale": {
+    "en": "Say Instead of “Felicidades”",
+    "uk": "Кажи замість «Felicidades»"
+  },
+  "order": 1,
+  "chapters": [
+    {
+      "id": "phrase_finder",
+      "kind": "phraseFinder",
+      "explanation": [
+        {
+          "id": "intro",
+          "relatedItemId": null,
+          "textByLocale": {
+            "en": "Today you'll learn five real ways to celebrate someone's good news in Spanish — from a quick reaction to something warmer and more personal.",
+            "uk": "Сьогодні ти вивчиш п'ять реальних способів привітати когось із хорошою новиною іспанською — від короткої реакції до чогось теплішого й особистішого."
+          },
+          "highlightsByLocale": {
+            "en": ["five real ways to celebrate someone's good news"],
+            "uk": ["п'ять реальних способів привітати когось із хорошою новиною"]
+          }
+        },
+        {
+          "id": "structure",
+          "relatedItemId": null,
+          "textByLocale": {
+            "en": "We'll go through felicidades, felicitaciones, enhorabuena, qué bien, and te lo mereces. Some are interchangeable, some carry a regional flavor, and one works best paired with the others.",
+            "uk": "Пройдемося по: felicidades, felicitaciones, enhorabuena, qué bien та te lo mereces. Деякі з них взаємозамінні, деякі мають регіональний відтінок, а одна найкраще працює в парі з іншими."
+          },
+          "highlightsByLocale": {
+            "en": ["felicidades", "felicitaciones", "enhorabuena", "qué bien", "te lo mereces"],
+            "uk": ["felicidades", "felicitaciones", "enhorabuena", "qué bien", "te lo mereces"]
+          }
+        },
+        {
+          "id": "explain_felicidades",
+          "relatedItemId": "felicidades",
+          "textByLocale": {
+            "en": "Let's start with felicidades — the safest, most all-purpose option. It works for almost any good news, anywhere. \"¡Felicidades por tu nuevo trabajo!\"",
+            "uk": "Почнімо з felicidades — найбезпечніший, універсальний варіант. Підходить майже для будь-якої хорошої новини, будь-де. «¡Felicidades por tu nuevo trabajo!»"
+          },
+          "highlightsByLocale": {
+            "en": ["felicidades"],
+            "uk": ["felicidades"]
+          }
+        },
+        {
+          "id": "explain_felicitaciones",
+          "relatedItemId": "felicitaciones",
+          "textByLocale": {
+            "en": "Next, felicitaciones — close cousin of felicidades, especially common across Latin America. The two are largely interchangeable.",
+            "uk": "Далі — felicitaciones, близький родич felicidades, особливо поширений у Латинській Америці. Ці два варіанти здебільшого взаємозамінні."
+          },
+          "highlightsByLocale": {
+            "en": ["felicitaciones"],
+            "uk": ["felicitaciones"]
+          }
+        },
+        {
+          "id": "explain_enhorabuena",
+          "relatedItemId": "enhorabuena",
+          "textByLocale": {
+            "en": "Now enhorabuena — you'll hear this one more in Spain. It's a touch more traditional, but still completely natural.",
+            "uk": "Тепер enhorabuena — це частіше почуєш в Іспанії. Трохи традиційніше, але цілком природне."
+          },
+          "highlightsByLocale": {
+            "en": ["enhorabuena"],
+            "uk": ["enhorabuena"]
+          }
+        },
+        {
+          "id": "explain_que_bien",
+          "relatedItemId": "que_bien",
+          "textByLocale": {
+            "en": "Qué bien leans casual — it's less a formal congratulation and more a warm, genuine reaction. Reach for it with friends.",
+            "uk": "Qué bien звучить невимушено — це радше тепла, щира реакція, ніж офіційне вітання. Використовуй з друзями."
+          },
+          "highlightsByLocale": {
+            "en": ["Qué bien"],
+            "uk": ["Qué bien"]
+          }
+        },
+        {
+          "id": "explain_te_lo_mereces",
+          "relatedItemId": "te_lo_mereces",
+          "textByLocale": {
+            "en": "And finally, te lo mereces — \"you deserve it.\" It's personal and warm, and works best right after one of the others, not on its own.",
+            "uk": "І нарешті te lo mereces — «ти це заслуговуєш». Особисто й тепло, і найкраще працює одразу після іншого вітання, а не самостійно."
+          },
+          "highlightsByLocale": {
+            "en": ["te lo mereces"],
+            "uk": ["te lo mereces"]
+          }
+        }
+      ],
+      "items": [
+        {
+          "id": "felicidades",
+          "spanish": "felicidades",
+          "englishMeaning": "congratulations",
+          "registerNote": "neutral, the safest all-purpose option",
+          "exampleSentence": "¡Felicidades por tu nuevo trabajo!"
+        },
+        {
+          "id": "felicitaciones",
+          "spanish": "felicitaciones",
+          "englishMeaning": "congratulations",
+          "registerNote": "neutral, common across Latin America, interchangeable with felicidades",
+          "exampleSentence": "¡Felicitaciones por tu graduación!"
+        },
+        {
+          "id": "enhorabuena",
+          "spanish": "enhorabuena",
+          "englishMeaning": "congratulations",
+          "registerNote": "common in Spain, slightly more traditional",
+          "exampleSentence": "Enhorabuena por el bebé, ¡qué alegría!"
+        },
+        {
+          "id": "que_bien",
+          "spanish": "qué bien",
+          "englishMeaning": "how great / good for you",
+          "registerNote": "casual, a warm reaction rather than a formal congratulation",
+          "exampleSentence": "¿Conseguiste el puesto? ¡Qué bien!"
+        },
+        {
+          "id": "te_lo_mereces",
+          "spanish": "te lo mereces",
+          "englishMeaning": "you deserve it",
+          "registerNote": "personal and warm, pairs naturally after another congratulation",
+          "exampleSentence": "Felicidades, de verdad te lo mereces."
+        }
+      ],
+      "quiz": [
+        {
+          "id": "q1",
+          "type": "multipleChoice",
+          "promptByLocale": {
+            "en": "Which one is most common in Spain specifically?",
+            "uk": "Яка фраза найбільш поширена саме в Іспанії?"
+          },
+          "relatedItemId": "enhorabuena",
+          "options": ["felicidades", "enhorabuena", "qué bien", "te lo mereces"],
+          "correctOptionIndex": 1,
+          "sentenceTemplate": null,
+          "acceptedAnswers": null
+        },
+        {
+          "id": "q2",
+          "type": "fillBlank",
+          "promptByLocale": {
+            "en": "Complete the phrase.",
+            "uk": "Заверши фразу."
+          },
+          "relatedItemId": "felicidades",
+          "options": null,
+          "correctOptionIndex": null,
+          "sentenceTemplate": "¡___ por tu nuevo trabajo!",
+          "acceptedAnswers": ["felicidades"]
+        },
+        {
+          "id": "q3",
+          "type": "multipleChoice",
+          "promptByLocale": {
+            "en": "Which phrase is the most casual — more of a reaction than a formal congratulation?",
+            "uk": "Яка фраза найбільш невимушена — швидше реакція, ніж офіційне вітання?"
+          },
+          "relatedItemId": "que_bien",
+          "options": ["enhorabuena", "felicitaciones", "qué bien", "te lo mereces"],
+          "correctOptionIndex": 2,
+          "sentenceTemplate": null,
+          "acceptedAnswers": null
+        },
+        {
+          "id": "q4",
+          "type": "fillBlank",
+          "promptByLocale": {
+            "en": "Complete the phrase.",
+            "uk": "Заверши фразу."
+          },
+          "relatedItemId": "te_lo_mereces",
+          "options": null,
+          "correctOptionIndex": null,
+          "sentenceTemplate": "Felicidades, de verdad te lo ___.",
+          "acceptedAnswers": ["mereces"]
+        },
+        {
+          "id": "q5",
+          "type": "multipleChoice",
+          "promptByLocale": {
+            "en": "Which phrase means \"you deserve it\"?",
+            "uk": "Яка фраза означає «ти це заслуговуєш»?"
+          },
+          "relatedItemId": "te_lo_mereces",
+          "options": ["felicidades", "qué bien", "te lo mereces", "enhorabuena"],
+          "correctOptionIndex": 2,
+          "sentenceTemplate": null,
+          "acceptedAnswers": null
+        }
+      ],
+      "wordSwapItems": null
+    }
+  ]
+}

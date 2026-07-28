@@ -5,7 +5,6 @@ import SwiftData
 struct ProfileView: View {
     var onBack: (() -> Void)? = nil
     @Environment(AuthState.self) private var authState
-    @State private var editingLevel: StudentLevel = .beginner
     @State private var editingFocus: String = ""
     @State private var isSaving = false
     @State private var showSignOutConfirm = false
@@ -164,44 +163,32 @@ struct ProfileView: View {
         return "\(first)\(second)".uppercased()
     }
 
-    // MARK: - Level (multi-axis, server-derived)
+    // MARK: - Level (read-only summary — edited in Settings → Level)
 
-    @ViewBuilder
     private var levelSection: some View {
-        if let lb = profile?.onboardingProfile?.levelBreakdown {
-            VStack(alignment: .leading, spacing: 12) {
-                sectionHeader(L("Learning Level"))
-                VStack(alignment: .leading, spacing: 14) {
-                    if !lb.currentState.isEmpty {
-                        levelRow(title: L("Current state"),
-                                 band: lb.overallBand,
-                                 note: lb.currentState)
-                    }
-                    levelRow(title: L("Listening"),
-                             band: lb.listening.band,
-                             note: lb.listening.note)
-                    levelRow(title: L("Speaking"),
-                             band: lb.speaking.band,
-                             note: lb.speaking.note)
-                    levelRow(title: L("Grammar"),
-                             band: lb.grammar.band,
-                             note: lb.grammar.note)
-                    if !lb.goals.isEmpty {
-                        Divider().background(AppColors.cardBorder)
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text(L("Goals"))
-                                .font(.system(size: 13, weight: .semibold, design: .rounded))
+        VStack(alignment: .leading, spacing: 12) {
+            sectionHeader(L("Learning Level"))
+            NavigationLink {
+                LevelSettingsView()
+            } label: {
+                HStack(spacing: 12) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(L(profile?.effectiveStage.displayLabel ?? LearnerStage.absoluteBeginner.displayLabel))
+                            .font(.system(size: 17, weight: .bold, design: .rounded))
+                            .foregroundColor(AppColors.textPrimary)
+                        if let lb = profile?.onboardingProfile?.levelBreakdown, lb.overallBand != "unknown", !lb.overallBand.isEmpty {
+                            Text(L("CEFR overall: %@", lb.overallBand))
+                                .font(.system(size: 13, weight: .regular, design: .rounded))
                                 .foregroundColor(AppColors.textTertiary)
-                                .textCase(.uppercase)
-                                .tracking(0.6)
-                            ForEach(Array(lb.goals.enumerated()), id: \.offset) { _, g in
-                                Text(g)
-                                    .font(.system(size: 15, weight: .regular, design: .rounded))
-                                    .foregroundColor(AppColors.textPrimary)
-                                    .fixedSize(horizontal: false, vertical: true)
-                            }
                         }
                     }
+                    Spacer()
+                    Text(L("Manage level"))
+                        .font(.system(size: 14, weight: .semibold, design: .rounded))
+                        .foregroundColor(.yellow)
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 12, weight: .semibold, design: .rounded))
+                        .foregroundColor(AppColors.textTertiary)
                 }
                 .padding(16)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -209,58 +196,7 @@ struct ProfileView: View {
                 .overlay(RoundedRectangle(cornerRadius: 14).stroke(AppColors.cardBorder, lineWidth: 1))
                 .clipShape(RoundedRectangle(cornerRadius: 14))
             }
-        } else {
-            VStack(alignment: .leading, spacing: 12) {
-                sectionHeader(L("Learning Level"))
-                HStack(spacing: 2) {
-                    ForEach(StudentLevel.allCases) { level in
-                        Button { editingLevel = level } label: {
-                            Text(L(level.displayLabel))
-                                .font(.system(size: 14, weight: .semibold, design: .rounded))
-                                .foregroundColor(editingLevel == level ? .black : AppColors.textSecondary)
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 9)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 10)
-                                        .fill(editingLevel == level ? Color.yellow : Color.clear)
-                                )
-                        }
-                        .buttonStyle(.plain)
-                    }
-                }
-                .padding(3)
-                .background(AppColors.cardBackground)
-                .clipShape(RoundedRectangle(cornerRadius: 14))
-                .overlay(RoundedRectangle(cornerRadius: 14).stroke(AppColors.cardBorder, lineWidth: 1))
-                .onChange(of: editingLevel) { _, _ in saveProfile() }
-                Text(L("Complete the voice onboarding to unlock a per-skill CEFR read."))
-                    .font(.system(size: 12, weight: .regular, design: .rounded))
-                    .foregroundColor(AppColors.textTertiary)
-            }
-        }
-    }
-
-    private func levelRow(title: String, band: String, note: String) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 8) {
-                Text(title)
-                    .font(.system(size: 15, weight: .semibold, design: .rounded))
-                    .foregroundColor(AppColors.textPrimary)
-                Spacer()
-                Text(band.uppercased())
-                    .font(.system(size: 12, weight: .bold, design: .rounded))
-                    .foregroundColor(.black)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 4)
-                    .background(Color.yellow)
-                    .clipShape(Capsule())
-            }
-            if !note.isEmpty {
-                Text(note)
-                    .font(.system(size: 14, weight: .regular, design: .rounded))
-                    .foregroundColor(AppColors.textSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
+            .buttonStyle(.plain)
         }
     }
 
@@ -440,13 +376,11 @@ struct ProfileView: View {
 
     private func loadFromProfile() {
         guard let p = profile else { return }
-        editingLevel = p.levelEnum
         editingFocus = p.currentStudyTopic ?? ""
     }
 
     private func saveProfile() {
         guard var p = profile else { return }
-        p.level = editingLevel.rawValue
         p.currentStudyTopic = editingFocus.isEmpty ? nil : editingFocus
         p.updatedAt = Date()
         // Update the in-memory profile immediately (not just Supabase) so a

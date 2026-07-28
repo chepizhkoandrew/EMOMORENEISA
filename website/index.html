@@ -514,6 +514,47 @@
       transform: translateY(-24px);
     }
 
+    /* 4-phone row */
+    .screens-4 .iphone-frame {
+      width: 120px;
+      height: 260px;
+      border-radius: 28px;
+      border-width: 7px;
+    }
+    .screens-4 .iphone-frame::before {
+      top: 4px;
+      width: 50px;
+      height: 16px;
+      border-radius: 9px;
+    }
+    .screens-4 .iphone-frame::after {
+      top: 49px;
+      right: -10px;
+      height: 38px;
+    }
+
+    /* 5-phone row */
+    .screens-5 {
+      gap: 0.7rem;
+    }
+    .screens-5 .iphone-frame {
+      width: 104px;
+      height: 225px;
+      border-radius: 24px;
+      border-width: 6px;
+    }
+    .screens-5 .iphone-frame::before {
+      top: 4px;
+      width: 44px;
+      height: 14px;
+      border-radius: 8px;
+    }
+    .screens-5 .iphone-frame::after {
+      top: 42px;
+      right: -9px;
+      height: 33px;
+    }
+
     /* ================================================================
        RESPONSIVE
     ================================================================ */
@@ -904,18 +945,26 @@
       <div class="use-case">
         <div class="uc-text">
           <div class="uc-number">02</div>
-          <h3 class="uc-title">Consistency is the trick</h3>
+          <h3 class="uc-title">Speaking club on demand</h3>
           <ol class="uc-list">
-            <li>You get a <span class="hl">personal schedule</span> for every word <strong>and</strong> tons of smart <span class="hl">notifications</span></li>
+            <li><span class="hl">Choose who</span> you want to talk with <span class="hl">and the situation</span></li>
+            <li>Train your <span class="hl">speaking and imagination</span></li>
+            <li>Madrid <span class="hl">will facilitate</span> your conversation <span class="hl">like a podcast</span> host</li>
           </ol>
-          <p class="uc-callout"><span class="hl">This is how dogs learn</span> to ride a bicycle.. Your Spanish is way easier, <strong>you can do it!</strong></p>
+          <p class="uc-callout"><span class="hl">This is how roleplay mode work</span> — your speaking partner can be anyone in history, and the host-Madrid never lets it go quiet.</p>
         </div>
-        <div class="uc-screens screens-2">
+        <div class="uc-screens screens-4">
           <div class="iphone-frame">
-            <img src="assets/10_el_loro_playback.png" alt="Seagull Steven word playback" loading="lazy">
+            <img src="assets/roleplay_who.png" alt="Choose who you want to talk to" loading="lazy">
           </div>
           <div class="iphone-frame">
-            <img src="assets/04_seagull_memory.png" alt="Seagull Steven memory queue" loading="lazy">
+            <img src="assets/roleplay_where.png" alt="Choose the situation and setting" loading="lazy">
+          </div>
+          <div class="iphone-frame">
+            <img src="assets/roleplay_topic.png" alt="Choose what they talk about" loading="lazy">
+          </div>
+          <div class="iphone-frame">
+            <img src="assets/roleplay_show.png" alt="Madrid hosts your conversation like a podcast" loading="lazy">
           </div>
         </div>
       </div>
@@ -923,6 +972,58 @@
       <div class="use-case reversed">
         <div class="uc-text">
           <div class="uc-number">03</div>
+          <h3 class="uc-title">New words learning queue — consistency = memory</h3>
+          <ol class="uc-list">
+            <li>You get a <span class="hl">personal schedule</span> for every word <strong>and</strong> tons of smart <span class="hl">notifications</span></li>
+          </ol>
+          <p class="uc-callout"><span class="hl">This is how dogs learn</span> to ride a bicycle.. Your Spanish is way easier, <strong>you can do it!</strong></p>
+        </div>
+        <div class="uc-screens screens-3">
+          <div class="iphone-frame">
+            <img src="assets/memqueue_seagull.png" alt="Seagull Steven memory queue — words due now" loading="lazy">
+          </div>
+          <div class="iphone-frame">
+            <img src="assets/memqueue_word.png" alt="Each word has its own illustrated card" loading="lazy">
+          </div>
+          <div class="iphone-frame">
+            <img src="assets/memqueue_practice.png" alt="Practice a phrase word by word with Seagull Steven" loading="lazy">
+          </div>
+        </div>
+      </div>
+
+      <div class="use-case">
+        <div class="uc-text">
+          <div class="uc-number">04</div>
+          <h3 class="uc-title">Remember with music</h3>
+          <ol class="uc-list">
+            <li>Tired of repeating words? <span class="hl">Sing them!</span></li>
+            <li>Choose words from <span class="hl">your personal learning queue</span></li>
+            <li>Madrid generates you <span class="hl">a song</span> with karaoke, <span class="hl">sing it and share</span> with friends!</li>
+          </ol>
+          <p class="uc-callout"><span class="hl">This is how songs get stuck in your head</span> — now it's your Spanish words doing the sticking.</p>
+        </div>
+        <div class="uc-screens screens-5">
+          <div class="iphone-frame">
+            <img src="assets/music_create.png" alt="Create a song — choose genre and length" loading="lazy">
+          </div>
+          <div class="iphone-frame">
+            <img src="assets/music_lyrics.png" alt="Pick words from your memory queue" loading="lazy">
+          </div>
+          <div class="iphone-frame">
+            <img src="assets/music_song.png" alt="Madrid generates your song with lyrics" loading="lazy">
+          </div>
+          <div class="iphone-frame">
+            <img src="assets/music_karaoke.png" alt="Sing along in karaoke mode" loading="lazy">
+          </div>
+          <div class="iphone-frame">
+            <img src="assets/music_library.png" alt="Your library of songs to share with friends" loading="lazy">
+          </div>
+        </div>
+      </div>
+
+      <div class="use-case reversed">
+        <div class="uc-text">
+          <div class="uc-number">05</div>
           <h3 class="uc-title">Verbs and times is 80% of Spanish</h3>
           <ol class="uc-list">
             <li>Practice verbally — <span class="hl">this is NLP</span></li>

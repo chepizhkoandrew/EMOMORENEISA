@@ -4,7 +4,7 @@ import PhotosUI
 import AVFoundation
 
 struct NewSessionView: View {
-    enum InitialStep { case topicInput, streetViewPhotos }
+    enum InitialStep { case topicInput, streetViewPhotos, freeFormInput }
 
     let initialStep: InitialStep
     let onSessionCreated: (LocalChatSession) -> Void
@@ -23,7 +23,16 @@ struct NewSessionView: View {
     @State private var showStreetCamera = false
     @State private var showStreetPhotoPicker = false
 
-    private enum NewSessionStep { case topicInput, streetViewPhotos }
+    @State private var freeFormText: String = ""
+    @State private var freeFormRecorder = AudioRecorder()
+    @State private var isRecordingFreeForm = false
+    @State private var isTranscribingFreeForm = false
+    @State private var freeFormImages: [UIImage] = []
+    @State private var selectedFreeFormItems: [PhotosPickerItem] = []
+    @State private var showFreeFormCamera = false
+    @State private var showFreeFormPhotoPicker = false
+
+    private enum NewSessionStep { case topicInput, streetViewPhotos, freeFormInput }
 
     private let predefinedTopics = [
         "Past-tense verbs",
@@ -36,7 +45,13 @@ struct NewSessionView: View {
     init(initialStep: InitialStep, onSessionCreated: @escaping (LocalChatSession) -> Void) {
         self.initialStep = initialStep
         self.onSessionCreated = onSessionCreated
-        _step = State(initialValue: initialStep == .topicInput ? .topicInput : .streetViewPhotos)
+        let startStep: NewSessionStep
+        switch initialStep {
+        case .topicInput:       startStep = .topicInput
+        case .streetViewPhotos: startStep = .streetViewPhotos
+        case .freeFormInput:    startStep = .freeFormInput
+        }
+        _step = State(initialValue: startStep)
     }
 
     var body: some View {
@@ -49,6 +64,8 @@ struct NewSessionView: View {
                         topicInputContent
                     case .streetViewPhotos:
                         streetViewPhotosContent
+                    case .freeFormInput:
+                        freeFormInputContent
                     }
                 }
             }
@@ -94,12 +111,39 @@ struct NewSessionView: View {
             }
             .ignoresSafeArea()
         }
+        .photosPicker(
+            isPresented: $showFreeFormPhotoPicker,
+            selection: $selectedFreeFormItems,
+            maxSelectionCount: 4,
+            matching: .images
+        )
+        .onChange(of: selectedFreeFormItems) { _, newItems in
+            Task {
+                var loaded: [UIImage] = []
+                for item in newItems {
+                    if let data = try? await item.loadTransferable(type: Data.self),
+                       let img = UIImage(data: data) {
+                        loaded.append(img)
+                    }
+                }
+                await MainActor.run { freeFormImages = loaded }
+            }
+        }
+        .fullScreenCover(isPresented: $showFreeFormCamera) {
+            CameraPickerView { image in
+                if freeFormImages.count < 4 {
+                    freeFormImages.append(image)
+                }
+            }
+            .ignoresSafeArea()
+        }
     }
 
     private var navTitle: String {
         switch step {
         case .topicInput:        return L("Choose a Topic")
         case .streetViewPhotos:  return L("Street View")
+        case .freeFormInput:     return L("Ask in a Free Forum")
         }
     }
 
@@ -453,6 +497,258 @@ struct NewSessionView: View {
         .padding(.bottom, 20)
         .background(AppColors.backgroundTop)
         .overlay(Rectangle().frame(height: 0.5).foregroundColor(AppColors.cardBorder), alignment: .top)
+    }
+
+    // MARK: - Step: Free Form Input
+
+    private var freeFormInputContent: some View {
+        VStack(spacing: 0) {
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: 20) {
+                    Spacer(minLength: 8)
+
+                    Text(L("What do you need? Paste homework, check something you wrote, or ask a question."))
+                        .font(.system(size: 20, weight: .semibold, design: .rounded))
+                        .foregroundColor(.white)
+                        .multilineTextAlignment(.center)
+                        .frame(maxWidth: .infinity)
+
+                    freeFormField
+
+                    if !freeFormImages.isEmpty {
+                        freeFormPhotoStrip
+                    }
+
+                    freeFormAttachRow
+                }
+                .padding(24)
+            }
+
+            startFreeFormBar
+        }
+    }
+
+    private var freeFormField: some View {
+        HStack(alignment: .top, spacing: 12) {
+            ZStack(alignment: .topLeading) {
+                if freeFormText.isEmpty {
+                    Text(L("e.g. paste an exercise, \"is this right: ...\", or \"when do I use ser vs estar?\"…"))
+                        .font(.system(size: 18, weight: .regular, design: .rounded))
+                        .foregroundColor(.white.opacity(0.45))
+                        .padding(.horizontal, 18)
+                        .padding(.vertical, 16)
+                        .allowsHitTesting(false)
+                }
+                TextField("", text: $freeFormText, axis: .vertical)
+                    .font(.system(size: 18, weight: .regular, design: .rounded))
+                    .foregroundColor(AppColors.textPrimary)
+                    .lineLimit(3...8)
+                    .padding(.horizontal, 18)
+                    .padding(.vertical, 16)
+            }
+            .background(AppColors.inputBackground)
+            .overlay(RoundedRectangle(cornerRadius: 16).stroke(AppColors.inputBorder, lineWidth: 1))
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+
+            freeFormMicButton
+        }
+        .overlay(alignment: .bottomLeading) {
+            if isTranscribingFreeForm {
+                HStack(spacing: 8) {
+                    ProgressView()
+                        .tint(.yellow)
+                        .scaleEffect(0.85)
+                    Text(L("Transcribing…"))
+                        .font(.system(size: 15, design: .rounded))
+                        .foregroundColor(.yellow.opacity(0.8))
+                }
+                .padding(.leading, 4)
+                .offset(y: 28)
+            } else if isRecordingFreeForm {
+                HStack(spacing: 8) {
+                    Circle()
+                        .fill(Color.red)
+                        .frame(width: 9, height: 9)
+                    Text(L("Listening… tap mic to stop"))
+                        .font(.system(size: 15, design: .rounded))
+                        .foregroundColor(.red.opacity(0.8))
+                }
+                .padding(.leading, 4)
+                .offset(y: 28)
+            }
+        }
+        .padding(.bottom, (isTranscribingFreeForm || isRecordingFreeForm) ? 28 : 0)
+    }
+
+    private var freeFormMicButton: some View {
+        Button {
+            guard !isTranscribingFreeForm else { return }
+            if isRecordingFreeForm {
+                isRecordingFreeForm = false
+                isTranscribingFreeForm = true
+                Task {
+                    let transcript = await freeFormRecorder.stopAndTranscribe()
+                    await MainActor.run {
+                        if !transcript.isEmpty {
+                            freeFormText = freeFormText.isEmpty ? transcript : freeFormText + " " + transcript
+                        }
+                        isTranscribingFreeForm = false
+                    }
+                }
+            } else {
+                do {
+                    try freeFormRecorder.start()
+                    isRecordingFreeForm = true
+                } catch {}
+            }
+        } label: {
+            ZStack {
+                Circle()
+                    .fill(isRecordingFreeForm ? Color.red : isTranscribingFreeForm ? Color.yellow.opacity(0.2) : AppColors.inputBackground)
+                    .frame(width: 58, height: 58)
+                    .overlay(
+                        Circle()
+                            .stroke(isRecordingFreeForm ? Color.red.opacity(0.4) : AppColors.inputBorder, lineWidth: 1)
+                    )
+                if isTranscribingFreeForm {
+                    ProgressView()
+                        .tint(.yellow)
+                        .scaleEffect(0.9)
+                } else if isRecordingFreeForm {
+                    VoiceWaveformView(
+                        audioLevel: freeFormRecorder.audioLevel,
+                        color: .white,
+                        barCount: 5,
+                        maxHeight: 24,
+                        barWidth: 3,
+                        spacing: 3
+                    )
+                } else {
+                    Image(systemName: "mic.fill")
+                        .font(.system(size: 22, weight: .semibold, design: .rounded))
+                        .foregroundColor(AppColors.textSecondary)
+                }
+            }
+        }
+    }
+
+    private var freeFormPhotoStrip: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 10) {
+                ForEach(freeFormImages.indices, id: \.self) { index in
+                    ZStack(alignment: .topTrailing) {
+                        Image(uiImage: freeFormImages[index])
+                            .resizable()
+                            .scaledToFill()
+                            .frame(width: 84, height: 84)
+                            .clipShape(RoundedRectangle(cornerRadius: 14))
+
+                        Button {
+                            freeFormImages.remove(at: index)
+                            if freeFormImages.isEmpty { selectedFreeFormItems = [] }
+                        } label: {
+                            Image(systemName: "xmark.circle.fill")
+                                .font(.system(size: 18, design: .rounded))
+                                .foregroundColor(.white)
+                                .background(Color.black.opacity(0.55), in: Circle())
+                        }
+                        .offset(x: 5, y: -5)
+                    }
+                }
+            }
+        }
+    }
+
+    private var freeFormAttachRow: some View {
+        HStack(spacing: 12) {
+            Button {
+                showFreeFormCamera = true
+            } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: "camera.fill")
+                        .font(.system(size: 18, weight: .semibold, design: .rounded))
+                    Text(L("Camera"))
+                        .font(.system(size: 17, weight: .semibold, design: .rounded))
+                }
+                .foregroundColor(.white)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 16)
+                .background(Color.white.opacity(0.10))
+                .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.white.opacity(0.18), lineWidth: 1))
+                .clipShape(RoundedRectangle(cornerRadius: 16))
+            }
+            .disabled(freeFormImages.count >= 4)
+            .opacity(freeFormImages.count >= 4 ? 0.35 : 1.0)
+
+            Button {
+                showFreeFormPhotoPicker = true
+            } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: "photo.on.rectangle.angled")
+                        .font(.system(size: 18, weight: .semibold, design: .rounded))
+                    Text(L("Photos"))
+                        .font(.system(size: 17, weight: .semibold, design: .rounded))
+                }
+                .foregroundColor(.white)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 16)
+                .background(Color.white.opacity(0.10))
+                .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.white.opacity(0.18), lineWidth: 1))
+                .clipShape(RoundedRectangle(cornerRadius: 16))
+            }
+            .disabled(freeFormImages.count >= 4)
+            .opacity(freeFormImages.count >= 4 ? 0.35 : 1.0)
+        }
+    }
+
+    private var startFreeFormBar: some View {
+        let disabled = isTranscribingFreeForm
+            || (freeFormText.trimmingCharacters(in: .whitespaces).isEmpty && freeFormImages.isEmpty)
+        return Button(action: createFreeFormSession) {
+            Text(L("Start"))
+                .font(.system(size: 19, weight: .bold, design: .rounded))
+                .foregroundColor(.white)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 20)
+                .background(disabled ? Color.yellow.opacity(0.35) : Color.yellow)
+                .clipShape(RoundedRectangle(cornerRadius: 18))
+                .shadow(color: disabled ? .clear : Color.yellow.opacity(0.4), radius: 12, y: 4)
+        }
+        .disabled(disabled)
+        .padding(.horizontal, 24)
+        .padding(.top, 12)
+        .padding(.bottom, 20)
+        .background(AppColors.backgroundTop)
+        .overlay(Rectangle().frame(height: 0.5).foregroundColor(AppColors.cardBorder), alignment: .top)
+    }
+
+    private func createFreeFormSession() {
+        if isRecordingFreeForm {
+            isRecordingFreeForm = false
+            freeFormRecorder.cancel()
+        }
+        guard let userId = authState.userId else { return }
+        let trimmedText = freeFormText.trimmingCharacters(in: .whitespaces)
+        guard !trimmedText.isEmpty || !freeFormImages.isEmpty else { return }
+
+        let session = LocalChatSession(
+            userId: userId,
+            mode: .freeForum,
+            title: trimmedText.isEmpty ? nil : String(trimmedText.prefix(60)),
+            topic: trimmedText.isEmpty ? nil : trimmedText
+        )
+        modelContext.insert(session)
+        try? modelContext.save()
+        FreeFormInputStore.shared.set(
+            text: trimmedText.isEmpty ? nil : trimmedText,
+            images: freeFormImages,
+            for: session.id
+        )
+        Task {
+            await SupabaseSyncService.shared.upsertSession(session, userId: userId)
+        }
+        AnalyticsService.shared.track(.sessionCreated(mode: SessionMode.freeForum.rawValue))
+        onSessionCreated(session)
     }
 
     // MARK: - Session Creation

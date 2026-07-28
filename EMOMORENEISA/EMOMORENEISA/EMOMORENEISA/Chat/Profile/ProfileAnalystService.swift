@@ -111,6 +111,17 @@ final class ProfileAnalystService {
             profile!.exerciseHistory = Array(profile!.exerciseHistory.suffix(10))
         }
 
+        // Level-up suggestion signal: only counts an exchange when the
+        // student is actually operating at-or-above their current stage —
+        // estimated_difficulty is CEFR 1–6 (see PromptBuilder.extractionPrompt),
+        // which maps to LearnerStage.order 0–5. A single easier exchange
+        // doesn't decrement; only an explicit stage change (accepting the
+        // level-up banner, or a manual edit in Level Settings) resets this
+        // via `ESPProfile.advanceStage()`.
+        if let difficulty = result.estimatedDifficulty, difficulty - 1 >= profile!.effectiveStage.order {
+            profile!.stageProgressCount += 1
+        }
+
         profile!.updatedAt = Date()
     }
 }

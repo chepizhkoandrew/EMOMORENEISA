@@ -206,6 +206,7 @@ export const config = {
     loro: num("COST_LORO_DRILL", 3),
     annotate: num("COST_ANNOTATE", 6),
     verbCheck: num("COST_VERB_CHECK", 2),
+    phraseCheck: num("COST_PHRASE_CHECK", 2),
     // Flat charge per roleplay turn — covers the larger dual-persona completion
     // plus both subsequent TTS calls (Madrid + object), which are billed free
     // via the "roleplay" TTS context so a turn is never double-charged.

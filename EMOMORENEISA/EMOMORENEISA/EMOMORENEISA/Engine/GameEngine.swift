@@ -162,34 +162,25 @@ final class GameEngine: ObservableObject {
         let cell = r.cells[cellIndex]
         glog("⚙️ ENGINE", "STT delivered for \"\(cell.expectedConjugation)\": '\(transcribed)'")
 
-        let normalized = normalizeTranscript(transcribed)
+        let normalized = SpokenAnswerJudge.normalizeTranscript(transcribed)
         if normalized != transcribed {
             glog("⚙️ ENGINE", "Normalized transcript: '\(transcribed)' → '\(normalized)'")
-        }
-
-        let normalizedExpected = normalizeTranscript(cell.expectedConjugation)
-        if normalized == normalizedExpected && !normalized.isEmpty {
-            glog("⚙️ ENGINE", "✅ Exact match '\(normalized)' == '\(normalizedExpected)' — skipping server")
-            markActiveCell(correct: true, cellIndex: cellIndex, transcript: transcribed)
-            advanceCell()
-            return
         }
 
         Task {
             glog("🤖 SERVER", "→ verb-check | expected: \"\(cell.expectedConjugation)\" | got: \"\(normalized)\"")
             let t0 = Date()
 
-            let correct: Bool
-            do {
-                correct = try await ProxyClient.shared.verbCheck(
-                    transcript: normalized,
+            let correct = await SpokenAnswerJudge.judge(
+                transcribed: normalized,
+                expected: cell.expectedConjugation
+            ) { normalizedTranscript in
+                try await ProxyClient.shared.verbCheck(
+                    transcript: normalizedTranscript,
                     expected: cell.expectedConjugation,
                     infinitive: cell.verb.infinitive,
                     pronoun: cell.pronoun.displayLabel
                 )
-            } catch {
-                glog("🤖 SERVER", "⚠️ verb-check failed (\(error.localizedDescription)) — fallback local")
-                correct = localFallback(transcribed: normalized, expected: cell.expectedConjugation)
             }
 
             let latency = Date().timeIntervalSince(t0)
@@ -319,28 +310,20 @@ final class GameEngine: ObservableObject {
 
     private func submitRetryAnswer(_ transcribed: String, cellIndex: Int) {
         guard let cell = round?.cells[safe: cellIndex] else { return }
-        let normalized = normalizeTranscript(transcribed)
-        let normalizedExpected = normalizeTranscript(cell.expectedConjugation)
+        let normalized = SpokenAnswerJudge.normalizeTranscript(transcribed)
         glog("⚙️ ENGINE", "🔄 Retry STT: expected \"\(cell.expectedConjugation)\" | got '\(normalized)'")
 
-        if normalized == normalizedExpected && !normalized.isEmpty {
-            glog("⚙️ ENGINE", "✅ Retry exact match — skipping server")
-            markActiveCell(correct: true, cellIndex: cellIndex, transcript: transcribed)
-            return
-        }
-
         Task {
-            let correct: Bool
-            do {
-                correct = try await ProxyClient.shared.verbCheck(
-                    transcript: normalized,
+            let correct = await SpokenAnswerJudge.judge(
+                transcribed: normalized,
+                expected: cell.expectedConjugation
+            ) { normalizedTranscript in
+                try await ProxyClient.shared.verbCheck(
+                    transcript: normalizedTranscript,
                     expected: cell.expectedConjugation,
                     infinitive: cell.verb.infinitive,
                     pronoun: cell.pronoun.displayLabel
                 )
-            } catch {
-                glog("🤖 SERVER", "⚠️ Retry verb-check failed — fallback local")
-                correct = localFallback(transcribed: normalized, expected: cell.expectedConjugation)
             }
             glog("🤖 SERVER", "🔄 Retry → \(correct ? "✅ CORRECT" : "❌ WRONG")")
             markActiveCell(correct: correct, cellIndex: cellIndex, transcript: transcribed)
@@ -445,45 +428,6 @@ final class GameEngine: ObservableObject {
         audioRecorder.cancel()
     }
 
-    private func normalizeTranscript(_ s: String) -> String {
-        let punctuation = CharacterSet(charactersIn: ".,!?¿¡;:\"'()[]")
-        return s
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-            .trimmingCharacters(in: punctuation)
-            .lowercased()
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-    }
-
-    private func localFallback(transcribed: String, expected: String) -> Bool {
-        let normalize: (String) -> String = {
-            $0.lowercased()
-              .folding(options: .diacriticInsensitive, locale: .current)
-              .trimmingCharacters(in: .whitespacesAndNewlines)
-        }
-        let a = normalize(transcribed)
-        let b = normalize(expected)
-        if a == b || a.hasSuffix(b) || b.hasSuffix(a) { return true }
-        let dist = levenshtein(a, b)
-        let maxLen = max(a.count, b.count)
-        let sim = maxLen == 0 ? 1.0 : 1.0 - Double(dist) / Double(maxLen)
-        return sim >= (b.count <= 5 ? 0.75 : 0.82)
-    }
-
-    private func levenshtein(_ s: String, _ t: String) -> Int {
-        let s = Array(s), t = Array(t)
-        let m = s.count, n = t.count
-        if m == 0 { return n }
-        if n == 0 { return m }
-        var dp = Array(repeating: Array(repeating: 0, count: n + 1), count: m + 1)
-        for i in 0...m { dp[i][0] = i }
-        for j in 0...n { dp[0][j] = j }
-        for i in 1...m {
-            for j in 1...n {
-                dp[i][j] = s[i-1] == t[j-1] ? dp[i-1][j-1] : 1 + min(dp[i-1][j], dp[i][j-1], dp[i-1][j-1])
-            }
-        }
-        return dp[m][n]
-    }
 }
 
 private extension Array {

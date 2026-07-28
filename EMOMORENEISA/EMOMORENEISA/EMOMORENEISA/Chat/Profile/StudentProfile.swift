@@ -42,6 +42,17 @@ struct ESPProfile: Codable, Identifiable {
     // (new and existing) per Apple 5.1.1(i)/5.1.2(i).
     var aiDisclosureAcceptedAt: Date?
 
+    // Graduated level system: replaces `level`'s 3-way granularity for
+    // deciding how much Spanish vs. native language the tutor uses. `level`
+    // itself stays populated (see `learnerStageEnum`'s bridge) since it's
+    // still read by a couple of legacy `levelEnum` call sites.
+    var learnerStage: String
+    var immersionMode: String
+    var absoluteBeginnerOverride: Bool
+    var showInlineTranslations: Bool
+    var autoSuggestLevelUp: Bool
+    var stageProgressCount: Int
+
     enum CodingKeys: String, CodingKey {
         case id
         case displayName        = "display_name"
@@ -69,6 +80,12 @@ struct ESPProfile: Codable, Identifiable {
         case onboardingProfile  = "onboarding_profile"
         case hasCompletedOnboarding = "has_completed_onboarding"
         case aiDisclosureAcceptedAt = "ai_disclosure_accepted_at"
+        case learnerStage             = "learner_stage"
+        case immersionMode            = "immersion_mode"
+        case absoluteBeginnerOverride = "absolute_beginner_override"
+        case showInlineTranslations   = "show_inline_translations"
+        case autoSuggestLevelUp       = "auto_suggest_level_up"
+        case stageProgressCount       = "stage_progress_count"
     }
 
     init(
@@ -97,7 +114,13 @@ struct ESPProfile: Codable, Identifiable {
         userPronoun: String? = nil,
         onboardingProfile: OnboardingProfile? = nil,
         hasCompletedOnboarding: Bool = false,
-        aiDisclosureAcceptedAt: Date? = nil
+        aiDisclosureAcceptedAt: Date? = nil,
+        learnerStage: String = "beginner",
+        immersionMode: String = "guided",
+        absoluteBeginnerOverride: Bool = false,
+        showInlineTranslations: Bool = true,
+        autoSuggestLevelUp: Bool = true,
+        stageProgressCount: Int = 0
     ) {
         self.id = id
         self.displayName = displayName
@@ -125,6 +148,12 @@ struct ESPProfile: Codable, Identifiable {
         self.onboardingProfile = onboardingProfile
         self.hasCompletedOnboarding = hasCompletedOnboarding
         self.aiDisclosureAcceptedAt = aiDisclosureAcceptedAt
+        self.learnerStage = learnerStage
+        self.immersionMode = immersionMode
+        self.absoluteBeginnerOverride = absoluteBeginnerOverride
+        self.showInlineTranslations = showInlineTranslations
+        self.autoSuggestLevelUp = autoSuggestLevelUp
+        self.stageProgressCount = stageProgressCount
     }
 
     init(from decoder: Decoder) throws {
@@ -155,11 +184,56 @@ struct ESPProfile: Codable, Identifiable {
         onboardingProfile = try? c.decodeIfPresent(OnboardingProfile.self, forKey: .onboardingProfile)
         hasCompletedOnboarding = (try? c.decode(Bool.self, forKey: .hasCompletedOnboarding)) ?? false
         aiDisclosureAcceptedAt = try? c.decodeIfPresent(Date.self, forKey: .aiDisclosureAcceptedAt)
+
+        // Backfill for rows that predate the `learner_stage` column: derive
+        // from the legacy 3-way `level`, NOT `.absoluteBeginner` — existing
+        // users must not regress to a zero-Spanish start just because this
+        // column is new to them. Only genuinely new signups get
+        // absoluteBeginner, via the DB column's own DEFAULT.
+        learnerStage = (try? c.decodeIfPresent(String.self, forKey: .learnerStage))
+            ?? LearnerStage.migrating(fromLegacy: level).rawValue
+        immersionMode = (try? c.decode(String.self, forKey: .immersionMode)) ?? "guided"
+        absoluteBeginnerOverride = (try? c.decode(Bool.self, forKey: .absoluteBeginnerOverride)) ?? false
+        showInlineTranslations = (try? c.decode(Bool.self, forKey: .showInlineTranslations)) ?? true
+        autoSuggestLevelUp = (try? c.decode(Bool.self, forKey: .autoSuggestLevelUp)) ?? true
+        stageProgressCount = (try? c.decode(Int.self, forKey: .stageProgressCount)) ?? 0
     }
 
     var levelEnum: StudentLevel {
         get { StudentLevel(rawValue: level) ?? .beginner }
         set { level = newValue.rawValue }
+    }
+
+    var learnerStageEnum: LearnerStage {
+        get { LearnerStage(rawValue: learnerStage) ?? .beginner }
+        set { learnerStage = newValue.rawValue }
+    }
+
+    var immersionModeEnum: ImmersionMode {
+        get { ImmersionMode(rawValue: immersionMode) ?? .guided }
+        set { immersionMode = newValue.rawValue }
+    }
+
+    /// The stage that should actually govern tutoring behavior right now.
+    /// `absoluteBeginnerOverride` is a manual escape hatch that masks
+    /// `learnerStage` without overwriting it — turning it off returns the
+    /// user to wherever their real stage was.
+    var effectiveStage: LearnerStage {
+        absoluteBeginnerOverride ? .absoluteBeginner : learnerStageEnum
+    }
+
+    /// Advances to the next stage (or just clears the override, if one was
+    /// masking a more advanced stored stage) and resets progress tracking.
+    /// Shared by the level-up banner's accept action and any other
+    /// stage-advancing call site so the reset logic lives in one place.
+    mutating func advanceStage() {
+        if absoluteBeginnerOverride {
+            absoluteBeginnerOverride = false
+        } else if let next = learnerStageEnum.next {
+            learnerStageEnum = next
+        }
+        stageProgressCount = 0
+        level = learnerStageEnum.bridgedLegacyLevel
     }
 
     var wordsDueToday: [WordEntry] { wordBank.filter { $0.isDueToday } }
@@ -228,6 +302,143 @@ enum StudentLevel: String, CaseIterable, Identifiable {
     }
 }
 
+/// Finer-grained level ladder that governs how much Spanish vs. native
+/// language the tutor uses (see `PromptBuilder.languageGuidance`), replacing
+/// `StudentLevel`'s 3-way granularity for that purpose. `StudentLevel`/
+/// `ESPProfile.level` stay in the model as a read-only compatibility bridge
+/// (`bridgedLegacyLevel`) for the couple of call sites still reading it.
+enum LearnerStage: String, CaseIterable, Identifiable, Comparable {
+    case absoluteBeginner  = "absolute_beginner"
+    case beginner          = "beginner"
+    case elementary        = "elementary"
+    case intermediate      = "intermediate"
+    case upperIntermediate = "upper_intermediate"
+    case advanced          = "advanced"
+
+    var id: String { rawValue }
+
+    var order: Int { Self.allCases.firstIndex(of: self) ?? 0 }
+
+    static func < (lhs: LearnerStage, rhs: LearnerStage) -> Bool { lhs.order < rhs.order }
+
+    var displayLabel: String {
+        switch self {
+        case .absoluteBeginner:  return "Absolute Beginner"
+        case .beginner:          return "Beginner"
+        case .elementary:        return "Elementary"
+        case .intermediate:      return "Intermediate"
+        case .upperIntermediate: return "Upper Intermediate"
+        case .advanced:          return "Advanced"
+        }
+    }
+
+    /// Plain-language reminder of what this stage means for tutoring —
+    /// shown under the progress bar in Level Settings.
+    var tutoringDescription: String {
+        switch self {
+        case .absoluteBeginner:
+            return "Your tutor speaks almost entirely in your native language, introducing a few simple Spanish words at a time."
+        case .beginner:
+            return "Your tutor mixes short, simple Spanish sentences with plenty of native-language support."
+        case .elementary:
+            return "Your tutor leans more into Spanish, still explaining new grammar in your native language."
+        case .intermediate:
+            return "Your tutor speaks mostly in Spanish, switching to your native language mainly for grammar notes."
+        case .upperIntermediate:
+            return "Your tutor speaks almost entirely in Spanish, with rare native-language asides."
+        case .advanced:
+            return "Your tutor speaks like a native speaker — full Spanish, no simplification."
+        }
+    }
+
+    var maxTokens: Int {
+        switch self {
+        case .absoluteBeginner:  return 220
+        case .beginner:          return 300
+        case .elementary:        return 380
+        case .intermediate:      return 512
+        case .upperIntermediate: return 580
+        case .advanced:          return 650
+        }
+    }
+
+    var next: LearnerStage? {
+        let cases = Self.allCases
+        let nextOrder = order + 1
+        return nextOrder < cases.count ? cases[nextOrder] : nil
+    }
+
+    /// Exchanges-at-or-above-this-stage required before the level-up banner
+    /// suggests moving on (see `ProfileAnalystService`). Lower early on for a
+    /// quick first nudge; nil at the top of the ladder (nothing to suggest).
+    var levelUpThreshold: Int? {
+        switch self {
+        case .absoluteBeginner:  return 6
+        case .beginner:          return 10
+        case .elementary:        return 14
+        case .intermediate:      return 18
+        case .upperIntermediate: return 24
+        case .advanced:          return nil
+        }
+    }
+
+    /// Best-effort mapping back onto the legacy 3-way `StudentLevel` so any
+    /// remaining `levelEnum` reader keeps getting something sane.
+    var bridgedLegacyLevel: String {
+        switch self {
+        case .absoluteBeginner, .beginner, .elementary: return "beginner"
+        case .intermediate:                             return "intermediate"
+        case .upperIntermediate, .advanced:             return "advanced"
+        }
+    }
+
+    /// Migration path from the legacy `level` field for profiles that
+    /// predate `learner_stage` — deliberately never returns `.absoluteBeginner`
+    /// here, since that would regress existing users to a zero-Spanish start.
+    static func migrating(fromLegacy level: String) -> LearnerStage {
+        switch level {
+        case "intermediate": return .intermediate
+        case "advanced":      return .advanced
+        default:              return .beginner
+        }
+    }
+}
+
+/// Nudges the Spanish-vs-native ratio up or down from a user's measured
+/// `LearnerStage` without changing the stage itself (see
+/// `PromptBuilder.languageGuidance`).
+enum ImmersionMode: String, CaseIterable, Identifiable {
+    case gentle, guided, immersive
+
+    var id: String { rawValue }
+
+    var displayLabel: String {
+        switch self {
+        case .gentle:    return "Gentle"
+        case .guided:    return "Guided"
+        case .immersive: return "Immersive"
+        }
+    }
+
+    var description: String {
+        switch self {
+        case .gentle:    return "More native language, ease in slowly"
+        case .guided:    return "Balanced for your level"
+        case .immersive: return "Push toward more Spanish"
+        }
+    }
+
+    /// Shift applied to a `LearnerStage.order` lookup before resolving
+    /// language-ratio guidance — clamped at the ladder's ends.
+    var stageOrderShift: Int {
+        switch self {
+        case .gentle:    return -1
+        case .guided:    return 0
+        case .immersive: return 1
+        }
+    }
+}
+
 @Model
 final class LocalStudentProfile {
     @Attribute(.unique) var id: UUID
@@ -256,6 +467,12 @@ final class LocalStudentProfile {
     var userPronoun: String? = nil
     var onboardingProfileJSON: Data = Data()
     var hasCompletedOnboarding: Bool = false
+    var learnerStage: String = "beginner"
+    var immersionMode: String = "guided"
+    var absoluteBeginnerOverride: Bool = false
+    var showInlineTranslations: Bool = true
+    var autoSuggestLevelUp: Bool = true
+    var stageProgressCount: Int = 0
 
     private static let encoder = JSONEncoder()
     private static let decoder = JSONDecoder()
@@ -285,6 +502,12 @@ final class LocalStudentProfile {
         self.userPronoun = remote.userPronoun
         self.onboardingProfileJSON = (try? Self.encoder.encode(remote.onboardingProfile)) ?? Data()
         self.hasCompletedOnboarding = remote.hasCompletedOnboarding
+        self.learnerStage = remote.learnerStage
+        self.immersionMode = remote.immersionMode
+        self.absoluteBeginnerOverride = remote.absoluteBeginnerOverride
+        self.showInlineTranslations = remote.showInlineTranslations
+        self.autoSuggestLevelUp = remote.autoSuggestLevelUp
+        self.stageProgressCount = remote.stageProgressCount
     }
 
     func update(from remote: ESPProfile) {
@@ -311,6 +534,12 @@ final class LocalStudentProfile {
         userPronoun = remote.userPronoun
         onboardingProfileJSON = (try? Self.encoder.encode(remote.onboardingProfile)) ?? Data()
         hasCompletedOnboarding = remote.hasCompletedOnboarding
+        learnerStage = remote.learnerStage
+        immersionMode = remote.immersionMode
+        absoluteBeginnerOverride = remote.absoluteBeginnerOverride
+        showInlineTranslations = remote.showInlineTranslations
+        autoSuggestLevelUp = remote.autoSuggestLevelUp
+        stageProgressCount = remote.stageProgressCount
     }
 
     var wordBank: [WordEntry] {

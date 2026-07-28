@@ -1,0 +1,205 @@
+{
+  "id": "romper",
+  "titleByLocale": {
+    "en": "Say Instead of “Romper”",
+    "uk": "Кажи замість «Romper»"
+  },
+  "order": 10,
+  "chapters": [
+    {
+      "id": "phrase_finder",
+      "kind": "phraseFinder",
+      "explanation": [
+        {
+          "id": "intro",
+          "relatedItemId": null,
+          "textByLocale": {
+            "en": "Today you'll learn five real ways to say something broke in Spanish — Spanish actually has a different verb depending on what broke.",
+            "uk": "Сьогодні ти вивчиш п'ять реальних способів сказати, що щось зламалося іспанською — і в іспанській для кожного випадку є своє дієслово."
+          },
+          "highlightsByLocale": {
+            "en": ["five real ways to say something broke"],
+            "uk": ["п'ять реальних способів сказати, що щось зламалося"]
+          }
+        },
+        {
+          "id": "structure",
+          "relatedItemId": null,
+          "textByLocale": {
+            "en": "We'll go through averiar, descomponerse, estropearse, quebrarse (or fracturarse), and hacerse pedazos. Each one is tied to a different kind of thing breaking.",
+            "uk": "Пройдемося по: averiar, descomponerse, estropearse, quebrarse (або fracturarse) та hacerse pedazos. Кожне дієслово пов'язане зі своїм видом «поломки»."
+          },
+          "highlightsByLocale": {
+            "en": ["averiar", "descomponerse", "estropearse", "quebrarse", "fracturarse", "hacerse pedazos"],
+            "uk": ["averiar", "descomponerse", "estropearse", "quebrarse", "fracturarse", "hacerse pedazos"]
+          }
+        },
+        {
+          "id": "explain_averiar",
+          "relatedItemId": "averiar",
+          "textByLocale": {
+            "en": "Let's start with averiar(se) — for appliances or anything with a motor, like a fridge or a car. \"Se averió la nevera, tendremos que comprar otra.\"",
+            "uk": "Почнімо з averiar(se) — для побутової техніки чи будь-чого з мотором, наприклад холодильника чи авто. «Se averió la nevera, tendremos que comprar otra.»"
+          },
+          "highlightsByLocale": {
+            "en": ["averiar"],
+            "uk": ["averiar"]
+          }
+        },
+        {
+          "id": "explain_descomponerse",
+          "relatedItemId": "descomponerse",
+          "textByLocale": {
+            "en": "Next, descomponerse — very similar to averiar for machines, but it also covers food going bad. A useful double meaning to know. \"Se descompuso la televisión.\"",
+            "uk": "Далі — descomponerse, дуже схоже на averiar для техніки, але також означає, що зіпсувалась їжа. Корисне подвійне значення. «Se descompuso la televisión.»"
+          },
+          "highlightsByLocale": {
+            "en": ["descomponerse"],
+            "uk": ["descomponerse"]
+          }
+        },
+        {
+          "id": "explain_estropearse",
+          "relatedItemId": "estropearse",
+          "textByLocale": {
+            "en": "Now estropearse — mainly for clothes and fabric, though it works for other objects too. \"La mancha de vino tinto estropeó el vestido blanco.\"",
+            "uk": "Тепер estropearse — здебільшого для одягу й тканини, хоча підходить і для інших предметів. «La mancha de vino tinto estropeó el vestido blanco.»"
+          },
+          "highlightsByLocale": {
+            "en": ["estropearse"],
+            "uk": ["estropearse"]
+          }
+        },
+        {
+          "id": "explain_quebrarse",
+          "relatedItemId": "quebrarse",
+          "textByLocale": {
+            "en": "Quebrarse (or fracturarse, a touch more formal) — specifically for bones. \"Verónica se cayó del árbol y se quebró la pierna.\"",
+            "uk": "Quebrarse (або fracturarse, трохи офіційніше) — саме для кісток. «Verónica se cayó del árbol y se quebró la pierna.»"
+          },
+          "highlightsByLocale": {
+            "en": ["quebrarse", "fracturarse"],
+            "uk": ["quebrarse", "fracturarse"]
+          }
+        },
+        {
+          "id": "explain_hacerse_pedazos",
+          "relatedItemId": "hacerse_pedazos",
+          "textByLocale": {
+            "en": "And finally, hacerse pedazos (or hacerse trizas) — for something shattering into pieces. \"El vaso de cristal se cayó y se hizo pedazos en el suelo.\"",
+            "uk": "І нарешті hacerse pedazos (або hacerse trizas) — коли щось розлітається на шматки. «El vaso de cristal se cayó y se hizo pedazos en el suelo.»"
+          },
+          "highlightsByLocale": {
+            "en": ["hacerse pedazos"],
+            "uk": ["hacerse pedazos"]
+          }
+        }
+      ],
+      "items": [
+        {
+          "id": "averiar",
+          "spanish": "averiarse",
+          "englishMeaning": "to break down",
+          "registerNote": "for appliances or anything with a motor",
+          "exampleSentence": "Se averió la nevera, tendremos que comprar otra."
+        },
+        {
+          "id": "descomponerse",
+          "spanish": "descomponerse",
+          "englishMeaning": "to break down / to go bad",
+          "registerNote": "for machines breaking down, or food spoiling",
+          "exampleSentence": "Se descompuso la televisión."
+        },
+        {
+          "id": "estropearse",
+          "spanish": "estropearse",
+          "englishMeaning": "to get ruined / damaged",
+          "registerNote": "mainly for clothes and fabric, also general objects",
+          "exampleSentence": "La mancha de vino tinto estropeó el vestido blanco."
+        },
+        {
+          "id": "quebrarse",
+          "spanish": "quebrarse / fracturarse",
+          "englishMeaning": "to break / fracture",
+          "registerNote": "specifically for bones, fracturarse is slightly more formal/technical",
+          "exampleSentence": "Verónica se cayó del árbol y se quebró la pierna."
+        },
+        {
+          "id": "hacerse_pedazos",
+          "spanish": "hacerse pedazos / hacerse trizas",
+          "englishMeaning": "to shatter into pieces",
+          "registerNote": "vivid, for glass or fragile objects shattering",
+          "exampleSentence": "El vaso de cristal se cayó y se hizo pedazos en el suelo."
+        }
+      ],
+      "quiz": [
+        {
+          "id": "q1",
+          "type": "multipleChoice",
+          "promptByLocale": {
+            "en": "Which one is for appliances or anything with a motor?",
+            "uk": "Яке слово підходить для техніки чи всього, що має мотор?"
+          },
+          "relatedItemId": "averiar",
+          "options": ["estropearse", "averiarse", "quebrarse", "hacerse pedazos"],
+          "correctOptionIndex": 1,
+          "sentenceTemplate": null,
+          "acceptedAnswers": null
+        },
+        {
+          "id": "q2",
+          "type": "fillBlank",
+          "promptByLocale": {
+            "en": "Complete the phrase.",
+            "uk": "Заверши фразу."
+          },
+          "relatedItemId": "descomponerse",
+          "options": null,
+          "correctOptionIndex": null,
+          "sentenceTemplate": "Se ___ la televisión.",
+          "acceptedAnswers": ["descompuso"]
+        },
+        {
+          "id": "q3",
+          "type": "multipleChoice",
+          "promptByLocale": {
+            "en": "Which one is used specifically for bones?",
+            "uk": "Яке слово вживається саме для кісток?"
+          },
+          "relatedItemId": "quebrarse",
+          "options": ["estropearse", "descomponerse", "quebrarse", "averiarse"],
+          "correctOptionIndex": 2,
+          "sentenceTemplate": null,
+          "acceptedAnswers": null
+        },
+        {
+          "id": "q4",
+          "type": "fillBlank",
+          "promptByLocale": {
+            "en": "Complete the phrase.",
+            "uk": "Заверши фразу."
+          },
+          "relatedItemId": "estropearse",
+          "options": null,
+          "correctOptionIndex": null,
+          "sentenceTemplate": "La mancha de vino tinto ___ el vestido blanco.",
+          "acceptedAnswers": ["estropeó"]
+        },
+        {
+          "id": "q5",
+          "type": "multipleChoice",
+          "promptByLocale": {
+            "en": "Which one means \"to shatter into pieces\"?",
+            "uk": "Яке слово означає «розлетітися на шматки»?"
+          },
+          "relatedItemId": "hacerse_pedazos",
+          "options": ["averiarse", "quebrarse", "estropearse", "hacerse pedazos"],
+          "correctOptionIndex": 3,
+          "sentenceTemplate": null,
+          "acceptedAnswers": null
+        }
+      ],
+      "wordSwapItems": null
+    }
+  ]
+}

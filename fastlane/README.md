@@ -153,6 +153,22 @@ Read-only: list recent builds with processing state (plus versions/subs via chec
 
 Create v1.2 in App Store Connect (now that v1.1 is READY_FOR_SALE and its train is closed) and bump the local marketing version to match. TestFlight-only — does not submit for review.
 
+### ios create_v13
+
+```sh
+[bundle exec] fastlane ios create_v13
+```
+
+
+
+### ios verify_last_build
+
+```sh
+[bundle exec] fastlane ios verify_last_build
+```
+
+
+
 ### ios check_state
 
 ```sh
@@ -176,6 +192,22 @@ Create v1.1, cancel old submissions, attach latest build + all 3 IAPs, and submi
 ```
 
 Submit v1.2 for review — pass build_number: (defaults to latest VALID build tagged 1.2). Run `metadata` first.
+
+### ios submit_v13
+
+```sh
+[bundle exec] fastlane ios submit_v13
+```
+
+Submit v1.3 for review — pass build_number: (defaults to latest VALID build tagged 1.3). Run `metadata` first.
+
+### ios cancel_submission
+
+```sh
+[bundle exec] fastlane ios cancel_submission
+```
+
+Cancel a specific reviewSubmission by id, regardless of its state (submit_v12's own cleanup step only handles UNRESOLVED_ISSUES/READY_FOR_REVIEW — this is for a submission stuck in WAITING_FOR_REVIEW or any other state blocking a version's item)
 
 ### ios fix_review_notes
 

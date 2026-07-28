@@ -1,0 +1,205 @@
+{
+  "id": "apologizing",
+  "titleByLocale": {
+    "en": "Say Instead of “Lo Siento”",
+    "uk": "Кажи замість «Lo siento»"
+  },
+  "order": 3,
+  "chapters": [
+    {
+      "id": "phrase_finder",
+      "kind": "phraseFinder",
+      "explanation": [
+        {
+          "id": "intro",
+          "relatedItemId": null,
+          "textByLocale": {
+            "en": "Today you'll learn five real ways to apologize in Spanish — from a quick \"my bad\" to a proper, sincere apology.",
+            "uk": "Сьогодні ти вивчиш п'ять реальних способів вибачитися іспанською — від швидкого «вибач» до справжнього, щирого вибачення."
+          },
+          "highlightsByLocale": {
+            "en": ["five real ways to apologize"],
+            "uk": ["п'ять реальних способів вибачитися"]
+          }
+        },
+        {
+          "id": "structure",
+          "relatedItemId": null,
+          "textByLocale": {
+            "en": "We'll go through perdón, disculpa, lo siento, fue mi culpa, and te pido disculpas. They range from a quick reflex to something you'd say when you really need to make things right.",
+            "uk": "Пройдемося по: perdón, disculpa, lo siento, fue mi culpa та te pido disculpas. Вони варіюються від швидкого рефлексу до того, що кажуть, коли справді потрібно все виправити."
+          },
+          "highlightsByLocale": {
+            "en": ["perdón", "disculpa", "lo siento", "fue mi culpa", "te pido disculpas"],
+            "uk": ["perdón", "disculpa", "lo siento", "fue mi culpa", "te pido disculpas"]
+          }
+        },
+        {
+          "id": "explain_perdon",
+          "relatedItemId": "perdon",
+          "textByLocale": {
+            "en": "Let's start with perdón — the quick reflex apology, like bumping into someone on the street. Almost automatic, no big deal implied. \"¡Perdón, no te vi!\"",
+            "uk": "Почнімо з perdón — швидке, рефлекторне вибачення, як коли зачепив когось на вулиці. Майже автоматичне, без натяку на щось серйозне. «¡Perdón, no te vi!»"
+          },
+          "highlightsByLocale": {
+            "en": ["perdón"],
+            "uk": ["perdón"]
+          }
+        },
+        {
+          "id": "explain_disculpa",
+          "relatedItemId": "disculpa",
+          "textByLocale": {
+            "en": "Next, disculpa — also useful to get someone's attention, like \"excuse me,\" but works as a light apology too. Neutral and easy to reach for.",
+            "uk": "Далі — disculpa, яке також підходить, щоб привернути чиюсь увагу, як «перепрошую», але працює і як легке вибачення. Нейтральне й зручне в будь-якій ситуації."
+          },
+          "highlightsByLocale": {
+            "en": ["disculpa"],
+            "uk": ["disculpa"]
+          }
+        },
+        {
+          "id": "explain_lo_siento",
+          "relatedItemId": "lo_siento",
+          "textByLocale": {
+            "en": "Now lo siento — \"I'm sorry,\" carrying real feeling behind it. Use this one when you actually feel bad about what happened, not just as a reflex.",
+            "uk": "Тепер lo siento — «мені шкода», зі справжнім почуттям за ним. Використовуй, коли дійсно шкодуєш про те, що сталося, а не просто за звичкою."
+          },
+          "highlightsByLocale": {
+            "en": ["lo siento"],
+            "uk": ["lo siento"]
+          }
+        },
+        {
+          "id": "explain_fue_mi_culpa",
+          "relatedItemId": "fue_mi_culpa",
+          "textByLocale": {
+            "en": "Fue mi culpa means \"it was my fault\" — you're not just apologizing, you're openly owning the mistake. Stronger and more direct.",
+            "uk": "Fue mi culpa означає «це була моя провина» — ти не просто вибачаєшся, а відкрито визнаєш помилку. Сильніше й прямолінійніше."
+          },
+          "highlightsByLocale": {
+            "en": ["Fue mi culpa"],
+            "uk": ["Fue mi culpa"]
+          }
+        },
+        {
+          "id": "explain_te_pido_disculpas",
+          "relatedItemId": "te_pido_disculpas",
+          "textByLocale": {
+            "en": "And finally, te pido disculpas — \"I'm asking for your forgiveness.\" The most formal and sincere option, for when you really need to make things right.",
+            "uk": "І нарешті te pido disculpas — «я прошу твого вибачення». Найофіційніший і найщиріший варіант, для ситуацій, коли справді треба все виправити."
+          },
+          "highlightsByLocale": {
+            "en": ["te pido disculpas"],
+            "uk": ["te pido disculpas"]
+          }
+        }
+      ],
+      "items": [
+        {
+          "id": "perdon",
+          "spanish": "perdón",
+          "englishMeaning": "sorry / pardon",
+          "registerNote": "quick reflex apology, almost automatic, no big deal implied",
+          "exampleSentence": "¡Perdón, no te vi!"
+        },
+        {
+          "id": "disculpa",
+          "spanish": "disculpa",
+          "englishMeaning": "excuse me / sorry",
+          "registerNote": "neutral, doubles as getting someone's attention",
+          "exampleSentence": "Disculpa, ¿sabes qué hora es?"
+        },
+        {
+          "id": "lo_siento",
+          "spanish": "lo siento",
+          "englishMeaning": "I'm sorry",
+          "registerNote": "carries real feeling, use when you genuinely feel bad",
+          "exampleSentence": "Lo siento mucho, no era mi intención."
+        },
+        {
+          "id": "fue_mi_culpa",
+          "spanish": "fue mi culpa",
+          "englishMeaning": "it was my fault",
+          "registerNote": "stronger and more direct, openly owns the mistake",
+          "exampleSentence": "Fue mi culpa, debí avisarte antes."
+        },
+        {
+          "id": "te_pido_disculpas",
+          "spanish": "te pido disculpas",
+          "englishMeaning": "I'm asking for your forgiveness",
+          "registerNote": "the most formal and sincere option",
+          "exampleSentence": "Te pido disculpas por lo que pasó ayer."
+        }
+      ],
+      "quiz": [
+        {
+          "id": "q1",
+          "type": "multipleChoice",
+          "promptByLocale": {
+            "en": "Which is the quick, almost automatic apology for something small?",
+            "uk": "Яка фраза — швидке, майже автоматичне вибачення за дрібницю?"
+          },
+          "relatedItemId": "perdon",
+          "options": ["perdón", "lo siento", "fue mi culpa", "te pido disculpas"],
+          "correctOptionIndex": 0,
+          "sentenceTemplate": null,
+          "acceptedAnswers": null
+        },
+        {
+          "id": "q2",
+          "type": "fillBlank",
+          "promptByLocale": {
+            "en": "Complete the phrase.",
+            "uk": "Заверши фразу."
+          },
+          "relatedItemId": "disculpa",
+          "options": null,
+          "correctOptionIndex": null,
+          "sentenceTemplate": "___, ¿sabes qué hora es?",
+          "acceptedAnswers": ["Disculpa"]
+        },
+        {
+          "id": "q3",
+          "type": "multipleChoice",
+          "promptByLocale": {
+            "en": "Which one carries real feeling — genuinely feeling bad, not just reflex?",
+            "uk": "Яка фраза передає справжнє почуття — щирий жаль, а не просто рефлекс?"
+          },
+          "relatedItemId": "lo_siento",
+          "options": ["perdón", "disculpa", "lo siento", "fue mi culpa"],
+          "correctOptionIndex": 2,
+          "sentenceTemplate": null,
+          "acceptedAnswers": null
+        },
+        {
+          "id": "q4",
+          "type": "fillBlank",
+          "promptByLocale": {
+            "en": "Complete the phrase.",
+            "uk": "Заверши фразу."
+          },
+          "relatedItemId": "fue_mi_culpa",
+          "options": null,
+          "correctOptionIndex": null,
+          "sentenceTemplate": "Fue mi ___, debí avisarte antes.",
+          "acceptedAnswers": ["culpa"]
+        },
+        {
+          "id": "q5",
+          "type": "multipleChoice",
+          "promptByLocale": {
+            "en": "Which is the most formal and sincere — \"I'm asking for your forgiveness\"?",
+            "uk": "Яка фраза найофіційніша й найщиріша — «я прошу твого вибачення»?"
+          },
+          "relatedItemId": "te_pido_disculpas",
+          "options": ["perdón", "lo siento", "fue mi culpa", "te pido disculpas"],
+          "correctOptionIndex": 3,
+          "sentenceTemplate": null,
+          "acceptedAnswers": null
+        }
+      ],
+      "wordSwapItems": null
+    }
+  ]
+}

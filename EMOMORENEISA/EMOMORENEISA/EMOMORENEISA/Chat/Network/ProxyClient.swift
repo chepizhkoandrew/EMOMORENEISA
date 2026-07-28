@@ -82,8 +82,14 @@ final class ProxyClient {
     // Returns raw decoded audio plus its MIME type. AAC is requested so the
     // server serves a compact, cache-backed file; PCM is wrapped into WAV by the
     // caller only when the server returns it (legacy/uncompressed fallback).
-    func tts(text: String, context: String = "default", voice: (languageCode: String, voiceName: String)? = nil) async throws -> (data: Data, mime: String) {
-        var body: [String: Any] = ["text": text, "format": "aac", "context": context]
+    // allowOpenAIFallback defaults to true so every existing caller (regular
+    // chat, roleplay, onboarding) is unaffected. Pass false only for content
+    // that must never be voiced by a different engine mid-playback — Say It
+    // Better's pre-generated, pre-warmed explanation script — where a silent
+    // clip is preferable to a jarring voice switch. See the server-side
+    // comment on /v1/tts for why this should be a near-dead code path.
+    func tts(text: String, context: String = "default", voice: (languageCode: String, voiceName: String)? = nil, allowOpenAIFallback: Bool = true) async throws -> (data: Data, mime: String) {
+        var body: [String: Any] = ["text": text, "format": "aac", "context": context, "allowOpenAIFallback": allowOpenAIFallback]
         if let voice {
             body["voice"] = ["languageCode": voice.languageCode, "voiceName": voice.voiceName]
         }
@@ -270,6 +276,22 @@ final class ProxyClient {
             "pronoun": pronoun
         ]
         let json = try await postJSON(path: "/v1/verb-check", body: body, timeout: 10)
+        guard let correct = json["correct"] as? Bool else { throw ProxyError.decoding }
+        return correct
+    }
+
+    /// Same shape as `verbCheck`, for Learn by the Book's voice quiz — the
+    /// answer is a whole vocabulary item/phrase rather than a specific verb
+    /// conjugation, so there's no infinitive/pronoun to send.
+    func phraseCheck(
+        transcript: String,
+        expected: String
+    ) async throws -> Bool {
+        let body: [String: Any] = [
+            "transcript": transcript,
+            "expected": expected
+        ]
+        let json = try await postJSON(path: "/v1/phrase-check", body: body, timeout: 10)
         guard let correct = json["correct"] as? Bool else { throw ProxyError.decoding }
         return correct
     }

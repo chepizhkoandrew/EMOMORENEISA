@@ -21,6 +21,10 @@ let ukStrings: [String: String] = [
     ukMusicStrings,
     ukSocialStrings,
     ukRoleplayStrings,
+    ukSayItBetterStrings,
+    ukFreeFormStrings,
+    ukLevelSettingsStrings,
+    ukLearnByBookStrings,
 ].reduce(into: [String: String]()) { merged, partial in
     merged.merge(partial) { _, new in new }
 }

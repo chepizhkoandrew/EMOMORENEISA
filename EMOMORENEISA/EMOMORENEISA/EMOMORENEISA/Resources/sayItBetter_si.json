@@ -1,0 +1,205 @@
+{
+  "id": "si",
+  "titleByLocale": {
+    "en": "Say Instead of “Sí”",
+    "uk": "Кажи замість «Sí»"
+  },
+  "order": 4,
+  "chapters": [
+    {
+      "id": "phrase_finder",
+      "kind": "phraseFinder",
+      "explanation": [
+        {
+          "id": "intro",
+          "relatedItemId": null,
+          "textByLocale": {
+            "en": "Today you'll learn five real ways to say yes in Spanish — from a quick, easy claro to something far more formal.",
+            "uk": "Сьогодні ти вивчиш п'ять реальних способів сказати «так» іспанською — від невимушеного claro до набагато офіційнішого варіанта."
+          },
+          "highlightsByLocale": {
+            "en": ["five real ways to say yes"],
+            "uk": ["п'ять реальних способів сказати «так»"]
+          }
+        },
+        {
+          "id": "structure",
+          "relatedItemId": null,
+          "textByLocale": {
+            "en": "We'll go through claro, por supuesto, sin duda, vale (or dale), and a la orden. Each one shifts the register a little further than the last.",
+            "uk": "Пройдемося по: claro, por supuesto, sin duda, vale (або dale) та a la orden. Кожна наступна фраза трохи змінює регістр порівняно з попередньою."
+          },
+          "highlightsByLocale": {
+            "en": ["claro", "por supuesto", "sin duda", "vale", "dale", "a la orden"],
+            "uk": ["claro", "por supuesto", "sin duda", "vale", "dale", "a la orden"]
+          }
+        },
+        {
+          "id": "explain_claro",
+          "relatedItemId": "claro",
+          "textByLocale": {
+            "en": "Let's start with claro — the easy, works-anywhere yes. Someone asks if you can help, and claro is your answer. \"¿Me ayudas con esto? Claro.\"",
+            "uk": "Почнімо з claro — легке «так», яке підходить будь-де. Хтось просить допомогти — і claro буде відповіддю. «¿Me ayudas con esto? Claro.»"
+          },
+          "highlightsByLocale": {
+            "en": ["claro"],
+            "uk": ["claro"]
+          }
+        },
+        {
+          "id": "explain_por_supuesto",
+          "relatedItemId": "por_supuesto",
+          "textByLocale": {
+            "en": "Next, por supuesto — \"of course.\" It's a step up in enthusiasm from claro, the kind of yes you give when the answer is obviously yes.",
+            "uk": "Далі — por supuesto, «звісно». Це емоційніше за claro — так кажуть, коли відповідь очевидно ствердна."
+          },
+          "highlightsByLocale": {
+            "en": ["por supuesto"],
+            "uk": ["por supuesto"]
+          }
+        },
+        {
+          "id": "explain_sin_duda",
+          "relatedItemId": "sin_duda",
+          "textByLocale": {
+            "en": "Now sin duda — \"without a doubt.\" It adds real confidence to your yes, useful when you want to sound sure, not just agreeable.",
+            "uk": "Тепер sin duda — «без сумніву». Додає впевненості до твого «так» — корисно, коли хочеш звучати переконано, а не просто погоджуватись."
+          },
+          "highlightsByLocale": {
+            "en": ["sin duda"],
+            "uk": ["sin duda"]
+          }
+        },
+        {
+          "id": "explain_vale_dale",
+          "relatedItemId": "vale_dale",
+          "textByLocale": {
+            "en": "Vale and dale both mean an easy, casual yes — but they're regional. Vale is heard constantly in Spain; dale is the Argentina and Uruguay equivalent.",
+            "uk": "Vale та dale обидва означають невимушене «так», але це регіональні варіанти. Vale часто чуєш в Іспанії; dale — аналог в Аргентині та Уругваї."
+          },
+          "highlightsByLocale": {
+            "en": ["vale", "dale"],
+            "uk": ["vale", "dale"]
+          }
+        },
+        {
+          "id": "explain_a_la_orden",
+          "relatedItemId": "a_la_orden",
+          "textByLocale": {
+            "en": "And finally, a la orden — \"at your service.\" It's the most formal option here, borrowed from military language and used at work or in customer service.",
+            "uk": "І нарешті a la orden — «до твоїх послуг». Найофіційніший варіант, запозичений з військової мови, вживається на роботі чи в обслуговуванні клієнтів."
+          },
+          "highlightsByLocale": {
+            "en": ["a la orden"],
+            "uk": ["a la orden"]
+          }
+        }
+      ],
+      "items": [
+        {
+          "id": "claro",
+          "spanish": "claro",
+          "englishMeaning": "sure / of course",
+          "registerNote": "neutral, the easy default, works almost anywhere",
+          "exampleSentence": "¿Me ayudas con esto? Claro."
+        },
+        {
+          "id": "por_supuesto",
+          "spanish": "por supuesto",
+          "englishMeaning": "of course",
+          "registerNote": "warmer and more emphatic than claro",
+          "exampleSentence": "¿Existe la tarea para hoy? Por supuesto."
+        },
+        {
+          "id": "sin_duda",
+          "spanish": "sin duda",
+          "englishMeaning": "without a doubt",
+          "registerNote": "confident, used when you're genuinely certain",
+          "exampleSentence": "¿Vas a ir a la clase el jueves? Sin duda."
+        },
+        {
+          "id": "vale_dale",
+          "spanish": "vale / dale",
+          "englishMeaning": "okay / sure",
+          "registerNote": "casual, regional — vale in Spain, dale in Argentina and Uruguay",
+          "exampleSentence": "¿Vamos al cine el viernes? ¡Vale! / ¡Dale!"
+        },
+        {
+          "id": "a_la_orden",
+          "spanish": "a la orden",
+          "englishMeaning": "at your service",
+          "registerNote": "formal, workplace or customer-service settings, from military language",
+          "exampleSentence": "¿Puede enviar el informe hoy? A la orden."
+        }
+      ],
+      "quiz": [
+        {
+          "id": "q1",
+          "type": "multipleChoice",
+          "promptByLocale": {
+            "en": "Which one is the most formal, borrowed from military language?",
+            "uk": "Яка фраза найбільш офіційна, запозичена з військової мови?"
+          },
+          "relatedItemId": "a_la_orden",
+          "options": ["claro", "sin duda", "a la orden", "vale"],
+          "correctOptionIndex": 2,
+          "sentenceTemplate": null,
+          "acceptedAnswers": null
+        },
+        {
+          "id": "q2",
+          "type": "fillBlank",
+          "promptByLocale": {
+            "en": "Complete the phrase.",
+            "uk": "Заверши фразу."
+          },
+          "relatedItemId": "claro",
+          "options": null,
+          "correctOptionIndex": null,
+          "sentenceTemplate": "¿Me ayudas con esto? ___.",
+          "acceptedAnswers": ["Claro", "claro"]
+        },
+        {
+          "id": "q3",
+          "type": "multipleChoice",
+          "promptByLocale": {
+            "en": "Which phrase is the Argentina/Uruguay equivalent of vale?",
+            "uk": "Яка фраза — аналог vale в Аргентині та Уругваї?"
+          },
+          "relatedItemId": "vale_dale",
+          "options": ["vale", "dale", "sin duda", "a la orden"],
+          "correctOptionIndex": 1,
+          "sentenceTemplate": null,
+          "acceptedAnswers": null
+        },
+        {
+          "id": "q4",
+          "type": "fillBlank",
+          "promptByLocale": {
+            "en": "Complete the phrase.",
+            "uk": "Заверши фразу."
+          },
+          "relatedItemId": "sin_duda",
+          "options": null,
+          "correctOptionIndex": null,
+          "sentenceTemplate": "¿Vas a ir a la clase el jueves? Sin ___.",
+          "acceptedAnswers": ["duda"]
+        },
+        {
+          "id": "q5",
+          "type": "multipleChoice",
+          "promptByLocale": {
+            "en": "Which one means \"of course\" and is a notch warmer than claro?",
+            "uk": "Яка фраза означає «звісно» і трохи тепліша за claro?"
+          },
+          "relatedItemId": "por_supuesto",
+          "options": ["claro", "por supuesto", "vale", "a la orden"],
+          "correctOptionIndex": 1,
+          "sentenceTemplate": null,
+          "acceptedAnswers": null
+        }
+      ],
+      "wordSwapItems": null
+    }
+  ]
+}

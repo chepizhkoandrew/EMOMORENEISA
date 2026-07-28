@@ -17,6 +17,7 @@ final class TTSService: NSObject {
     private var queue: [(id: UUID, text: String, voice: (languageCode: String, voiceName: String)?)] = []
     private var queueIndex: Int = 0
     private var queueContext: String = "sentence"
+    private var queueAllowOpenAIFallback: Bool = true
     private var progressTimer: Timer?
 
     // Chunk state — all indexed by chunk index
@@ -41,10 +42,10 @@ final class TTSService: NSObject {
 
     func speak(text: String, messageId: UUID, context: String = "default", voice: (languageCode: String, voiceName: String)? = nil) {
         clearQueue()
-        Task { await playSingle(text: text, messageId: messageId, context: context, voice: voice) }
+        Task { await playSingle(text: text, messageId: messageId, context: context, voice: voice, allowOpenAIFallback: true) }
     }
 
-    func speakQueue(startingFrom messageId: UUID, in messages: [(id: UUID, text: String)], context: String = "sentence") {
+    func speakQueue(startingFrom messageId: UUID, in messages: [(id: UUID, text: String)], context: String = "sentence", allowOpenAIFallback: Bool = true) {
         let startIdx = messages.firstIndex(where: { $0.id == messageId }) ?? 0
         let items = messages[startIdx...].map { (id: $0.id, text: $0.text, voice: nil as (languageCode: String, voiceName: String)?) }
         guard !items.isEmpty else { return }
@@ -52,6 +53,7 @@ final class TTSService: NSObject {
         queue = items
         queueIndex = 0
         queueContext = context
+        queueAllowOpenAIFallback = allowOpenAIFallback
         isQueueActive = true
         Task { await playCurrentQueueItem() }
     }
@@ -61,12 +63,18 @@ final class TTSService: NSObject {
     // override. Reuses the same queue machinery as speakQueue so playback
     // advances automatically without one call's clearQueue() cutting off the
     // previous item still in flight (which calling speak() twice in a row would do).
-    func speakTurn(_ items: [(id: UUID, text: String, voice: (languageCode: String, voiceName: String)?)], context: String = "roleplay") {
+    //
+    // allowOpenAIFallback defaults to true (unaffected: roleplay turns, the
+    // only other caller today). Say It Better's explanation-script autoplay
+    // passes false — see the server-side /v1/tts comment for why a fallback
+    // voice mid-message is worse than silence for that specific content.
+    func speakTurn(_ items: [(id: UUID, text: String, voice: (languageCode: String, voiceName: String)?)], context: String = "roleplay", allowOpenAIFallback: Bool = true) {
         guard !items.isEmpty else { return }
         clearQueue()
         queue = items
         queueIndex = 0
         queueContext = context
+        queueAllowOpenAIFallback = allowOpenAIFallback
         isQueueActive = true
         Task { await playCurrentQueueItem() }
     }
@@ -222,7 +230,7 @@ final class TTSService: NSObject {
     // MARK: - Playback
 
     @MainActor
-    private func playSingle(text: String, messageId: UUID, context: String = "default", voice: (languageCode: String, voiceName: String)? = nil) async {
+    private func playSingle(text: String, messageId: UUID, context: String = "default", voice: (languageCode: String, voiceName: String)? = nil, allowOpenAIFallback: Bool = true) async {
         let chunks = splitTextIntoChunks(text)
         activeChunks = chunks
         chunkURLs = Array(repeating: nil, count: chunks.count)
@@ -236,7 +244,7 @@ final class TTSService: NSObject {
             let msgId = messageId
             let task = Task<URL?, Never> {
                 if let cached = self.cachedChunkURL(for: msgId, chunkIndex: idx) { return cached }
-                guard let (data, ext) = await self.fetchTTS(text: chunkText, context: context, voice: voice) else { return nil }
+                guard let (data, ext) = await self.fetchTTS(text: chunkText, context: context, voice: voice, allowOpenAIFallback: allowOpenAIFallback) else { return nil }
                 let fileURL = self.cacheChunkURL(for: msgId, chunkIndex: idx, ext: ext)
                 try? data.write(to: fileURL)
                 return fileURL
@@ -339,7 +347,7 @@ final class TTSService: NSObject {
             return
         }
         let item = queue[queueIndex]
-        await playSingle(text: item.text, messageId: item.id, context: queueContext, voice: item.voice)
+        await playSingle(text: item.text, messageId: item.id, context: queueContext, voice: item.voice, allowOpenAIFallback: queueAllowOpenAIFallback)
     }
 
     private func finishCurrentMessagePlayback() {
@@ -359,9 +367,9 @@ final class TTSService: NSObject {
 
     // MARK: - TTS Fetch
 
-    private func fetchTTS(text: String, context: String = "default", voice: (languageCode: String, voiceName: String)? = nil) async -> (Data, String)? {
+    private func fetchTTS(text: String, context: String = "default", voice: (languageCode: String, voiceName: String)? = nil, allowOpenAIFallback: Bool = true) async -> (Data, String)? {
         do {
-            let (raw, mime) = try await ProxyClient.shared.tts(text: text, context: context, voice: voice)
+            let (raw, mime) = try await ProxyClient.shared.tts(text: text, context: context, voice: voice, allowOpenAIFallback: allowOpenAIFallback)
             let m = mime.lowercased()
             // AAC (and m4a) play natively via AVAudioPlayer — store as-is. Only raw
             // PCM needs the WAV header.

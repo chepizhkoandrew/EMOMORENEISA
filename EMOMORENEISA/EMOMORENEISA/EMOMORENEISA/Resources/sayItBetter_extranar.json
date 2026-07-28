@@ -1,0 +1,205 @@
+{
+  "id": "extranar",
+  "titleByLocale": {
+    "en": "Say Instead of “Extrañar”",
+    "uk": "Кажи замість «Extrañar»"
+  },
+  "order": 13,
+  "chapters": [
+    {
+      "id": "phrase_finder",
+      "kind": "phraseFinder",
+      "explanation": [
+        {
+          "id": "intro",
+          "relatedItemId": null,
+          "textByLocale": {
+            "en": "Today's a little different: \"to miss\" doesn't always translate to extrañar. Spanish reaches for a completely different verb depending on what you're missing.",
+            "uk": "Сьогодні трохи інакше: «to miss» не завжди перекладається як extrañar. В іспанській для кожного значення є своє дієслово."
+          },
+          "highlightsByLocale": {
+            "en": ["\"to miss\" doesn't always translate to extrañar"],
+            "uk": ["«to miss» не завжди перекладається як extrañar"]
+          }
+        },
+        {
+          "id": "structure",
+          "relatedItemId": null,
+          "textByLocale": {
+            "en": "Extrañar only works for missing a person. For missing an event, missing transportation, missing what someone said, or missing a shot, Spanish uses perderse, perder, no escuchar, and fallar instead.",
+            "uk": "Extrañar підходить лише для того, коли скучаєш за людиною. Для пропущеної події, транспорту, почутого чи влучного удару іспанська використовує perderse, perder, no escuchar та fallar."
+          },
+          "highlightsByLocale": {
+            "en": ["extrañar", "perderse", "perder", "no escuchar", "fallar"],
+            "uk": ["extrañar", "perderse", "perder", "no escuchar", "fallar"]
+          }
+        },
+        {
+          "id": "explain_extranar",
+          "relatedItemId": "extranar",
+          "textByLocale": {
+            "en": "Let's start with extrañar (or echar de menos in Spain) — for missing a person or something that used to be part of your life. \"Te extraño mucho, mi amor.\"",
+            "uk": "Почнімо з extrañar (або echar de menos в Іспанії) — коли скучаєш за людиною чи чимось, що раніше було частиною твого життя. «Te extraño mucho, mi amor.»"
+          },
+          "highlightsByLocale": {
+            "en": ["extrañar", "echar de menos"],
+            "uk": ["extrañar", "echar de menos"]
+          }
+        },
+        {
+          "id": "explain_perderse",
+          "relatedItemId": "perderse",
+          "textByLocale": {
+            "en": "Next, perderse — for missing an event you weren't able to attend. \"Me perdí la boda de mi hermana porque no pude viajar.\"",
+            "uk": "Далі — perderse, коли пропускаєш подію, на яку не зміг потрапити. «Me perdí la boda de mi hermana porque no pude viajar.»"
+          },
+          "highlightsByLocale": {
+            "en": ["perderse"],
+            "uk": ["perderse"]
+          }
+        },
+        {
+          "id": "explain_perder",
+          "relatedItemId": "perder",
+          "textByLocale": {
+            "en": "Now perder — for missing transportation or a deadline because you were late. \"Mariana perdió el tren por cinco minutos.\"",
+            "uk": "Тепер perder — коли запізнюєшся на транспорт чи не встигаєш до дедлайну. «Mariana perdió el tren por cinco minutos.»"
+          },
+          "highlightsByLocale": {
+            "en": ["perder"],
+            "uk": ["perder"]
+          }
+        },
+        {
+          "id": "explain_no_escuchar",
+          "relatedItemId": "no_escuchar",
+          "textByLocale": {
+            "en": "No escuchar (or no entender) — for missing what someone said. \"Lo siento, no escuché lo que dijiste.\"",
+            "uk": "No escuchar (або no entender) — коли не почув, що сказали. «Lo siento, no escuché lo que dijiste.»"
+          },
+          "highlightsByLocale": {
+            "en": ["no escuchar"],
+            "uk": ["no escuchar"]
+          }
+        },
+        {
+          "id": "explain_fallar",
+          "relatedItemId": "fallar",
+          "textByLocale": {
+            "en": "And finally, fallar (or errar) — for missing a shot, a target, or a goal. \"El equipo falló en convertir el gol en el último minuto.\"",
+            "uk": "І нарешті fallar (або errar) — коли не влучив у ціль чи не забив гол. «El equipo falló en convertir el gol en el último minuto.»"
+          },
+          "highlightsByLocale": {
+            "en": ["fallar"],
+            "uk": ["fallar"]
+          }
+        }
+      ],
+      "items": [
+        {
+          "id": "extranar",
+          "spanish": "extrañar / echar de menos",
+          "englishMeaning": "to miss (a person)",
+          "registerNote": "extrañar is more common in Latin America, echar de menos in Spain",
+          "exampleSentence": "Te extraño mucho, mi amor."
+        },
+        {
+          "id": "perderse",
+          "spanish": "perderse",
+          "englishMeaning": "to miss (an event)",
+          "registerNote": "for an event or experience you weren't able to attend",
+          "exampleSentence": "Me perdí la boda de mi hermana porque no pude viajar."
+        },
+        {
+          "id": "perder",
+          "spanish": "perder",
+          "englishMeaning": "to miss (transportation, a deadline)",
+          "registerNote": "for missing a train, flight, or deadline by being late",
+          "exampleSentence": "Mariana perdió el tren por cinco minutos."
+        },
+        {
+          "id": "no_escuchar",
+          "spanish": "no escuchar / no entender",
+          "englishMeaning": "to miss (what was said)",
+          "registerNote": "for missing something someone said",
+          "exampleSentence": "Lo siento, no escuché lo que dijiste."
+        },
+        {
+          "id": "fallar",
+          "spanish": "fallar / errar",
+          "englishMeaning": "to miss (a shot, a target)",
+          "registerNote": "for failing to hit a target, common in sports",
+          "exampleSentence": "El equipo falló en convertir el gol en el último minuto."
+        }
+      ],
+      "quiz": [
+        {
+          "id": "q1",
+          "type": "multipleChoice",
+          "promptByLocale": {
+            "en": "Which one is only for missing a person?",
+            "uk": "Яке слово вживається лише тоді, коли скучаєш за людиною?"
+          },
+          "relatedItemId": "extranar",
+          "options": ["perderse", "extrañar", "fallar", "perder"],
+          "correctOptionIndex": 1,
+          "sentenceTemplate": null,
+          "acceptedAnswers": null
+        },
+        {
+          "id": "q2",
+          "type": "fillBlank",
+          "promptByLocale": {
+            "en": "Complete the phrase.",
+            "uk": "Заверши фразу."
+          },
+          "relatedItemId": "perderse",
+          "options": null,
+          "correctOptionIndex": null,
+          "sentenceTemplate": "Me ___ la boda de mi hermana porque no pude viajar.",
+          "acceptedAnswers": ["perdí"]
+        },
+        {
+          "id": "q3",
+          "type": "multipleChoice",
+          "promptByLocale": {
+            "en": "Which one is for missing a train because you were late?",
+            "uk": "Яке слово вживається, коли запізнюєшся на потяг?"
+          },
+          "relatedItemId": "perder",
+          "options": ["extrañar", "fallar", "perder", "no escuchar"],
+          "correctOptionIndex": 2,
+          "sentenceTemplate": null,
+          "acceptedAnswers": null
+        },
+        {
+          "id": "q4",
+          "type": "fillBlank",
+          "promptByLocale": {
+            "en": "Complete the phrase.",
+            "uk": "Заверши фразу."
+          },
+          "relatedItemId": "no_escuchar",
+          "options": null,
+          "correctOptionIndex": null,
+          "sentenceTemplate": "Lo siento, no ___ lo que dijiste.",
+          "acceptedAnswers": ["escuché"]
+        },
+        {
+          "id": "q5",
+          "type": "multipleChoice",
+          "promptByLocale": {
+            "en": "Which one is for missing a goal or a shot?",
+            "uk": "Яке слово вживається, коли не влучив у ціль чи не забив гол?"
+          },
+          "relatedItemId": "fallar",
+          "options": ["perderse", "fallar", "extrañar", "perder"],
+          "correctOptionIndex": 1,
+          "sentenceTemplate": null,
+          "acceptedAnswers": null
+        }
+      ],
+      "wordSwapItems": null
+    }
+  ]
+}
