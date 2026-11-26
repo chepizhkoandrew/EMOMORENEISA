@@ -170,6 +170,9 @@ class LiveSession {
     this.clock = null;
     this.promptTokens = 0;
     this.responseTokens = 0;
+    // Diagnostics, logged once at the end of every call.
+    this.stats = { inAudio: 0, inAudioBytes: 0, inTurns: 0, inDropped: 0, inBad: 0,
+      outAudio: 0, outAudioBytes: 0, outInText: 0, outOutText: 0, outTurns: 0, outInterrupted: 0, outOther: [] };
   }
 
   // ---- client side ----
@@ -202,17 +205,24 @@ class LiveSession {
 
   fromClient(data) {
     let msg;
-    try { msg = JSON.parse(data.toString()); } catch (_) { return; }
+    try { msg = JSON.parse(data.toString()); } catch (_) { this.stats.inBad += 1; return; }
     // Whitelist: the client may stream input and send turns, never `setup`.
     const allowed = {};
-    if (msg.realtimeInput) allowed.realtimeInput = msg.realtimeInput;
-    else if (msg.clientContent) allowed.clientContent = msg.clientContent;
-    else return;
+    if (msg.realtimeInput) {
+      allowed.realtimeInput = msg.realtimeInput;
+      this.stats.inAudio += 1;
+      this.stats.inAudioBytes += (msg.realtimeInput.audio?.data?.length || 0) * 0.75;
+    } else if (msg.clientContent) {
+      allowed.clientContent = msg.clientContent;
+      this.stats.inTurns += 1;
+    } else { this.stats.inBad += 1; return; }
     const out = JSON.stringify(allowed);
     if (this.upstreamReady && this.upstream?.readyState === WebSocket.OPEN) {
       this.upstream.send(out);
     } else if (allowed.clientContent) {
       this.pending.push(out); // audio during a reconnect is dropped; turns are kept
+    } else {
+      this.stats.inDropped += 1;
     }
   }
 
@@ -300,6 +310,18 @@ class LiveSession {
       this.openUpstream();
       return;
     }
+    const sc = msg.serverContent;
+    if (sc) {
+      for (const p of sc.modelTurn?.parts || []) {
+        if (p.inlineData?.data) { this.stats.outAudio += 1; this.stats.outAudioBytes += p.inlineData.data.length * 0.75; }
+      }
+      if (sc.inputTranscription?.text) this.stats.outInText += 1;
+      if (sc.outputTranscription?.text) this.stats.outOutText += 1;
+      if (sc.turnComplete) this.stats.outTurns += 1;
+      if (sc.interrupted) this.stats.outInterrupted += 1;
+    } else if (!msg.usageMetadata && this.stats.outOther.length < 5) {
+      this.stats.outOther.push(text.slice(0, 200));
+    }
     if (msg.usageMetadata) {
       const u = msg.usageMetadata;
       this.promptTokens = Math.max(this.promptTokens, u.promptTokenCount || 0);
@@ -370,7 +392,11 @@ class LiveSession {
       rawCostUsd: (this.billedSeconds / 60) * config.pricing.usdPerMinLive,
       treatsCharged: this.everConnected ? this.paidMinutes * costPerMinute() : 0
     }).catch(() => {});
-    console.log(`[live] session ${this.id.slice(0, 8)} ended (${reason}) ${this.billedSeconds}s, ${this.paidMinutes} min paid`);
+    const st = this.stats;
+    console.log(`[live] session ${this.id.slice(0, 8)} ended (${reason}) ${this.billedSeconds}s, ${this.paidMinutes} min paid | ` +
+      `phone→: ${st.inAudio} audio msgs (${Math.round(st.inAudioBytes / 1024)} KB), ${st.inTurns} turns, ${st.inDropped} dropped, ${st.inBad} bad | ` +
+      `vertex→: ${st.outAudio} audio parts (${Math.round(st.outAudioBytes / 1024)} KB), ${st.outInText} heard-text, ${st.outOutText} said-text, ` +
+      `${st.outTurns} turns, ${st.outInterrupted} interrupts` + (st.outOther.length ? ` | other: ${st.outOther.join(" || ")}` : ""));
   }
 }
 
