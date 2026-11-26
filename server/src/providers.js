@@ -51,24 +51,53 @@ export async function openaiChat({ systemPrompt, history, userText, imageData, m
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
+// ---------------------------------------------------------------------------
+// Vertex AI generateContent (professor-madrid project, Cloud billing). Every
+// Gemini text/TTS call goes through here — the app no longer uses the AI
+// Studio / Gemini Developer API key. Same request/response JSON as the old
+// generativelanguage endpoint; only the URL and auth (service-account bearer
+// token) differ. Returns the raw fetch Response.
+// ---------------------------------------------------------------------------
+export function vertexConfigured() {
+  return Boolean(config.cloudTts.credentials?.private_key && config.vertexImage.projectId);
+}
+
+export async function vertexGenerateContent(model, body, { timeoutMs = 40000, location = config.vertexText.location } = {}) {
+  const client = gcpJwtClient();
+  if (!client || !config.vertexImage.projectId) {
+    const err = new Error("vertex_not_configured");
+    err.status = 503;
+    throw err;
+  }
+  const token = (await client.getAccessToken())?.token;
+  if (!token) {
+    const err = new Error("vertex_token_failed");
+    err.status = 503;
+    throw err;
+  }
+  const host = location === "global" ? "aiplatform.googleapis.com" : `${location}-aiplatform.googleapis.com`;
+  const url = `https://${host}/v1/projects/${config.vertexImage.projectId}/locations/${location}/publishers/google/models/${model}:generateContent`;
+  return fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify(body),
+    signal: AbortSignal.timeout(timeoutMs)
+  });
+}
+
 // Single Gemini TTS call. Returns audio, or { retryable } so the caller can
 // decide whether a backoff retry is worth it (429/5xx = transient throttling).
 async function geminiTTSOnce(text, model) {
-  if (!config.geminiKey) return { audio: null, retryable: false };
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${config.geminiKey}`;
+  if (!vertexConfigured()) return { audio: null, retryable: false };
   let resp;
   try {
-    resp = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text }] }],
-        generationConfig: {
-          responseModalities: ["AUDIO"],
-          speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: config.tts.voiceName } } }
-        }
-      })
-    });
+    resp = await vertexGenerateContent(model, {
+      contents: [{ role: "user", parts: [{ text }] }],
+      generationConfig: {
+        responseModalities: ["AUDIO"],
+        speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: config.tts.voiceName } } }
+      }
+    }, { timeoutMs: 30000 });
   } catch (e) {
     return { audio: null, retryable: true, status: 0 };
   }
@@ -99,28 +128,13 @@ export async function geminiTTS(text, model = config.models.ttsGemini) {
   return audio || null;
 }
 
-// Gemini text completion via generativelanguage generateContent. Used by the
+// Gemini text completion via Vertex generateContent. Used by the
 // onboarding reasoning routes (probe passes + synthesis). Returns the raw
 // text body — callers are responsible for JSON.parse and validation.
 export async function geminiText({ prompt, model, temperature = 0.4, maxOutputTokens = 1024, disableThinking = true, timeoutMs = 40000 }) {
-  if (!config.geminiKey) {
-    const err = new Error("gemini_not_configured");
-    err.status = 503;
-    throw err;
-  }
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${config.geminiKey}`;
-  // Plain fetch has no timeout of its own — a slow/rate-limited response used
-  // to be able to hang a caller indefinitely (discovered via the music-job
-  // scene-plan call silently stretching "generating" well past when the song
-  // was actually ready). Every caller now gets a bounded wait by default.
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
-  let resp;
-  try {
-    resp = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
+  // Every caller gets a bounded wait (a slow response used to hang the
+  // music-job scene plan indefinitely).
+  const resp = await vertexGenerateContent(model, {
         contents: [{ role: "user", parts: [{ text: prompt }] }],
         generationConfig: {
           temperature,
@@ -136,12 +150,7 @@ export async function geminiText({ prompt, model, temperature = 0.4, maxOutputTo
           // mode.") — so this must be opt-out per call, not blanket-disabled.
           ...(disableThinking ? { thinkingConfig: { thinkingBudget: 0 } } : {})
         }
-      }),
-      signal: controller.signal
-    });
-  } finally {
-    clearTimeout(timer);
-  }
+  }, { timeoutMs });
   if (!resp.ok) {
     let detail = "";
     try { detail = (await resp.text()).slice(0, 300); } catch (_) {}
@@ -534,27 +543,6 @@ async function generateIllustrationViaVertex(prompt, aspectRatio, imageParts = [
   );
 }
 
-// Fallback path: the Gemini Developer API (generativelanguage.googleapis.com,
-// API-key auth) is a completely separate product from Vertex AI
-// (aiplatform.googleapis.com, service-account auth) with its own independent
-// quota — same underlying model, different rate-limit bucket. More expensive
-// per call than Vertex, but only fires when Vertex has already failed, so a
-// transient Vertex quota exhaustion (2 req/min default on new GCP billing
-// accounts — see the 2026-07-19 karaoke chorus incident) doesn't leave a
-// scene without a picture.
-async function generateIllustrationViaGeminiKey(prompt, aspectRatio, imageParts = []) {
-  if (!config.geminiKey) return null;
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${config.vertexImage.model}:generateContent?key=${config.geminiKey}`;
-  return callGenerateContentImage(
-    url,
-    { "Content-Type": "application/json" },
-    prompt,
-    aspectRatio,
-    "gemini-key",
-    imageParts
-  );
-}
-
 // Returns { base64, mime } on success or null when both backends fail (429/
 // 5xx/empty) so the caller can degrade to the seagull pose without ever
 // throwing. `aspectRatio` defaults to the memorization-illustration portrait
@@ -563,7 +551,10 @@ async function generateIllustrationViaGeminiKey(prompt, aspectRatio, imageParts 
 export async function generateIllustration(prompt, aspectRatio = "3:4", imageParts = []) {
   const viaVertex = await generateIllustrationViaVertex(prompt, aspectRatio, imageParts);
   if (viaVertex) return viaVertex;
-  return generateIllustrationViaGeminiKey(prompt, aspectRatio, imageParts);
+  // One delayed retry (transient Vertex 429s on low default quotas). The old
+  // AI Studio key fallback is gone: everything bills to the GCP project now.
+  await sleep(2500);
+  return generateIllustrationViaVertex(prompt, aspectRatio, imageParts);
 }
 
 // Speech-to-text via OpenAI. gpt-4o-transcribe is the most accurate at catching

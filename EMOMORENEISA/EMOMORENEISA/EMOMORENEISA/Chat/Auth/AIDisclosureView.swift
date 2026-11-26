@@ -69,6 +69,10 @@ struct AIDisclosureView: View {
                             icon: "theatermasks.fill",
                             text: L("In Roleplay mode, the guest character and setting you choose are sent to Google's Gemini to generate a background picture for the episode.")
                         )
+                        disclosureRow(
+                            icon: "phone.fill",
+                            text: L("During a Live Call, your voice, any photos you share, and the topic you choose are streamed to Google's Gemini (Google Cloud Vertex AI) so the tutor can talk with you in real time. Calls are not saved.")
+                        )
                     }
                     .padding(.horizontal, 32)
 

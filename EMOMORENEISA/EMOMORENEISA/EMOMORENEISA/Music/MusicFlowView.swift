@@ -1,3 +1,4 @@
+import SwiftData
 import SwiftUI
 
 /// Two-step song creation flow ("Remember with Music"). Step 1 picks genre +

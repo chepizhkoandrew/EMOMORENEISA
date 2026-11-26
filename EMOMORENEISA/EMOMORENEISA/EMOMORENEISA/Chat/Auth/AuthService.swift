@@ -24,7 +24,9 @@ final class AuthService {
     /// music-generation feature's two AI calls. 2026-07-21: added Roleplay's
     /// scene-image generation — the existing illustration row was worded
     /// narrowly around the memory queue and didn't clearly cover it.
-    static let aiDisclosureVersion = "2026-07-21"
+    /// 2026-11-26: added Live Call (real-time voice + photos to Gemini Live
+    /// on Vertex AI).
+    static let aiDisclosureVersion = "2026-11-26"
 
     /// `aiDisclosureVersion` parsed as a date — an acceptance timestamp
     /// older than this predates the current wording.

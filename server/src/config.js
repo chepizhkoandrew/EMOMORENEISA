@@ -52,10 +52,10 @@ export const config = {
     // 500, which is the root cause of our intermittent 502s. There is no GA
     // Gemini TTS on this endpoint (the GA gemini-*-tts models live on Cloud TTS,
     // which needs service-account auth). Hence the OpenAI fallback below.
-    ttsGemini: str("MODEL_TTS_GEMINI", "gemini-2.5-flash-preview-tts"),
+    ttsGemini: str("MODEL_TTS_GEMINI", "gemini-2.5-flash-tts"),
     // Secondary Gemini attempt before falling back to OpenAI. Defaults to the
     // same flash model; point at another Gemini TTS model to switch.
-    ttsGeminiFallback: str("MODEL_TTS_GEMINI_FALLBACK", "gemini-2.5-flash-preview-tts"),
+    ttsGeminiFallback: str("MODEL_TTS_GEMINI_FALLBACK", "gemini-2.5-flash-tts"),
     // Multilingual OpenAI voice model — officially supports Spanish with
     // native-level pronunciation (50+ languages), so this is a first-class
     // fallback, not a degraded English-accent stopgap. Used whenever the preview
@@ -64,8 +64,10 @@ export const config = {
     // OpenAI speech-to-text. gpt-4o-transcribe is the most accurate for catching
     // Spanish word endings (the part that matters most for the verb game).
     transcribe: str("MODEL_TRANSCRIBE", "gpt-4o-transcribe"),
-    // Onboarding reasoning models — Gemini text via generativelanguage API.
+    // Onboarding reasoning models — Gemini text via Vertex AI.
     // Probes run mid-quiz (must be quick); synthesis runs once at the end.
+    // Spoken verb/phrase answer checks (CORRECT/WRONG).
+    answerCheck: str("MODEL_ANSWER_CHECK", "gemini-2.5-flash"),
     onboardingProbe: str("MODEL_ONBOARDING_PROBE", "gemini-2.5-flash"),
     onboardingSynthesis: str("MODEL_ONBOARDING_SYNTHESIS", "gemini-2.5-pro"),
     // Roleplay's per-message turn-taking referee (who speaks next): fires far
@@ -73,7 +75,7 @@ export const config = {
     // gets Google's cheapest text tier rather than an OpenAI model — Gemini
     // infra is already in use for TTS/images, and geminiText() enforces valid
     // JSON natively (no code-fence/preamble parse failures to fall back from).
-    turnClassifier: str("MODEL_TURN_CLASSIFIER", "gemini-2.5-flash-lite")
+    turnClassifier: str("MODEL_TURN_CLASSIFIER", "gemini-3.1-flash-lite")
   },
 
   // Voice synthesis behaviour. Spanish audio must stay on Gemini; the OpenAI
@@ -164,6 +166,25 @@ export const config = {
     requestTimeoutMs: num("MUSIC_REQUEST_TIMEOUT_MS", 600000)
   },
 
+  // Vertex AI Gemini text/TTS (replaces the AI Studio GEMINI_API_KEY).
+  vertexText: {
+    location: str("VERTEX_TEXT_LOCATION", "global")
+  },
+
+  // Live Conversation: Gemini Live on Vertex AI (professor-madrid, Cloud
+  // billing), proxied by the /v1/live/ws relay with the same service account
+  // as Cloud TTS / Vertex images. gemini-3.8-live is served in us-central1
+  // (regional europe-*, us-east4 and global return "not found"); the eu/us
+  // multi-region endpoints also serve it — see docs/live-call-vertex-quota.md.
+  live: {
+    model: str("MODEL_LIVE", "gemini-3.8-live"),
+    location: str("LIVE_LOCATION", "us-central1"),
+    projectId: str("LIVE_PROJECT_ID", ""),
+    voiceName: str("LIVE_VOICE", "Puck"),
+    silenceDurationMs: num("LIVE_SILENCE_MS", 700),
+    maxMinutes: num("LIVE_MAX_MINUTES", 30)
+  },
+
   enforceWallet: bool("ENFORCE_WALLET", false),
 
   // Social layer: friend invites, song sharing, in-app notifications.
@@ -214,7 +235,10 @@ export const config = {
     // Placeholder song prices until real GPU cost per length is measured.
     musicShort: num("COST_MUSIC_30S", 15),
     musicMedium: num("COST_MUSIC_60S", 25),
-    musicLong: num("COST_MUSIC_120S", 45)
+    musicLong: num("COST_MUSIC_120S", 45),
+    // Live Conversation: charged per started call minute. Raw Gemini Live
+    // cost is ~$0.03–0.06/min (audio in+out, context re-read every turn).
+    liveMinute: num("COST_LIVE_MINUTE", 20)
   },
 
   pricing: {
@@ -228,6 +252,8 @@ export const config = {
     usdPerMinTtsOpenAI: num("USD_PER_MIN_TTS_OPENAI", 0.015),
     // Vertex Gemini 2.5 Flash Image bills ~1290 output tokens/image (~$0.039).
     usdPerImage: num("USD_PER_IMAGE", 0.039),
+    // Estimated blended Gemini Live cost per call minute (metering only).
+    usdPerMinLive: num("USD_PER_MIN_LIVE", 0.045),
     infraOverhead: num("INFRA_OVERHEAD", 0.15),
     targetMargin: num("TARGET_MARGIN", 5.0),
     appleFee: num("APPLE_FEE", 0.15),
@@ -245,7 +271,7 @@ export const config = {
 export function featureFlags() {
   return {
     chat: Boolean(config.openaiKey),
-    tts: Boolean(config.geminiKey || config.openaiKey),
+    tts: Boolean(config.cloudTts.credentials || config.openaiKey),
     wallet: Boolean(config.supabaseUrl && config.supabaseServiceKey),
     auth: Boolean(config.supabaseUrl && config.supabaseServiceKey)
   };

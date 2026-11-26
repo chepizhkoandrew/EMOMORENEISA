@@ -814,6 +814,41 @@ final class ProxyClient {
         )
     }
 
+    // MARK: - Live Conversation (Gemini Live on Vertex via the /v1/live/ws relay)
+
+    struct LiveStart {
+        let sessionId: String
+        /// Per-call secret for attaching (and re-attaching) to the relay socket.
+        let ticket: String
+        let wsURL: String
+        let costPerMinute: Int
+        let maxMinutes: Int
+    }
+
+    /// Debits the first minute and opens a relay session. Every following
+    /// minute is billed by the relay itself while the socket is attached.
+    func liveStart(topic: String, hasPhoto: Bool, level: String, appLanguage: String,
+                   nativeLanguage: String, displayName: String?, interests: String?) async throws -> LiveStart {
+        var body: [String: Any] = [
+            "topic": topic, "hasPhoto": hasPhoto, "level": level,
+            "appLanguage": appLanguage, "nativeLanguage": nativeLanguage
+        ]
+        if let displayName { body["displayName"] = displayName }
+        if let interests { body["interests"] = interests }
+        let json = try await postJSON(path: "/v1/live/start", body: body, timeout: 20)
+        guard let sessionId = json["sessionId"] as? String,
+              let ticket = json["ticket"] as? String,
+              let ws = json["wsUrl"] as? String else { throw ProxyError.decoding }
+        if let bal = (json["balance"] as? NSNumber)?.intValue {
+            await MainActor.run { WalletManager.shared.balanceTreats = bal }
+        }
+        return LiveStart(
+            sessionId: sessionId, ticket: ticket, wsURL: ws,
+            costPerMinute: (json["costPerMinute"] as? NSNumber)?.intValue ?? 0,
+            maxMinutes: (json["maxMinutes"] as? NSNumber)?.intValue ?? 30
+        )
+    }
+
     // MARK: - Transport
 
     private func authToken() async throws -> String {

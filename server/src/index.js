@@ -1,7 +1,7 @@
 import express from "express";
 import { config, featureFlags } from "./config.js";
 import { requireUser } from "./auth.js";
-import { openaiChat, openaiTranscribe, geminiText } from "./providers.js";
+import { openaiChat, openaiTranscribe, geminiText, vertexConfigured, vertexGenerateContent } from "./providers.js";
 import { getVoice, activeVoiceTag } from "./voicecache.js";
 import { probePass1Prompt, probePass2Prompt, synthesisPrompt, ONBOARDING_QUIZ_VERSION } from "./onboardingPrompts.js";
 import { getIllustration, getIllustrationFromPrompt } from "./imagecache.js";
@@ -17,6 +17,7 @@ import {
   publicInviteInfo, listFriends, respondToInvite, unfriend, blockUser, unblockUser
 } from "./social.js";
 import { shareSong, listSharedSongs, downloadSharedSong } from "./shares.js";
+import { liveStart, attachLiveRelay } from "./live.js";
 import {
   requireAdmin, createAnnouncement, announceAnnouncement,
   retireAnnouncement, bulkAckAnnouncement, fanOutPackPurchase
@@ -104,6 +105,10 @@ app.get("/v1/wallet", requireUser, async (req, res) => {
 app.get("/v1/packs", requireUser, (req, res) => {
   res.json({ packs: config.packs, trialGrantTreats: config.trialGrantTreats });
 });
+
+// Live Conversation (real-time voice tutor on Gemini Live).
+// The call itself runs over the /v1/live/ws WebSocket relay (see live.js).
+app.post("/v1/live/start", requireUser, liveStart);
 
 app.post("/v1/chat", requireUser, async (req, res) => {
   if (!config.openaiKey) return res.status(503).json({ error: "chat_not_configured" });
@@ -293,7 +298,7 @@ app.post("/v1/utility", requireUser, async (req, res) => {
       // text tier instead of OpenAI. geminiText() also forces valid JSON via
       // responseMimeType, removing the code-fence/preamble parse failures an
       // OpenAI completion could return under this instruction.
-      if (!config.geminiKey) return res.status(503).json({ error: "chat_not_configured" });
+      if (!vertexConfigured()) return res.status(503).json({ error: "chat_not_configured" });
       result = await geminiText({
         prompt,
         model: config.models.turnClassifier,
@@ -683,24 +688,17 @@ Mark WRONG if:
 Reply with exactly one word: CORRECT or WRONG`;
 
   try {
-    const geminiKey = config.geminiKey;
-    if (!geminiKey) {
+    if (!vertexConfigured()) {
       if (pre.enforced) await credit(req.user.id, cost, "refund", "verb_check_no_key", {});
       return res.status(503).json({ error: "verb_check_not_configured" });
     }
 
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`;
-    const body = {
-      contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: { temperature: 0, maxOutputTokens: 8 }
-    };
-
-    const response = await fetch(geminiUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-      signal: AbortSignal.timeout(8000)
-    });
+    // Vertex (GCP billing). thinkingBudget 0: with an 8-token cap, 2.5-flash's
+    // default thinking would eat the whole budget and return no text.
+    const response = await vertexGenerateContent(config.models.answerCheck, {
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
+      generationConfig: { temperature: 0, maxOutputTokens: 8, thinkingConfig: { thinkingBudget: 0 } }
+    }, { timeoutMs: 8000 });
 
     if (!response.ok) {
       if (pre.enforced) await credit(req.user.id, cost, "refund", "verb_check_api_error", {});
@@ -754,24 +752,17 @@ Mark WRONG if:
 Reply with exactly one word: CORRECT or WRONG`;
 
   try {
-    const geminiKey = config.geminiKey;
-    if (!geminiKey) {
+    if (!vertexConfigured()) {
       if (pre.enforced) await credit(req.user.id, cost, "refund", "phrase_check_no_key", {});
       return res.status(503).json({ error: "phrase_check_not_configured" });
     }
 
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`;
-    const body = {
-      contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: { temperature: 0, maxOutputTokens: 8 }
-    };
-
-    const response = await fetch(geminiUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-      signal: AbortSignal.timeout(8000)
-    });
+    // Vertex (GCP billing). thinkingBudget 0: with an 8-token cap, 2.5-flash's
+    // default thinking would eat the whole budget and return no text.
+    const response = await vertexGenerateContent(config.models.answerCheck, {
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
+      generationConfig: { temperature: 0, maxOutputTokens: 8, thinkingConfig: { thinkingBudget: 0 } }
+    }, { timeoutMs: 8000 });
 
     if (!response.ok) {
       if (pre.enforced) await credit(req.user.id, cost, "refund", "phrase_check_api_error", {});
@@ -1140,6 +1131,7 @@ app.get("/v1/music/job/:id", requireUser, (req, res) => {
 
 app.use((req, res) => res.status(404).json({ error: "not_found" }));
 
-app.listen(config.port, () => {
+const server = app.listen(config.port, () => {
   console.log(`professor-madrid-api listening on :${config.port}`);
 });
+attachLiveRelay(server);
