@@ -66,6 +66,11 @@ nonisolated final class LiveSessionClient: NSObject, URLSessionWebSocketDelegate
         sendJSON(["clientContent": ["turns": [["role": "user", "parts": parts]], "turnComplete": true]])
     }
 
+    /// Diagnostics for the relay's log (never forwarded to Google).
+    func sendLog(_ info: [String: Any]) {
+        sendJSON(["clientLog": info])
+    }
+
     private func sendJSON(_ obj: [String: Any]) {
         guard let task, let data = try? JSONSerialization.data(withJSONObject: obj),
               let text = String(data: data, encoding: .utf8) else { return }

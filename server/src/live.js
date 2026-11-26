@@ -206,6 +206,11 @@ class LiveSession {
   fromClient(data) {
     let msg;
     try { msg = JSON.parse(data.toString()); } catch (_) { this.stats.inBad += 1; return; }
+    if (msg.clientLog) {
+      // App-side audio diagnostics (TestFlight has no console). Log only.
+      console.log(`[live] client ${this.id.slice(0, 8)}: ${JSON.stringify(msg.clientLog).slice(0, 600)}`);
+      return;
+    }
     // Whitelist: the client may stream input and send turns, never `setup`.
     const allowed = {};
     if (msg.realtimeInput) {

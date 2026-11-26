@@ -47,6 +47,9 @@ final class LiveCallModel {
     private var clockTask: Task<Void, Never>?
     private var reconnectAttempts = 0
     private var openingSent = false
+    private var logTask: Task<Void, Never>?
+    private var audioChunksReceived = 0
+    private var transcriptChunks = 0
     private var interruptionObserver: NSObjectProtocol?
 
     init(config: LiveCallConfig) {
@@ -95,7 +98,10 @@ final class LiveCallModel {
         connect()
     }
 
-    func hangUp() { finish(.hungUp) }
+    func hangUp() {
+        sendDiagnostics(tag: "hangup")
+        finish(.hungUp)
+    }
 
     /// Mid-call photo: the tutor reacts to it right away.
     func sendPhoto(_ image: UIImage) {
@@ -108,6 +114,7 @@ final class LiveCallModel {
         guard !isEnded else { return }
         phase = .ended(reason)
         clockTask?.cancel()
+        logTask?.cancel()
         client?.onEvent = nil
         client?.close()
         client = nil
@@ -163,16 +170,20 @@ final class LiveCallModel {
             phase = .live
             audio.captureEnabled = true
             startClockIfNeeded()
+            startDiagnosticsIfNeeded()
             if !openingSent {
                 openingSent = true
                 let jpeg = config.photo.flatMap { Self.jpeg($0) }
                 source.sendTurn(text: "(La llamada acaba de empezar. Saluda y abre la conversación.)", jpeg: jpeg)
             }
         case .audio(let pcm):
+            audioChunksReceived += 1
             audio.enqueue(pcm16: pcm)
         case .inputTranscript(let t):
+            transcriptChunks += 1
             append(t, role: .user)
         case .outputTranscript(let t):
+            transcriptChunks += 1
             append(t, role: .tutor)
         case .interrupted:
             audio.flush()
@@ -196,6 +207,46 @@ final class LiveCallModel {
                 reconnect()
             }
         }
+    }
+
+    // MARK: - Remote diagnostics (TestFlight has no console)
+
+    private func startDiagnosticsIfNeeded() {
+        guard logTask == nil else { return }
+        logTask = Task { [weak self] in
+            for delay in [4, 15, 30, 30, 30, 60, 60] {
+                try? await Task.sleep(nanoseconds: UInt64(delay) * 1_000_000_000)
+                guard let self, !Task.isCancelled, !self.isEnded else { return }
+                self.sendDiagnostics(tag: "t\(self.elapsed)")
+            }
+        }
+    }
+
+    private func sendDiagnostics(tag: String) {
+        let st = audio.stats
+        let session = AVAudioSession.sharedInstance()
+        let route = session.currentRoute
+        client?.sendLog([
+            "tag": tag,
+            "engineRunning": audio.engineRunning,
+            "inputFormat": st.inputFormat,
+            "micCallbacks": st.micCallbacks,
+            "micChunks": st.micChunks,
+            "micConvertErrors": st.micConvertErrors,
+            "audioRecv": audioChunksReceived,
+            "buffersScheduled": st.buffersScheduled,
+            "buffersPlayed": st.buffersPlayed,
+            "configChanges": st.configChanges,
+            "restarts": st.restarts,
+            "lastError": st.lastError,
+            "transcripts": transcriptChunks,
+            "muted": isMuted,
+            "category": session.category.rawValue,
+            "mode": session.mode.rawValue,
+            "inputs": route.inputs.map { $0.portType.rawValue },
+            "outputs": route.outputs.map { $0.portType.rawValue },
+            "outputVolume": session.outputVolume
+        ])
     }
 
     // MARK: - Call clock (display only — the relay bills per minute)
