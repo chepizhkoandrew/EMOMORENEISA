@@ -10,13 +10,38 @@ struct PromptBuilder {
     /// with a tight token budget (e.g. roleplay's one-line-per-turn format).
     /// A nil profile fails toward MORE native language, never less — an
     /// unknown user should never be greeted in all-Spanish.
-    static func languageGuidance(profile: ESPProfile?, terse: Bool = false) -> String {
-        let native = LocalizationManager.shared.tutorNativeLanguage
+    /// The stage that governs how much Spanish vs. native language the tutor
+    /// uses: the learner's effective stage, shifted by their immersion
+    /// setting. Shared by text chat and Live Call.
+    static func languageStage(profile: ESPProfile?) -> LearnerStage {
         let stage = profile?.effectiveStage ?? .absoluteBeginner
         let shift = profile?.immersionModeEnum.stageOrderShift ?? 0
         let cases = LearnerStage.allCases
-        let shiftedOrder = min(max(stage.order + shift, 0), cases.count - 1)
-        let effective = cases[shiftedOrder]
+        return cases[min(max(stage.order + shift, 0), cases.count - 1)]
+    }
+
+    /// Everything the tutor should already know about the student, for the
+    /// Live Call system instruction (built server-side). Same digest the
+    /// chat tutor gets, plus the full personal notes (the digest trims them
+    /// to 120 chars, which is how a pet's name got lost) and past session
+    /// notes.
+    static func liveCallStudentContext(profile: ESPProfile?) -> String {
+        guard let p = profile else { return "" }
+        var parts: [String] = []
+        let digest = p.profileDigest
+        if !digest.isEmpty { parts.append(digest) }
+        let life = p.lifeNotes.trimmingCharacters(in: .whitespacesAndNewlines)
+        if life.count > 120 { parts.append("Contexto personal completo: \(life.prefix(1500))") }
+        if !p.hobbies.isEmpty { parts.append("Aficiones: \(p.hobbies.prefix(8).joined(separator: ", "))") }
+        if !p.focusTopics.isEmpty { parts.append("Temas que le interesan: \(p.focusTopics.prefix(6).joined(separator: ", "))") }
+        let notes = p.learningNotes.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !notes.isEmpty { parts.append("Notas de sesiones anteriores: \(notes.prefix(800))") }
+        return String(parts.joined(separator: "\n").prefix(5000))
+    }
+
+    static func languageGuidance(profile: ESPProfile?, terse: Bool = false) -> String {
+        let native = LocalizationManager.shared.tutorNativeLanguage
+        let effective = languageStage(profile: profile)
         let shouldGloss = profile?.showInlineTranslations ?? true
         let glossRule = shouldGloss
             ? "Whenever you use a new Spanish word or phrase, immediately gloss it in parentheses with its \(native) meaning, e.g. \"perro (dog)\"."

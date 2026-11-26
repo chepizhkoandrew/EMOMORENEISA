@@ -827,14 +827,15 @@ final class ProxyClient {
 
     /// Debits the first minute and opens a relay session. Every following
     /// minute is billed by the relay itself while the socket is attached.
-    func liveStart(topic: String, hasPhoto: Bool, level: String, appLanguage: String,
-                   nativeLanguage: String, displayName: String?, interests: String?) async throws -> LiveStart {
+    func liveStart(topic: String, hasPhoto: Bool, stage: String, cefr: String?, appLanguage: String,
+                   nativeLanguage: String, displayName: String?, studentContext: String) async throws -> LiveStart {
         var body: [String: Any] = [
-            "topic": topic, "hasPhoto": hasPhoto, "level": level,
-            "appLanguage": appLanguage, "nativeLanguage": nativeLanguage
+            "topic": topic, "hasPhoto": hasPhoto, "stage": stage,
+            "appLanguage": appLanguage, "nativeLanguage": nativeLanguage,
+            "studentContext": studentContext
         ]
+        if let cefr { body["cefr"] = cefr }
         if let displayName { body["displayName"] = displayName }
-        if let interests { body["interests"] = interests }
         let json = try await postJSON(path: "/v1/live/start", body: body, timeout: 20)
         guard let sessionId = json["sessionId"] as? String,
               let ticket = json["ticket"] as? String,

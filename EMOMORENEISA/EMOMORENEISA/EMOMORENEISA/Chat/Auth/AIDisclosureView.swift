@@ -71,7 +71,7 @@ struct AIDisclosureView: View {
                         )
                         disclosureRow(
                             icon: "phone.fill",
-                            text: L("During a Live Call, your voice, any photos you share, and the topic you choose are streamed to Google's Gemini (Google Cloud Vertex AI) so the tutor can talk with you in real time. Calls are not saved.")
+                            text: L("During a Live Call, your voice, any photos you share, the topic you choose, and your learning profile (your level and what you've shared about yourself) are sent to Google's Gemini (Google Cloud Vertex AI) so the tutor can talk with you in real time. Calls are not saved.")
                         )
                     }
                     .padding(.horizontal, 32)

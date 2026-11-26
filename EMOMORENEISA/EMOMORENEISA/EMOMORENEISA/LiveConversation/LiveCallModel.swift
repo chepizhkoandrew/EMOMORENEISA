@@ -69,14 +69,17 @@ final class LiveCallModel {
 
         let profile = AuthState.shared.profile
         do {
+            let band = profile?.onboardingProfile?.levelBreakdown?.speaking.band
+                ?? profile?.onboardingProfile?.levelBreakdown?.overallBand
             let s = try await ProxyClient.shared.liveStart(
                 topic: config.topic,
                 hasPhoto: config.photo != nil,
-                level: profile?.level ?? "A2",
+                stage: PromptBuilder.languageStage(profile: profile).rawValue,
+                cefr: (band == nil || band == "unknown" || band!.isEmpty) ? nil : band,
                 appLanguage: LocalizationManager.shared.language.rawValue,
-                nativeLanguage: profile?.nativeLanguage ?? LocalizationManager.shared.language.rawValue,
+                nativeLanguage: LocalizationManager.shared.tutorNativeLanguage,
                 displayName: profile?.displayName,
-                interests: profile.map { $0.hobbies.prefix(6).joined(separator: ", ") }
+                studentContext: PromptBuilder.liveCallStudentContext(profile: profile)
             )
             guard !isEnded else { return }
             start = s
