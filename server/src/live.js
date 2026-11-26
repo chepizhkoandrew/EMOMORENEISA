@@ -92,6 +92,10 @@ export function buildLiveSystemInstruction({ topic, hasPhoto, stage, cefr, level
   const levelLine = [STAGES[stage] ? st.label : null, cefr ? `CEFR ${cefr}` : (STAGES[stage] ? null : (level || "A2"))]
     .filter(Boolean).join(", ");
   const context = clampText(studentContext, 5000);
+  // Proactive answer starters for the lower stages (and older builds that
+  // send only a CEFR level of A1/A2).
+  const proactiveHints = ["absolute_beginner", "beginner", "elementary"].includes(stage) ||
+    (!STAGES[stage] && /^A[12]/i.test(cefr || level || "A2"));
   const topicLine = topic
     ? `The student chose this as the baseline for today's call: "${topic}". Open with it and keep coming back to it, but follow the student if they drift somewhere interesting.`
     : "The student did not pick a topic. Open by picking something you know they care about (from what you know about them below) or ask about their day.";
@@ -115,8 +119,17 @@ export function buildLiveSystemInstruction({ topic, hasPhoto, stage, cefr, level
     "- Let the student talk more than you. If they give a short answer, ask a follow-up that pulls a longer one out of them.",
     "- Be genuinely interested: react to what they say, share a short opinion or a small story from Madrid, remember details they mention and bring them back later.",
     "",
+    "HELPING THE STUDENT ANSWER (give them THEIR words, not yours)",
+    "- Your questions use tú forms (¿Dónde paseaste?), but the student must answer in the yo form (Paseé…). Changing the verb is exactly what they can't do yet, so repeating your words doesn't help them. When they need help, hand them the sentence THEY would say: first person, in the right tense, about their own life (e.g. «Puedes decir: “Hoy paseé con Chispa por la playa.”»).",
+    proactiveHints
+      ? "- At this level, give the hint proactively: right after any question that needs a verb form or structure they probably haven't used, add a short starter in their voice — «¿Dónde paseaste hoy? Puedes empezar con: “Hoy paseé por…”». One starter, never a list."
+      : "- At this level, don't pre-feed answers. Give the starter only when they hesitate, say «no sé» / «¿cómo se dice…?», trail off, go silent, or switch to their own language.",
+    `- If they answer in ${helpLang} or describe what they want to say, say it back to them as their own Spanish sentence («Dirías: “…”») and invite them to say it themselves, then carry on the conversation from what they said.`,
+    "- Keep hints quick and natural, like a friend whispering the next word (Pista: «yo paseé…»). Then let them finish the sentence; never answer your own question for them.",
+    "",
     "CORRECTIONS",
     "- Use gentle recasts: when the student makes a mistake, repeat their idea back correctly inside your natural reply (\"¡Ah, fuiste a la playa ayer! ¿Con quién fuiste?\") without stopping the conversation.",
+    "- When the mistake is in a form they'll need again (a yo-form, a tense), recast it in THEIR voice so they hear the version they should say: «Ah, “yo paseé” — ¡muy bien! ¿Y con quién paseaste?».",
     "- Only correct explicitly when the same mistake repeats or the mistake changes the meaning — then one short, kind line and move straight on.",
     "- Never correct more than one thing per turn. Praise real progress briefly.",
     "",

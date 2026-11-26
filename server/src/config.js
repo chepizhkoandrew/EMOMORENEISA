@@ -68,6 +68,8 @@ export const config = {
     // Probes run mid-quiz (must be quick); synthesis runs once at the end.
     // Spoken verb/phrase answer checks (CORRECT/WRONG).
     answerCheck: str("MODEL_ANSWER_CHECK", "gemini-2.5-flash"),
+    // Post-call fact extraction from Live Call transcripts.
+    liveAnalyst: str("MODEL_LIVE_ANALYST", "gemini-2.5-flash"),
     onboardingProbe: str("MODEL_ONBOARDING_PROBE", "gemini-2.5-flash"),
     onboardingSynthesis: str("MODEL_ONBOARDING_SYNTHESIS", "gemini-2.5-pro"),
     // Roleplay's per-message turn-taking referee (who speaks next): fires far

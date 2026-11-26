@@ -307,6 +307,20 @@ app.post("/v1/utility", requireUser, async (req, res) => {
       });
       rawCost = geminiLiteCostUsd(result.usage.inputTokens, result.usage.outputTokens);
       provider = "gemini";
+    } else if (kind === "live_analyst") {
+      // Post-call fact extraction for Live Call transcripts: stays on Gemini
+      // (Vertex, GCP billing) so the AI disclosure's "sent to Google's
+      // Gemini" stays true for Live Call data. JSON-mode output.
+      if (!vertexConfigured()) return res.status(503).json({ error: "chat_not_configured" });
+      result = await geminiText({
+        prompt,
+        model: config.models.liveAnalyst,
+        maxOutputTokens: Math.min(maxTokens || 1500, 3000),
+        temperature: temperature ?? 0.2
+      });
+      // gemini-2.5-flash list price: $0.30 / 1M in, $2.50 / 1M out.
+      rawCost = (result.usage.inputTokens * 0.30 + result.usage.outputTokens * 2.50) / 1_000_000;
+      provider = "gemini";
     } else {
       if (!config.openaiKey) return res.status(503).json({ error: "chat_not_configured" });
       const model = kind === "analyst" ? config.models.analyst : config.models.chat;

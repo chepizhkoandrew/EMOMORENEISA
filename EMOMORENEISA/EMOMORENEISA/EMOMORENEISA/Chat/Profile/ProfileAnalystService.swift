@@ -65,7 +65,7 @@ final class ProfileAnalystService {
     }
 
     @MainActor
-    private func applyExtractionLocally(_ result: ExtractionResult, to profile: inout ESPProfile?) {
+    func applyExtractionLocally(_ result: ExtractionResult, to profile: inout ESPProfile?) {
         guard profile != nil else { return }
 
         for item in result.wordsIntroduced {

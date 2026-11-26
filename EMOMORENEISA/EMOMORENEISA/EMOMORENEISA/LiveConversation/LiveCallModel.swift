@@ -116,6 +116,10 @@ final class LiveCallModel {
     private func finish(_ reason: EndReason) {
         guard !isEnded else { return }
         phase = .ended(reason)
+        // Remember what the student told us (facts, words, recurring
+        // mistakes) — the transcript itself is analysed once and dropped.
+        closeOpenLines()
+        ProfileAnalystService.shared.analyzeLiveCall(lines: lines, topic: config.topic, authState: AuthState.shared)
         clockTask?.cancel()
         logTask?.cancel()
         client?.onEvent = nil
